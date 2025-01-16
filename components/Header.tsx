@@ -11,23 +11,17 @@ const Header = () => {
 
         {/* 내비게이션 */}
         <nav className="flex space-x-6">
-          {/* <Link
-            href="/about"
-            className="text-gray-600 hover:text-blue-500 transition"
-          >
-            About
-          </Link>
-          <Link
-            href="/services"
-            className="text-gray-600 hover:text-blue-500 transition"
-          >
-            Services
-          </Link> */}
           <Link
             href="/login"
             className="text-gray-600 hover:text-blue-500 transition"
           >
             Login
+          </Link>
+          <Link
+            href="/signup"
+            className="text-gray-600 hover:text-blue-500 transition"
+          >
+            SignUp
           </Link>
         </nav>
       </div>

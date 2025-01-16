@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent, useState } from "react";
 
-const LoginForm = () => {
+const LoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Add your login logic here
     console.log({ email, password });
