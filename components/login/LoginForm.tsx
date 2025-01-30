@@ -1,57 +1,34 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ErrorText, LabelInput } from "../common";
+import { LoginInfoState as ErrorState } from "@/lib/definition";
 
-const LoginForm: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const handleSubmit = async (e: ChangeEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // Add your login logic here
-    console.log({ email, password });
-  };
-
+function LoginForm({
+  state,
+  formAction,
+}: {
+  state: ErrorState;
+  formAction: (payload: FormData) => void;
+}) {
   return (
     <form
-      onSubmit={handleSubmit}
+      action={formAction}
       className="max-w-md mx-auto mt-10 p-6 bg-white shadow-md rounded"
     >
       <h1 className="text-2xl font-bold mb-4 text-center">Login</h1>
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+      <LabelInput name="email" />
+      <ErrorText elemName="email" errors={state?.errors?.email} />
+      <LabelInput name="password" type="password" />
+      <ErrorText elemName="password" errors={state?.errors?.password} />
       <button
         type="submit"
-        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+        className="w-full bg-blue-500 text-white my-2 py-2 rounded hover:bg-blue-600 transition"
       >
         Login
       </button>
+      {state?.message && <p className="text-red-500 mt-2">{state.message}</p>}
     </form>
   );
-};
+}
 
 export default LoginForm;

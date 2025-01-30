@@ -1,11 +1,11 @@
-import LoginForm from "@/components/login/LoginForm";
+import LoginPage from "@/components/login/LoginPage";
 
-const LoginPage: React.FC = () => {
+const page: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <LoginForm />
+      <LoginPage />
     </div>
   );
 };
 
-export default LoginPage;
+export default page;

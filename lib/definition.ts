@@ -10,3 +10,12 @@ export interface UserState {
   };
   message?: string | null;
 }
+
+export type LoginInfo = Omit<User, "name">;
+
+export interface LoginInfoState {
+  errors?: {
+    [key in keyof LoginInfo]?: string[];
+  };
+  message?: string | null;
+}

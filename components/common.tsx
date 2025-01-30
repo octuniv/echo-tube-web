@@ -1,3 +1,5 @@
+import { JSX } from "react";
+
 export function LabelInput({
   name,
   ...rest
@@ -13,7 +15,7 @@ export function LabelInput({
         type="text"
         name={name}
         id={name}
-        className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+        className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         {...rest}
       />
     </div>
@@ -44,5 +46,19 @@ export function ErrorText({
         </div>
       ))}
     </>
+  );
+}
+
+export function MakeFormButton({
+  action,
+  ButtonShape,
+}: {
+  action: () => Promise<void>;
+  ButtonShape: () => JSX.Element;
+}) {
+  return (
+    <form action={action}>
+      <ButtonShape />
+    </form>
   );
 }

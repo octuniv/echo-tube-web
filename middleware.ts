@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// 1. Specify protected and public routes
+// 보호된 페이지 목록
 const protectedRoutes = ["/dashboard"];
 const publicRoutes = ["/login", "/signup", "/"];
 
-export default async function middleware(req: NextRequest) {
-  // 2. Check if the current route is protected or public
+export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isProtectedRoute = protectedRoutes.includes(path);
   const isPublicRoute = publicRoutes.includes(path);
 
-  // 3. Get Cookie from request
-  const token = req.cookies.get("auth_token");
+  // ✅ `req.cookies.get()`로 접근 (정상적으로 저장되었을 경우)
+  const accessToken = req.cookies.get("access_token")?.value;
 
-  // 4. Redirect to /login if the user is not authenticated
-  if (isProtectedRoute && !token) {
+  // 보호된 페이지 접근 시 로그인 필요
+  if (isProtectedRoute && !accessToken) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
-  // 5. Redirect to /dashboard if the user is authenticated
+  // 로그인/회원가입 페이지 접근 시 이미 로그인한 경우 대시보드로 이동
   if (
     isPublicRoute &&
-    token &&
+    accessToken &&
     !req.nextUrl.pathname.startsWith("/dashboard")
   ) {
     return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
@@ -30,7 +29,7 @@ export default async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-// Routes Middleware should not run on
+// API 요청, 정적 파일 등은 제외
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
 };
