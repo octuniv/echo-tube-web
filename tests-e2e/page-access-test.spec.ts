@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { logout } from "./auto-logout";
 
 test("Main Page Access test", async ({ page }) => {
+  await logout(page);
   await page.goto("/");
   await expect(page.getByRole("paragraph")).toContainText("Welcome My Home!");
 });

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import LogoutButton from "./logout/LogoutButton";
-import { getUserFromCookie } from "@/lib/auth";
+import { getAuthState } from "@/lib/authState";
 
 const Header = async () => {
-  const { isAuthenticated } = await getUserFromCookie();
+  const { isAuthenticated } = await getAuthState();
   return (
     <header className="static top-0 left-0 w-full bg-white shadow-md z-50">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">

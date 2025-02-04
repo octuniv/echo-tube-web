@@ -1,10 +1,12 @@
 import { test, expect } from "@playwright/test";
+import { logout } from "./auto-logout";
 
 /*
     Warning : You must start and initialize the app server before you start it.
 */
 test.describe("SignUp Form E2E Tests", () => {
   test.beforeEach(async ({ page }) => {
+    await logout(page);
     await page.goto("/signup");
   });
 

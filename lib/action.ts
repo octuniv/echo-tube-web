@@ -5,6 +5,7 @@ import { UserState } from "./definition";
 import { serverAddress, thisBaseUrl } from "./util";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { resetAuthState } from "./authState";
 
 const userSchema = z.object({
   name: z.string().min(1, { message: "Please enter your valid name." }),
@@ -88,21 +89,23 @@ export async function LoginAction(prevState: UserState, formData: FormData) {
     const { access_token, refresh_token } = await response.json();
 
     const cookieStore = await cookies();
-    const cookieOptions = {
+
+    const baseCookieOptions = {
       httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7, // 7일 (refresh_token 기준)
       path: "/",
       sameSite: "lax" as const,
+      secure: process.env.NODE_ENV === "production",
       domain: "localhost",
-      secure: false,
     };
 
     cookieStore.set("access_token", access_token, {
-      ...cookieOptions,
+      ...baseCookieOptions,
       maxAge: 60 * 15,
     });
-
-    cookieStore.set("refresh_token", refresh_token, cookieOptions);
+    cookieStore.set("refresh_token", refresh_token, {
+      ...baseCookieOptions,
+      maxAge: 60 * 60 * 24 * 7,
+    });
 
     if (!response.ok) {
       return {
@@ -115,7 +118,7 @@ export async function LoginAction(prevState: UserState, formData: FormData) {
       message: `Login Failed.`,
     };
   }
-
+  resetAuthState();
   redirect(`/dashboard`);
 }
 
@@ -123,5 +126,6 @@ export async function LogoutAction() {
   const cookieStore = await cookies();
   cookieStore.delete("access_token");
   cookieStore.delete("refresh_token");
+  resetAuthState();
   redirect(`/login`);
 }

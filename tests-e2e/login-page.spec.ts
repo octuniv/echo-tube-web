@@ -1,16 +1,18 @@
 import { test, expect } from "@playwright/test";
+import { logout } from "./auto-logout";
 
 test.describe("Login Page", () => {
   test.beforeEach(async ({ page }) => {
+    await logout(page);
     await page.goto("/login");
   });
 
   test("Test to see signup and login buttons", async ({ page }) => {
-    await expect(page.getByRole("link", { name: "SignUp" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Logout" })
     ).not.toBeVisible();
+    await expect(page.getByRole("link", { name: "SignUp" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
   });
 
   test("should not allow login with empty fields", async ({ page }) => {
