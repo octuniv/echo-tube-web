@@ -1,13 +1,18 @@
 import { test, expect } from "@playwright/test";
-import { logout } from "./auto-logout";
+import { login, logout } from "./authUtil";
 
-/*
-    Warning : You must start and initialize the app server before you start it.
-*/
 test.describe("SignUp Form E2E Tests", () => {
   test.beforeEach(async ({ page }) => {
     await logout(page);
     await page.goto("/signup");
+  });
+
+  test.afterAll(async ({ page }) => {
+    try {
+      await login(page); // 로그인 상태로 초기화
+    } catch (error) {
+      console.error("Failed to log in after test:", error);
+    }
   });
 
   test("should display validation errors on empty form submission", async ({

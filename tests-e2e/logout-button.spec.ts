@@ -1,10 +1,5 @@
 import { resetAuthState } from "@/lib/authState";
 import { test, expect } from "@playwright/test";
-import path from "path";
-
-const authFile = path.join(__dirname, "./.auth/user.json");
-
-test.use({ storageState: authFile });
 
 test.describe("Logout Button", () => {
   test.beforeAll(() => {

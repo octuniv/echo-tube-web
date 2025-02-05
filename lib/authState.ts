@@ -11,10 +11,9 @@ type AuthResult = AuthSuccess | AuthFailure;
 let cachedAuthState: AuthResult | null = null;
 
 export const getAuthState = cache(async (): Promise<AuthResult> => {
-  // You have to be careful with this code......
-  // if (cachedAuthState) {
-  //   return cachedAuthState;
-  // }
+  if (cachedAuthState) {
+    return cachedAuthState;
+  }
 
   const cookieStore = await cookies();
   const access_token = cookieStore.get("access_token")?.value;

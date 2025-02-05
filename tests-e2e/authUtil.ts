@@ -1,4 +1,13 @@
 import { Page, expect } from "@playwright/test";
+import * as dotenv from "dotenv";
+
+dotenv.config({ path: ".env.e2e.test" });
+
+const account = {
+  name: process.env.tester_name as string,
+  email: process.env.tester_email as string,
+  password: process.env.tester_password as string,
+};
 
 export async function logout(page: Page) {
   try {
@@ -20,4 +29,20 @@ export async function logout(page: Page) {
   } catch (error) {
     console.log("Logout button not found or failed to log out:", error);
   }
+}
+
+// from auth.setup.ts
+export async function login(page: Page) {
+  await page.goto("/login");
+
+  await page.waitForURL("/login", { timeout: 1000 });
+
+  await page.waitForSelector('input[name="email"]');
+  await page.fill('input[name="email"]', account.email);
+  await page.fill('input[name="password"]', account.password);
+
+  await page.waitForSelector('button[type="submit"]:not([disabled])');
+  await page.click('button[type="submit"]');
+
+  await page.waitForURL("/dashboard", { timeout: 5000 });
 }
