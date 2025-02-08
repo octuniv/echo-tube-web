@@ -1,4 +1,4 @@
-import { LogoutAction } from "@/lib/action";
+import { LogoutAction } from "@/lib/actions";
 import { MakeFormButton } from "../common";
 
 function LogoutShape() {

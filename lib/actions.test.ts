@@ -1,6 +1,6 @@
 // actions.test.ts
 
-import { signUpAction, LoginAction, LogoutAction } from "./action";
+import { signUpAction, LoginAction, LogoutAction } from "./actions";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { resetAuthState } from "./authState";
