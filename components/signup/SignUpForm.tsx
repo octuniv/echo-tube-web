@@ -16,6 +16,8 @@ export function SignUpForm({
       <h1 className="text-2xl font-bold mb-4 text-center">Sign Up</h1>
       <LabelInput name="name" />
       <ErrorText elemName="name" errors={state?.errors?.name} />
+      <LabelInput name="nickName" />
+      <ErrorText elemName="nickName" errors={state?.errors?.nickName} />
       <LabelInput name="email" />
       <ErrorText elemName="email" errors={state?.errors?.email} />
       <LabelInput name="password" type="password" />

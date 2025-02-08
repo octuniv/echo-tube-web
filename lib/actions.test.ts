@@ -36,6 +36,7 @@ describe("Actions Module", () => {
     // Arrange: FormData 모킹
     const formData = new FormData();
     formData.append("name", "John Doe");
+    formData.append("nickName", "John");
     formData.append("email", "john@example.com");
     formData.append("password", "password123");
 
@@ -58,6 +59,7 @@ describe("Actions Module", () => {
     // Arrange: FormData 모킹 (잘못된 데이터)
     const formData = new FormData();
     formData.append("name", "");
+    formData.append("nickName", "");
     formData.append("email", "invalid-email");
     formData.append("password", "short");
 
@@ -66,6 +68,26 @@ describe("Actions Module", () => {
 
     // Assert: 에러 메시지가 반환되어야 함
     expect(result.errors?.name).toBeDefined();
+    expect(result.errors?.nickName).toBeDefined();
+    expect(result.errors?.email).toBeDefined();
+    expect(result.errors?.password).toBeDefined();
+    expect(result.message).toBe("Missing Fields. Failed to Sign Up.");
+  });
+
+  it("should handle failed sign-up due to invalid fields", async () => {
+    // Arrange: FormData 모킹 (잘못된 데이터)
+    const formData = new FormData();
+    formData.append("name", "");
+    formData.append("nickName", "");
+    formData.append("email", "invalid-email");
+    formData.append("password", "short");
+
+    // Act: 회원가입 액션 실행
+    const result = await signUpAction({}, formData);
+
+    // Assert: 에러 메시지가 반환되어야 함
+    expect(result.errors?.name).toBeDefined();
+    expect(result.errors?.nickName).toBeDefined();
     expect(result.errors?.email).toBeDefined();
     expect(result.errors?.password).toBeDefined();
     expect(result.message).toBe("Missing Fields. Failed to Sign Up.");

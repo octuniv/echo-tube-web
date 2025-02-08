@@ -1,20 +1,24 @@
 import { test as setup, expect } from "@playwright/test";
 import path from "path";
 import * as dotenv from "dotenv";
+import { User } from "@/lib/definition";
 
 dotenv.config({ path: ".env.e2e.test" });
 
 const authFile = path.join(__dirname, "./.auth/user.json");
+
 const account = {
   name: process.env.tester_name as string,
+  nickName: process.env.tester_nickName as string,
   email: process.env.tester_email as string,
   password: process.env.tester_password as string,
-};
+} satisfies User;
 
 setup("authenticate (login)", async ({ page, context }) => {
   await page.goto("/signup");
 
   await page.fill('input[name="name"]', account.name);
+  await page.fill('input[name="nickName"]', account.nickName);
   await page.fill('input[name="email"]', account.email);
   await page.fill('input[name="password"]', account.password);
   await page.click('button[type="submit"]');

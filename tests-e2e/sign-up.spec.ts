@@ -23,6 +23,9 @@ test.describe("SignUp Form E2E Tests", () => {
     await expect(page.locator("#name-error")).toHaveText(
       "Please enter your valid name."
     );
+    await expect(page.locator("#nickName-error")).toHaveText(
+      "Please enter your nickName."
+    );
     await expect(page.locator("#email-error")).toHaveText(
       "This email is invalid"
     );
@@ -33,6 +36,7 @@ test.describe("SignUp Form E2E Tests", () => {
 
   test("should display an error for invalid email format", async ({ page }) => {
     await page.fill('input[name="name"]', "John Doe");
+    await page.fill('input[name="nickName"]', "John");
     await page.fill('input[name="email"]', "invalid-email");
     await page.fill('input[name="password"]', "password123");
 
@@ -45,6 +49,7 @@ test.describe("SignUp Form E2E Tests", () => {
 
   test("should sign up successfully with valid inputs", async ({ page }) => {
     await page.fill('input[name="name"]', "John Doe");
+    await page.fill('input[name="nickName"]', "John");
     await page.fill('input[name="email"]', "john.doe@example.com");
     await page.fill('input[name="password"]', "password123");
 
@@ -57,6 +62,7 @@ test.describe("SignUp Form E2E Tests", () => {
     page,
   }) => {
     await page.fill('input[name="name"]', "Existing User");
+    await page.fill('input[name="nickName"]', "another");
     await page.fill('input[name="email"]', "john.doe@example.com");
     await page.fill('input[name="password"]', "password123");
 
@@ -64,6 +70,21 @@ test.describe("SignUp Form E2E Tests", () => {
 
     await expect(page.locator("p.text-red-500")).toHaveText(
       `This email john.doe@example.com is already existed!`
+    );
+  });
+
+  test("should display server error message on failure if you put an nickName that already exists on the server ", async ({
+    page,
+  }) => {
+    await page.fill('input[name="name"]', "another User");
+    await page.fill('input[name="nickName"]', "John");
+    await page.fill('input[name="email"]', "anotherTester@example.com");
+    await page.fill('input[name="password"]', "password123");
+
+    await page.click('button[type="submit"]');
+
+    await expect(page.locator("p.text-red-500")).toHaveText(
+      `This nickName John is already existed!`
     );
   });
 });

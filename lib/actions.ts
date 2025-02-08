@@ -9,6 +9,7 @@ import { resetAuthState } from "./authState";
 
 const userSchema = z.object({
   name: z.string().min(1, { message: "Please enter your valid name." }),
+  nickName: z.string().min(1, { message: "Please enter your nickName." }),
   email: z.string().email({ message: "This email is invalid" }),
   password: z
     .string()
@@ -18,6 +19,7 @@ const userSchema = z.object({
 export async function signUpAction(prevState: UserState, formData: FormData) {
   const validatedFields = userSchema.safeParse({
     name: formData.get("name"),
+    nickName: formData.get("nickName"),
     email: formData.get("email"),
     password: formData.get("password"),
   });
@@ -52,15 +54,16 @@ export async function signUpAction(prevState: UserState, formData: FormData) {
       }
     }
   } catch (error) {
+    console.error(error);
     return {
-      message: `Something went wrong. ${error}`,
+      message: `Login failed`,
     };
   }
 
   redirect(`/login`);
 }
 
-const LoginInfoSchema = userSchema.omit({ name: true });
+const LoginInfoSchema = userSchema.omit({ name: true, nickName: true });
 
 export async function LoginAction(prevState: UserState, formData: FormData) {
   const validatedFields = LoginInfoSchema.safeParse({

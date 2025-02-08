@@ -1,3 +1,4 @@
+import { User } from "@/lib/definition";
 import { Page, expect } from "@playwright/test";
 import * as dotenv from "dotenv";
 
@@ -5,9 +6,10 @@ dotenv.config({ path: ".env.e2e.test" });
 
 const account = {
   name: process.env.tester_name as string,
+  nickName: process.env.tester_nickName as string,
   email: process.env.tester_email as string,
   password: process.env.tester_password as string,
-};
+} satisfies User;
 
 export async function logout(page: Page) {
   try {
