@@ -11,7 +11,56 @@ import {
 import { serverAddress, thisBaseUrl } from "./util";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { resetAuthState } from "./authState";
+import { clearAuth, getAuthState } from "./authState";
+import { revalidatePath } from "next/cache";
+
+export const ensureAuthenticated = async (): Promise<boolean> => {
+  const authState = await getAuthState();
+
+  if (!authState.isAuthenticated) {
+    // 인증 실패 시 인증 정보 초기화
+    await clearAuth();
+    return false;
+  }
+
+  return true;
+};
+
+export const authenticatedFetch = async (
+  url: string,
+  options: RequestInit = {}
+): Promise<Response | null> => {
+  const isAuthenticated = await ensureAuthenticated();
+
+  if (!isAuthenticated) {
+    console.warn("User is not authenticated. Redirecting to login...");
+    return null;
+  }
+
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("access_token")?.value;
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (response.status === 401) {
+      // 401 Unauthorized: 토큰이 만료되었거나 유효하지 않음
+      await clearAuth();
+      return null;
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Failed to make authenticated request:", error);
+    return null;
+  }
+};
 
 export async function signUpAction(prevState: UserState, formData: FormData) {
   const validatedFields = userSchema.safeParse({
@@ -53,11 +102,11 @@ export async function signUpAction(prevState: UserState, formData: FormData) {
   } catch (error) {
     console.error(error);
     return {
-      message: `Login failed`,
+      message: "Login failed",
     };
   }
 
-  redirect(`/login`);
+  redirect("/login");
 }
 
 const LoginInfoSchema = userSchema.omit({ name: true, nickName: true });
@@ -112,25 +161,23 @@ export async function LoginAction(
 
     if (!response.ok) {
       return {
-        message: `Invalid credentials`,
+        message: "Invalid credentials",
       };
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return {
-      message: `Login Failed.`,
+      message: "Login Failed.",
     };
   }
-  resetAuthState();
-  redirect(`/dashboard`);
+  revalidatePath("/");
+  redirect("/dashboard");
 }
 
 export async function LogoutAction() {
-  const cookieStore = await cookies();
-  cookieStore.delete("access_token");
-  cookieStore.delete("refresh_token");
-  resetAuthState();
-  redirect(`/login`);
+  await clearAuth();
+  revalidatePath("/");
+  redirect("/login");
 }
 
 export async function FetchPosts(): Promise<PostDto[]> {
@@ -172,26 +219,24 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
   }
 
   const reqAddress = serverAddress + "/posts";
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("access_token")?.value;
+
   try {
-    const response = await fetch(reqAddress, {
+    const response = await authenticatedFetch(reqAddress, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(params),
     });
+
+    if (!response) {
+      redirect("/login");
+    }
+
     const result = await response.json();
 
     if (!response.ok || result?.error) {
-      if (result?.statusCode === 401) {
-        resetAuthState();
-        return {
-          message: "Your login has expired.",
-        };
-      } else if (result?.statusCode === 400) {
+      if (result?.statusCode === 400) {
         return {
           message: `${result.message}`,
         };
@@ -202,9 +247,10 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return {
-      message: `Create post failed.`,
+      message: "Create post failed.",
     };
   }
 
-  redirect(`/dashboard/posts`);
+  revalidatePath("/dashboard/posts");
+  redirect("/dashboard/posts");
 }

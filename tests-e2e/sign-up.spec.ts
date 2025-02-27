@@ -1,18 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { login, logout } from "./authUtil";
 
 test.describe("SignUp Form E2E Tests", () => {
   test.beforeEach(async ({ page }) => {
-    await logout(page);
+    await page.context().clearCookies();
     await page.goto("/signup");
-  });
-
-  test.afterAll(async ({ page }) => {
-    try {
-      await login(page); // 로그인 상태로 초기화
-    } catch (error) {
-      console.error("Failed to log in after test:", error);
-    }
+    await page.reload();
   });
 
   test("should display validation errors on empty form submission", async ({

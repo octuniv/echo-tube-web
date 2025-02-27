@@ -62,5 +62,9 @@ export const server = setupServer(
   // Mock API for fetch posts
   http.get(`${serverAddress}/posts`, () => {
     return HttpResponse.json(mockPosts, { status: 200 });
+  }),
+
+  http.get("https://example.com", () => {
+    return HttpResponse.json({}, { status: 200 });
   })
 );

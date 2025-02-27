@@ -4,13 +4,16 @@ import {
   LogoutAction,
   FetchPosts,
   CreatePost,
+  ensureAuthenticated,
+  authenticatedFetch,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { resetAuthState } from "./authState";
+import { clearAuth, getAuthState } from "./authState";
 import { mockPosts, server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
 import { serverAddress, thisBaseUrl } from "./util";
+import { revalidatePath } from "next/cache";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -28,13 +31,67 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("./authState", () => ({
-  resetAuthState: jest.fn(),
+  getAuthState: jest.fn(),
+  clearAuth: jest.fn(),
+}));
+
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
 }));
 
 describe("Actions Module", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    resetAuthState(); // 각 테스트 전에 인증 상태 초기화
+  });
+
+  describe("ensureAuthenticated", () => {
+    it("should return true when authenticated", async () => {
+      (getAuthState as jest.Mock).mockResolvedValue({ isAuthenticated: true });
+      const result = await ensureAuthenticated();
+      expect(result).toBe(true);
+    });
+
+    it("should return false and clear auth when not authenticated", async () => {
+      (getAuthState as jest.Mock).mockResolvedValue({ isAuthenticated: false });
+      const result = await ensureAuthenticated();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("authenticatedFetch", () => {
+    it("should make a successful request with valid token", async () => {
+      (getAuthState as jest.Mock).mockResolvedValue({ isAuthenticated: true });
+      (cookies as jest.Mock).mockReturnValue({
+        get: jest.fn((name: string) => ({ value: `${name}-valid-token` })),
+      });
+
+      server.use(
+        http.get("https://example.com", () => {
+          return HttpResponse.json({}, { status: 201 });
+        })
+      );
+
+      const response = await authenticatedFetch("https://example.com");
+      expect(response?.ok).toBe(true);
+    });
+
+    it("should handle 401 Unauthorized response", async () => {
+      (getAuthState as jest.Mock).mockResolvedValue({ isAuthenticated: true });
+      (cookies as jest.Mock).mockReturnValue({
+        get: jest.fn((name: string) => ({ value: `${name}-expired-token` })),
+      });
+
+      server.use(
+        http.get("https://example.com", () => {
+          return HttpResponse.json({}, { status: 401 });
+        })
+      );
+
+      const response = await authenticatedFetch("https://example.com");
+      expect(clearAuth).toHaveBeenCalled();
+      expect(response).toBeNull();
+    });
   });
 
   describe("signUpAction", () => {
@@ -109,7 +166,7 @@ describe("Actions Module", () => {
         "valid-refresh-token",
         expect.any(Object)
       );
-      expect(resetAuthState).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
       expect(redirect).toHaveBeenCalledWith("/dashboard");
     });
 
@@ -136,16 +193,10 @@ describe("Actions Module", () => {
 
   describe("LogoutAction", () => {
     it("should handle logout", async () => {
-      (cookies as jest.Mock).mockResolvedValue({
-        delete: jest.fn(),
-      });
-
       await LogoutAction();
 
-      const cookieStore = await cookies();
-      expect(cookieStore.delete).toHaveBeenCalledWith("access_token");
-      expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
-      expect(resetAuthState).toHaveBeenCalled();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
       expect(redirect).toHaveBeenCalledWith("/login");
     });
   });
@@ -202,6 +253,7 @@ describe("Actions Module", () => {
 
       await CreatePost({}, formData);
 
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/posts");
       expect(redirect).toHaveBeenCalledWith("/dashboard/posts");
     });
 
@@ -233,10 +285,10 @@ describe("Actions Module", () => {
         })
       );
 
-      const result = await CreatePost({}, formData);
+      await CreatePost({}, formData);
 
-      expect(resetAuthState).toHaveBeenCalled();
-      expect(result.message).toBe("Your login has expired.");
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login");
     });
 
     it("should handle unexpected errors", async () => {

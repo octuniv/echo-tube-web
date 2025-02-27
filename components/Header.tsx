@@ -1,9 +1,10 @@
 import Link from "next/link";
 import LogoutButton from "./logout/LogoutButton";
-import { getAuthState } from "@/lib/authState";
 
-const Header = async () => {
-  const { isAuthenticated } = await getAuthState();
+interface HeaderProps {
+  isLogined: boolean;
+}
+const Header = ({ isLogined }: HeaderProps) => {
   return (
     <header className="static top-0 left-0 w-full bg-white shadow-md z-50">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
@@ -15,7 +16,7 @@ const Header = async () => {
         {/* 내비게이션 */}
 
         <nav className="flex space-x-6">
-          {isAuthenticated ? (
+          {isLogined ? (
             <LogoutButton />
           ) : (
             <>

@@ -1,14 +1,13 @@
 import { test, expect } from "@playwright/test";
-import path from "path";
-
-const authFile = path.join(__dirname, "./.auth/user.json");
-test.use({ storageState: authFile });
 
 test.describe("Logout Button", () => {
-  test("should logout when click logout button", async ({ page, context }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto("/dashboard");
+    await page.reload();
     await page.waitForURL("/dashboard", { timeout: 5000 });
+  });
 
+  test("should logout when click logout button", async ({ page, context }) => {
     // 로그인 상태 확인
     await expect(page.getByRole("link", { name: "SignUp" })).not.toBeVisible();
     await expect(page.getByRole("link", { name: "Login" })).not.toBeVisible();

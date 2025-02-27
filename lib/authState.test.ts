@@ -1,6 +1,10 @@
 // lib/authState.test.ts
-
-import { getAuthState, resetAuthState } from "./authState";
+import {
+  getAuthState,
+  clearAuth,
+  resetAuthState,
+  loginStatus,
+} from "./authState";
 import { cookies } from "next/headers";
 import { server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
@@ -10,7 +14,7 @@ jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
     Promise.resolve({
       get: jest.fn((key: string) => {
-        if (key === "access_token") return { value: "expired-access-token" };
+        if (key === "access_token") return { value: "valid-access-token" };
         if (key === "refresh_token") return { value: "valid-refresh-token" };
         return undefined;
       }),
@@ -23,7 +27,7 @@ jest.mock("next/headers", () => ({
 describe("AuthState Module", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    resetAuthState(); // 각 테스트 전에 인증 상태 초기화
+    resetAuthState();
   });
 
   it("should return isAuthenticated: false when tokens do not exist", async () => {
@@ -111,5 +115,67 @@ describe("AuthState Module", () => {
       "new-refresh-token",
       expect.any(Object)
     );
+  });
+
+  it("should clear cached state and cookies when clearAuth is called", async () => {
+    // Arrange: 초기 상태에서 유효한 토큰 설정
+    (cookies as jest.Mock).mockResolvedValue({
+      get: jest.fn((key: string) => {
+        if (key === "access_token") return { value: "valid-access-token" };
+        if (key === "refresh_token") return { value: "valid-refresh-token" };
+        return undefined;
+      }),
+      delete: jest.fn(),
+    });
+
+    // 초기 인증 상태 확인
+    const authState = await getAuthState();
+    expect(authState.isAuthenticated).toBe(true);
+
+    // Act: clearAuth 호출
+    await clearAuth();
+
+    // 쿠키가 삭제되었는지 확인
+    const cookieStore = await cookies();
+    expect(cookieStore.delete).toHaveBeenCalledWith("access_token");
+    expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
+  });
+});
+
+describe("loginStatus", () => {
+  beforeEach(() => {
+    // Clear all mocks before each test
+    jest.clearAllMocks();
+  });
+
+  it("should return true when access_token cookie exists", async () => {
+    // Arrange: Mock cookies to return an access_token
+    (cookies as jest.Mock).mockReturnValue({
+      get: jest.fn((name) => {
+        if (name === "access_token") {
+          return { value: "valid-token" };
+        }
+        return null;
+      }),
+    });
+
+    // Act: Call the loginStatus function
+    const result = await loginStatus();
+
+    // Assert: Verify the result is true
+    expect(result).toBe(true);
+  });
+
+  it("should return false when access_token cookie does not exist", async () => {
+    // Arrange: Mock cookies to return no access_token
+    (cookies as jest.Mock).mockReturnValue({
+      get: jest.fn(() => null), // No access_token cookie
+    });
+
+    // Act: Call the loginStatus function
+    const result = await loginStatus();
+
+    // Assert: Verify the result is false
+    expect(result).toBe(false);
   });
 });
