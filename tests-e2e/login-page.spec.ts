@@ -46,6 +46,6 @@ test.describe("Login Page", () => {
     // Click the login button
     await page.click('button[type="submit"]');
 
-    await expect(page.getByText("Login Failed")).toBeVisible();
+    await expect(page.getByText("Invalid credentials")).toBeVisible();
   });
 });

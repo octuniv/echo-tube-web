@@ -1,10 +1,14 @@
-// actions.test.ts
-
-import { signUpAction, LoginAction, LogoutAction } from "./actions";
+import {
+  signUpAction,
+  LoginAction,
+  LogoutAction,
+  FetchPosts,
+  CreatePost,
+} from "./actions";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { resetAuthState } from "./authState";
-import { server } from "../mocks/server";
+import { mockPosts, server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
 import { serverAddress, thisBaseUrl } from "./util";
 
@@ -20,6 +24,7 @@ jest.mock("next/headers", () => ({
 
 jest.mock("next/navigation", () => ({
   redirect: jest.fn(),
+  notFound: jest.fn(),
 }));
 
 jest.mock("./authState", () => ({
@@ -32,120 +37,226 @@ describe("Actions Module", () => {
     resetAuthState(); // 각 테스트 전에 인증 상태 초기화
   });
 
-  it("should handle successful sign-up", async () => {
-    // Arrange: FormData 모킹
-    const formData = new FormData();
-    formData.append("name", "John Doe");
-    formData.append("nickName", "John");
-    formData.append("email", "john@example.com");
-    formData.append("password", "password123");
+  describe("signUpAction", () => {
+    it("should handle successful sign-up", async () => {
+      const formData = new FormData();
+      formData.append("name", "John Doe");
+      formData.append("nickName", "John");
+      formData.append("email", "john@example.com");
+      formData.append("password", "password123");
 
-    // Mock API 응답을 성공으로 변경
-    server.use(
-      http.post(`${serverAddress}/users`, () => {
-        return HttpResponse.json({ success: true }, { status: 200 });
-      })
-    );
+      server.use(
+        http.post(`${serverAddress}/users`, () => {
+          return HttpResponse.json({ success: true }, { status: 200 });
+        })
+      );
 
-    // Act: 회원가입 액션 실행
-    const result = await signUpAction({}, formData);
+      const result = await signUpAction({}, formData);
 
-    // Assert: 에러가 없어야 함
-    expect(result).not.toBeDefined();
-    expect(redirect).toHaveBeenCalledWith("/login");
-  });
-
-  it("should handle failed sign-up due to invalid fields", async () => {
-    // Arrange: FormData 모킹 (잘못된 데이터)
-    const formData = new FormData();
-    formData.append("name", "");
-    formData.append("nickName", "");
-    formData.append("email", "invalid-email");
-    formData.append("password", "short");
-
-    // Act: 회원가입 액션 실행
-    const result = await signUpAction({}, formData);
-
-    // Assert: 에러 메시지가 반환되어야 함
-    expect(result.errors?.name).toBeDefined();
-    expect(result.errors?.nickName).toBeDefined();
-    expect(result.errors?.email).toBeDefined();
-    expect(result.errors?.password).toBeDefined();
-    expect(result.message).toBe("Missing Fields. Failed to Sign Up.");
-  });
-
-  it("should handle failed sign-up due to invalid fields", async () => {
-    // Arrange: FormData 모킹 (잘못된 데이터)
-    const formData = new FormData();
-    formData.append("name", "");
-    formData.append("nickName", "");
-    formData.append("email", "invalid-email");
-    formData.append("password", "short");
-
-    // Act: 회원가입 액션 실행
-    const result = await signUpAction({}, formData);
-
-    // Assert: 에러 메시지가 반환되어야 함
-    expect(result.errors?.name).toBeDefined();
-    expect(result.errors?.nickName).toBeDefined();
-    expect(result.errors?.email).toBeDefined();
-    expect(result.errors?.password).toBeDefined();
-    expect(result.message).toBe("Missing Fields. Failed to Sign Up.");
-  });
-
-  it("should handle successful login", async () => {
-    (cookies as jest.Mock).mockResolvedValue({
-      set: jest.fn(),
+      expect(result).not.toBeDefined();
+      expect(redirect).toHaveBeenCalledWith("/login");
     });
-    // Arrange: FormData 모킹
-    const formData = new FormData();
-    formData.append("email", "john@example.com");
-    formData.append("password", "password123");
 
-    // Mock API 응답을 성공으로 변경
-    server.use(
-      http.post(`${thisBaseUrl}/api/login`, () => {
-        return HttpResponse.json(
-          {
-            access_token: "valid-access-token",
-            refresh_token: "valid-refresh-token",
-          },
-          { status: 200 }
-        );
-      })
-    );
+    it("should handle failed sign-up due to invalid fields", async () => {
+      const formData = new FormData();
+      formData.append("name", "");
+      formData.append("nickName", "");
+      formData.append("email", "invalid-email");
+      formData.append("password", "short");
 
-    // Act: 로그인 액션 실행
-    await LoginAction({}, formData);
+      const result = await signUpAction({}, formData);
 
-    // Assert: 쿠키가 설정되고 리다이렉트 되어야 함
-    const cookieStore = await cookies();
-    expect(cookieStore.set).toHaveBeenCalledWith(
-      "access_token",
-      "valid-access-token",
-      expect.any(Object)
-    );
-    expect(cookieStore.set).toHaveBeenCalledWith(
-      "refresh_token",
-      "valid-refresh-token",
-      expect.any(Object)
-    );
-    expect(resetAuthState).toHaveBeenCalled();
-    expect(redirect).toHaveBeenCalledWith("/dashboard");
+      expect(result.errors?.name).toBeDefined();
+      expect(result.errors?.nickName).toBeDefined();
+      expect(result.errors?.email).toBeDefined();
+      expect(result.errors?.password).toBeDefined();
+      expect(result.message).toBe("Missing Fields. Failed to Sign Up.");
+    });
   });
 
-  it("should handle logout", async () => {
-    (cookies as jest.Mock).mockResolvedValue({
-      delete: jest.fn(),
-    });
-    // Act: 로그아웃 액션 실행
-    await LogoutAction();
+  describe("LoginAction", () => {
+    it("should handle successful login", async () => {
+      (cookies as jest.Mock).mockResolvedValue({
+        set: jest.fn(),
+      });
 
-    // Assert: 쿠키가 삭제되고 캐시가 초기화되어야 함
-    const cookieStore = await cookies();
-    expect(cookieStore.delete).toHaveBeenCalledWith("access_token");
-    expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
-    expect(resetAuthState).toHaveBeenCalled();
-    expect(redirect).toHaveBeenCalledWith("/login");
+      const formData = new FormData();
+      formData.append("email", "john@example.com");
+      formData.append("password", "password123");
+
+      server.use(
+        http.post(`${thisBaseUrl}/api/login`, () => {
+          return HttpResponse.json(
+            {
+              access_token: "valid-access-token",
+              refresh_token: "valid-refresh-token",
+            },
+            { status: 200 }
+          );
+        })
+      );
+
+      await LoginAction({}, formData);
+
+      const cookieStore = await cookies();
+      expect(cookieStore.set).toHaveBeenCalledWith(
+        "access_token",
+        "valid-access-token",
+        expect.any(Object)
+      );
+      expect(cookieStore.set).toHaveBeenCalledWith(
+        "refresh_token",
+        "valid-refresh-token",
+        expect.any(Object)
+      );
+      expect(resetAuthState).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("should handle failed login due to invalid credentials", async () => {
+      const formData = new FormData();
+      formData.append("email", "invalid@example.com");
+      formData.append("password", "wrong-password");
+
+      server.use(
+        http.post(`${thisBaseUrl}/api/login`, () => {
+          return HttpResponse.json(
+            { error: "Invalid credentials" },
+            { status: 401 }
+          );
+        })
+      );
+
+      const result = await LoginAction({}, formData);
+
+      expect(result.message).toBe("Invalid credentials");
+      expect(redirect).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("LogoutAction", () => {
+    it("should handle logout", async () => {
+      (cookies as jest.Mock).mockResolvedValue({
+        delete: jest.fn(),
+      });
+
+      await LogoutAction();
+
+      const cookieStore = await cookies();
+      expect(cookieStore.delete).toHaveBeenCalledWith("access_token");
+      expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
+      expect(resetAuthState).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+  });
+
+  describe("FetchPosts", () => {
+    it("should fetch posts successfully", async () => {
+      const posts = await FetchPosts();
+      expect(posts).toEqual(mockPosts);
+    });
+
+    it("should throw an error when the response is not ok", async () => {
+      server.use(
+        http.get(`${serverAddress}/posts`, () => {
+          return HttpResponse.json({ status: 500 }, { status: 500 });
+        })
+      );
+
+      await FetchPosts();
+      expect(notFound).toHaveBeenCalled();
+    });
+
+    it("should handle empty posts array", async () => {
+      server.use(
+        http.get(`${serverAddress}/posts`, () =>
+          HttpResponse.json([], { status: 200 })
+        )
+      );
+
+      const posts = await FetchPosts();
+      expect(posts).toEqual([]);
+    });
+  });
+
+  describe("CreatePost", () => {
+    it("should create a post successfully", async () => {
+      const formData = new FormData();
+      formData.append("title", "New Post");
+      formData.append("content", "This is the content of the new post.");
+      formData.append("videoUrl", "https://example.com/video");
+
+      server.use(
+        http.post(`${serverAddress}/posts`, () => {
+          return HttpResponse.json({ success: true }, { status: 201 });
+        })
+      );
+
+      (cookies as jest.Mock).mockResolvedValue({
+        get: jest.fn((key: string) => {
+          if (key === "access_token") return { value: "valid-access-token" };
+          if (key === "refresh_token") return { value: "valid-refresh-token" };
+          return undefined;
+        }),
+      });
+
+      await CreatePost({}, formData);
+
+      expect(redirect).toHaveBeenCalledWith("/dashboard/posts");
+    });
+
+    it("should handle validation errors", async () => {
+      const formData = new FormData();
+      formData.append("title", "");
+      formData.append("content", "");
+      formData.append("videoUrl", "");
+
+      const result = await CreatePost({}, formData);
+
+      expect(result.errors?.title).toBeDefined();
+      expect(result.errors?.content).toBeDefined();
+      expect(result.message).toBe("Missing Fields. Failed to create posts.");
+    });
+
+    it("should handle unauthorized access", async () => {
+      const formData = new FormData();
+      formData.append("title", "New Post");
+      formData.append("content", "This is the content of the new post.");
+      formData.append("videoUrl", "https://example.com/video");
+
+      server.use(
+        http.post(`${serverAddress}/posts`, () => {
+          return HttpResponse.json(
+            { statusCode: 401, message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+
+      const result = await CreatePost({}, formData);
+
+      expect(resetAuthState).toHaveBeenCalled();
+      expect(result.message).toBe("Your login has expired.");
+    });
+
+    it("should handle unexpected errors", async () => {
+      const formData = new FormData();
+      formData.append("title", "New Post");
+      formData.append("content", "This is the content of the new post.");
+      formData.append("videoUrl", "https://example.com/video");
+
+      server.use(
+        http.post(`${serverAddress}/posts`, () => {
+          return HttpResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+          );
+        })
+      );
+
+      const result = await CreatePost({}, formData);
+
+      expect(result.message).toBe("Create post failed.");
+    });
   });
 });

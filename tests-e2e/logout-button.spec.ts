@@ -1,12 +1,13 @@
-import { resetAuthState } from "@/lib/authState";
 import { test, expect } from "@playwright/test";
+import path from "path";
+
+const authFile = path.join(__dirname, "./.auth/user.json");
+test.use({ storageState: authFile });
 
 test.describe("Logout Button", () => {
-  test.beforeAll(() => {
-    resetAuthState();
-  });
   test("should logout when click logout button", async ({ page, context }) => {
     await page.goto("/dashboard");
+    await page.waitForURL("/dashboard", { timeout: 5000 });
 
     // 로그인 상태 확인
     await expect(page.getByRole("link", { name: "SignUp" })).not.toBeVisible();

@@ -1,20 +1,17 @@
 "use server";
 
-import { z } from "zod";
-import { UserState } from "./definition";
+import {
+  LoginInfoState,
+  PostDto,
+  postSchema,
+  PostState,
+  userSchema,
+  UserState,
+} from "./definition";
 import { serverAddress, thisBaseUrl } from "./util";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { resetAuthState } from "./authState";
-
-const userSchema = z.object({
-  name: z.string().min(1, { message: "Please enter your valid name." }),
-  nickName: z.string().min(1, { message: "Please enter your nickName." }),
-  email: z.string().email({ message: "This email is invalid" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters" }),
-});
 
 export async function signUpAction(prevState: UserState, formData: FormData) {
   const validatedFields = userSchema.safeParse({
@@ -65,7 +62,10 @@ export async function signUpAction(prevState: UserState, formData: FormData) {
 
 const LoginInfoSchema = userSchema.omit({ name: true, nickName: true });
 
-export async function LoginAction(prevState: UserState, formData: FormData) {
+export async function LoginAction(
+  prevState: LoginInfoState,
+  formData: FormData
+) {
   const validatedFields = LoginInfoSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -112,7 +112,7 @@ export async function LoginAction(prevState: UserState, formData: FormData) {
 
     if (!response.ok) {
       return {
-        message: `Login Failed`,
+        message: `Invalid credentials`,
       };
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -131,4 +131,80 @@ export async function LogoutAction() {
   cookieStore.delete("refresh_token");
   resetAuthState();
   redirect(`/login`);
+}
+
+export async function FetchPosts(): Promise<PostDto[]> {
+  const reqAddress = serverAddress + "/posts";
+  const response = await fetch(reqAddress, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    cache: "no-store", // 실시간 데이터를 위해 캐시 비활성화
+  });
+
+  if (!response.ok) {
+    notFound();
+  }
+
+  const data = await response.json();
+  return data;
+}
+
+export async function CreatePost(prevState: PostState, formData: FormData) {
+  const validatedFields = postSchema.safeParse({
+    title: formData.get("title"),
+    content: formData.get("content"),
+    videoUrl: formData.get("videoUrl"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing Fields. Failed to create posts.",
+    };
+  }
+
+  const params = validatedFields.data;
+
+  if (params.videoUrl === "") {
+    delete params.videoUrl;
+  }
+
+  const reqAddress = serverAddress + "/posts";
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("access_token")?.value;
+  try {
+    const response = await fetch(reqAddress, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(params),
+    });
+    const result = await response.json();
+
+    if (!response.ok || result?.error) {
+      if (result?.statusCode === 401) {
+        resetAuthState();
+        return {
+          message: "Your login has expired.",
+        };
+      } else if (result?.statusCode === 400) {
+        return {
+          message: `${result.message}`,
+        };
+      } else {
+        throw new Error(result.error);
+      }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    return {
+      message: `Create post failed.`,
+    };
+  }
+
+  redirect(`/dashboard/posts`);
 }

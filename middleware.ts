@@ -6,8 +6,11 @@ const publicRoutes = ["/login", "/signup", "/"];
 
 export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  const isProtectedRoute = protectedRoutes.includes(path);
-  const isPublicRoute = publicRoutes.includes(path);
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    path.startsWith(route)
+  );
+  const isPublicRoute =
+    !isProtectedRoute && publicRoutes.some((route) => path.startsWith(route));
 
   // ✅ `req.cookies.get()`로 접근 (정상적으로 저장되었을 경우)
   const accessToken = req.cookies.get("access_token")?.value;
