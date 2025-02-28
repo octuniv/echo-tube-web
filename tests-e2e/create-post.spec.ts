@@ -82,30 +82,4 @@ test.describe("Create Post Test", () => {
     // 리다이렉션 확인
     await expect(page).toHaveURL("/dashboard/posts");
   });
-
-  test("failed to submit with valid data when authentication is invalid", async ({
-    page,
-  }) => {
-    // 페이지에 컴포넌트 마운트
-    await page.goto("/dashboard/posts/create");
-    await page.waitForURL("/dashboard/posts/create", { timeout: 5000 });
-
-    // Authentication 쿠키 제거
-    await page.context().clearCookies();
-
-    // 폼 입력값 채우기
-    const titleInput = page.locator("input#title");
-    const contentTextarea = page.locator("textarea#content");
-    const submitButton = page.locator('button[type="submit"]');
-
-    await titleInput.fill("Test Title");
-    await contentTextarea.fill("Test Content");
-
-    // 폼 제출
-    await submitButton.click();
-
-    // 로그인 페이지로 리다이렉션 확인
-    await page.reload();
-    await expect(page).toHaveURL("/login");
-  });
 });

@@ -33,7 +33,6 @@ export const authenticatedFetch = async (
   const isAuthenticated = await ensureAuthenticated();
 
   if (!isAuthenticated) {
-    console.warn("User is not authenticated. Redirecting to login...");
     return null;
   }
 
