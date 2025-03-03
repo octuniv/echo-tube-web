@@ -2,10 +2,11 @@ import {
   signUpAction,
   LoginAction,
   LogoutAction,
-  FetchPosts,
+  FetchAllPosts,
   CreatePost,
   ensureAuthenticated,
   authenticatedFetch,
+  FetchPost,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -201,9 +202,9 @@ describe("Actions Module", () => {
     });
   });
 
-  describe("FetchPosts", () => {
+  describe("FetchAllPosts", () => {
     it("should fetch posts successfully", async () => {
-      const posts = await FetchPosts();
+      const posts = await FetchAllPosts();
       expect(posts).toEqual(mockPosts);
     });
 
@@ -214,7 +215,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await FetchPosts();
+      await FetchAllPosts();
       expect(notFound).toHaveBeenCalled();
     });
 
@@ -225,8 +226,65 @@ describe("Actions Module", () => {
         )
       );
 
-      const posts = await FetchPosts();
+      const posts = await FetchAllPosts();
       expect(posts).toEqual([]);
+    });
+  });
+
+  describe("FetchPost", () => {
+    it("should fetch a post successfully", async () => {
+      const postId = 1;
+      const mockPost = {
+        id: postId,
+        title: "Post 1",
+        content: "Content of Post 1",
+        videoUrl: "https://example.com/video1",
+        nickName: "UserA",
+        createdAt: "2023-10-01T12:00:00Z",
+        updatedAt: "2023-10-01T12:00:00Z",
+      };
+
+      server.use(
+        http.get(`${serverAddress}/posts/${postId}`, () => {
+          return HttpResponse.json(mockPost, { status: 200 });
+        })
+      );
+
+      const result = await FetchPost(postId);
+
+      expect(result).toEqual(mockPost);
+    });
+
+    it("should handle not found error when the post does not exist", async () => {
+      const postId = 999; // 존재하지 않는 게시물 ID
+
+      server.use(
+        http.get(`${serverAddress}/posts/${postId}`, () => {
+          return HttpResponse.json(
+            { error: "Post not found" },
+            { status: 404 }
+          );
+        })
+      );
+
+      await FetchPost(postId);
+      expect(notFound).toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors during the fetch", async () => {
+      const postId = 1;
+
+      server.use(
+        http.get(`${serverAddress}/posts/${postId}`, () => {
+          return HttpResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+          );
+        })
+      );
+
+      await FetchPost(postId);
+      expect(notFound).toHaveBeenCalled();
     });
   });
 

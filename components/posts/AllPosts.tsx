@@ -12,7 +12,12 @@ const Posts: React.FC<PostsProps> = ({ sortedVideos }) => {
       {sortedVideos.length > 0 ? (
         sortedVideos.map((video) => <VideoCard key={video.id} video={video} />)
       ) : (
-        <p className="text-center text-gray-500">게시물이 없습니다.</p>
+        <p
+          className="text-center text-gray-500"
+          aria-label="No posts available"
+        >
+          게시물이 없습니다.
+        </p>
       )}
       <Link href="/posts/create">
         <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">

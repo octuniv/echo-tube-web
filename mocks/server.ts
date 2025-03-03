@@ -64,6 +64,27 @@ export const server = setupServer(
     return HttpResponse.json(mockPosts, { status: 200 });
   }),
 
+  http.get(`${serverAddress}/posts/:id`, ({ params }) => {
+    const postId = Number(params.id);
+
+    if (postId === 1) {
+      return HttpResponse.json(
+        {
+          id: 1,
+          title: "Post 1",
+          content: "Content of Post 1",
+          videoUrl: "https://example.com/video1",
+          nickName: "UserA",
+          createdAt: "2023-10-01T12:00:00Z",
+          updatedAt: "2023-10-01T12:00:00Z",
+        },
+        { status: 200 }
+      );
+    }
+
+    return HttpResponse.json({ error: "Post not found" }, { status: 404 });
+  }),
+
   http.get("https://example.com", () => {
     return HttpResponse.json({}, { status: 200 });
   })

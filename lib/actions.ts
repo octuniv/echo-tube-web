@@ -179,8 +179,26 @@ export async function LogoutAction() {
   redirect("/login");
 }
 
-export async function FetchPosts(): Promise<PostDto[]> {
+export async function FetchAllPosts(): Promise<PostDto[]> {
   const reqAddress = serverAddress + "/posts";
+  const response = await fetch(reqAddress, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    cache: "no-store", // 실시간 데이터를 위해 캐시 비활성화
+  });
+
+  if (!response.ok) {
+    notFound();
+  }
+
+  const data = await response.json();
+  return data.length ? data : [];
+}
+
+export async function FetchPost(id: number): Promise<PostDto> {
+  const reqAddress = serverAddress + `/posts/${id}`;
   const response = await fetch(reqAddress, {
     method: "GET",
     headers: {

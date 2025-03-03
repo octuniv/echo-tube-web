@@ -1,15 +1,16 @@
 import SignUpPage from "@/components/signup/SignUpPage";
-import { getAuthState } from "@/lib/authState";
+import { loginStatus } from "@/lib/authState";
 import { redirect } from "next/navigation";
 
 const page: React.FC = async () => {
-  // 인증 상태 확인
-  const authState = await getAuthState();
+  // 로그인 상태 확인
+  const isLogined = await loginStatus();
 
-  // 인증된 경우 /dashboard로 리다이렉트
-  if (authState.isAuthenticated) {
+  // 로그인 된 경우 홈으로 리다이렉트
+  if (isLogined) {
     redirect("/dashboard");
   }
+
   return <SignUpPage />;
 };
 
