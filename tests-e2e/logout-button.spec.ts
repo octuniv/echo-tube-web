@@ -9,8 +9,8 @@ test.describe("Logout Button", () => {
 
   test("should logout when click logout button", async ({ page, context }) => {
     // 로그인 상태 확인
-    await expect(page.getByRole("link", { name: "SignUp" })).not.toBeVisible();
-    await expect(page.getByRole("link", { name: "Login" })).not.toBeVisible();
+    await expect(page.getByLabel("Sign Up")).not.toBeVisible();
+    await expect(page.getByLabel("Login")).not.toBeVisible();
     await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
 
     // 로그아웃 버튼 클릭
@@ -27,5 +27,12 @@ test.describe("Logout Button", () => {
     expect(
       cookies.some((cookie) => cookie.name === "refresh_token")
     ).toBeFalsy();
+
+    // 로그아웃 상태 적용 확인인
+    await expect(page.getByLabel("Sign Up")).toBeVisible();
+    await expect(page.getByLabel("Login")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Logout" })
+    ).not.toBeVisible();
   });
 });

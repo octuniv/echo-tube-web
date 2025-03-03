@@ -3,8 +3,8 @@ import { test, expect } from "@playwright/test";
 test.describe("Create Post Test", () => {
   test.beforeEach(async ({ page }) => {
     // 게시판 목록 이동
-    await page.goto("/dashboard/posts");
-    await page.waitForURL("/dashboard/posts", { timeout: 5000 });
+    await page.goto("/posts");
+    await page.waitForURL("/posts", { timeout: 5000 });
     await page.reload();
   });
 
@@ -20,20 +20,20 @@ test.describe("Create Post Test", () => {
     await page.getByRole("button", { name: "게시물 작성" }).click();
 
     // 게시물 작성 페이지 리다이렉트 확인
-    await expect(page).toHaveURL("/dashboard/posts/create");
+    await expect(page).toHaveURL("/posts/create");
   });
 
   test("renders the form correctly", async ({ page }) => {
     // 페이지에 컴포넌트 마운트
-    await page.goto("/dashboard/posts/create");
-    await page.waitForURL("/dashboard/posts/create", { timeout: 5000 });
+    await page.goto("/posts/create");
+    await page.waitForURL("/posts/create", { timeout: 5000 });
 
     // 폼 요소 확인
     const titleInput = page.locator("input#title");
     const contentTextarea = page.locator("textarea#content");
     const videoUrlInput = page.locator("input#videoUrl");
     const submitButton = page.locator('button[type="submit"]');
-    const backButton = page.locator('a[href="/dashboard/posts"] button');
+    const backButton = page.locator('a[href="/posts"] button');
 
     await expect(titleInput).toBeVisible();
     await expect(contentTextarea).toBeVisible();
@@ -44,8 +44,8 @@ test.describe("Create Post Test", () => {
 
   test("displays validation errors when fields are empty", async ({ page }) => {
     // 페이지에 컴포넌트 마운트
-    await page.goto("/dashboard/posts/create");
-    await page.waitForURL("/dashboard/posts/create", { timeout: 5000 });
+    await page.goto("/posts/create");
+    await page.waitForURL("/posts/create", { timeout: 5000 });
 
     // 폼 제출 시도
     const submitButton = page.locator('button[type="submit"]');
@@ -65,8 +65,8 @@ test.describe("Create Post Test", () => {
 
   test("submits the form successfully with valid data", async ({ page }) => {
     // 페이지에 컴포넌트 마운트
-    await page.goto("/dashboard/posts/create");
-    await page.waitForURL("/dashboard/posts/create", { timeout: 5000 });
+    await page.goto("/posts/create");
+    await page.waitForURL("/posts/create", { timeout: 5000 });
 
     // 폼 입력값 채우기
     const titleInput = page.locator("input#title");
@@ -80,6 +80,6 @@ test.describe("Create Post Test", () => {
     await submitButton.click();
 
     // 리다이렉션 확인
-    await expect(page).toHaveURL("/dashboard/posts");
+    await expect(page).toHaveURL("/posts");
   });
 });

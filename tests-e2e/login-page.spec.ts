@@ -11,8 +11,8 @@ test.describe("Login Page", () => {
     await expect(
       page.getByRole("button", { name: "Logout" })
     ).not.toBeVisible();
-    await expect(page.getByRole("link", { name: "SignUp" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
+    await expect(page.getByLabel("Sign Up")).toBeVisible();
+    await expect(page.getByLabel("Login")).toBeVisible();
   });
 
   test("should not allow login with empty fields", async ({ page }) => {

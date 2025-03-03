@@ -41,8 +41,8 @@ test.describe("Auth Test", () => {
       page,
     }) => {
       // 페이지에 컴포넌트 마운트
-      await page.goto("/dashboard/posts/create");
-      await page.waitForURL("/dashboard/posts/create", { timeout: 5000 });
+      await page.goto("/posts/create");
+      await page.waitForURL("/posts/create", { timeout: 5000 });
 
       // Authentication 쿠키 제거
       await page.context().clearCookies();
@@ -67,8 +67,8 @@ test.describe("Auth Test", () => {
       page,
     }) => {
       // Arrange: 페이지에 컴포넌트 마운트
-      await page.goto("/dashboard/posts/create");
-      await page.waitForURL("/dashboard/posts/create", { timeout: 5000 });
+      await page.goto("/posts/create");
+      await page.waitForURL("/posts/create", { timeout: 5000 });
 
       // 기존 access_token 저장
       const prevAccessToken = currentCookies.find(
@@ -106,7 +106,7 @@ test.describe("Auth Test", () => {
       await submitButton.click();
 
       // Assert: 리다이렉션 확인 (게시물 목록 페이지로 이동)
-      await page.waitForURL("/dashboard/posts", { timeout: 5000 });
+      await page.waitForURL("/posts", { timeout: 5000 });
 
       // Optional: 새로 발급된 access_token이 쿠키에 저장되었는지 확인
       const cookies = await page.context().cookies();

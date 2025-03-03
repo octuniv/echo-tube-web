@@ -250,6 +250,6 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
     };
   }
 
-  revalidatePath("/dashboard/posts");
-  redirect("/dashboard/posts");
+  revalidatePath("/posts");
+  redirect("/posts");
 }

@@ -12,20 +12,20 @@ test.describe("Page-to-page movement test", () => {
   });
 
   test("Login Page Access Test", async ({ page }) => {
-    await page.getByRole("link", { name: "Login" }).click();
+    await page.getByLabel("Login").click();
     await expect(page).toHaveURL("/login");
     await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
     await expect(page.getByText("Email")).toBeVisible();
     await expect(page.getByText("Password")).toBeVisible();
-    await page.getByRole("link", { name: "MyApp" }).click();
+    await page.getByLabel("Go To Home").click();
     await expect(page).not.toHaveURL("/login");
   });
 
   test("SignUp Page Access Test", async ({ page }) => {
-    await page.getByRole("link", { name: "SignUp" }).click();
+    await page.getByLabel("Sign Up").click();
     await expect(page).toHaveURL("/signup");
-    await expect(page.getByRole("button", { name: "Sign Up" })).toBeVisible();
-    await page.getByRole("link", { name: "MyApp" }).click();
+    await expect(page.getByLabel("Sign Up")).toBeVisible();
+    await page.getByLabel("Go To Home").click();
     await expect(page).not.toHaveURL("/signup");
   });
 
@@ -33,6 +33,18 @@ test.describe("Page-to-page movement test", () => {
     page,
   }) => {
     await page.goto("/dashboard");
+    await expect(page).toHaveURL("/login");
+  });
+
+  test("Posts Page Access Test", async ({ page }) => {
+    await page.getByLabel("Go To Post").click();
+    await expect(page).toHaveURL("/posts");
+  });
+
+  test("Redirect to login page when ths user is not logged in and access page about creating post", async ({
+    page,
+  }) => {
+    await page.goto("/posts/create");
     await expect(page).toHaveURL("/login");
   });
 });

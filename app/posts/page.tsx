@@ -1,4 +1,4 @@
-import Posts from "@/components/dashboard/posts/Posts";
+import Posts from "@/components/posts/Posts";
 import { FetchPosts } from "@/lib/actions";
 import { PostDto, VideoCardInfo } from "@/lib/definition";
 

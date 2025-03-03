@@ -81,7 +81,7 @@ function CreatePostForm({ state, formAction }: CreatePostFormProps) {
           </button>
 
           {/* 돌아가기 */}
-          <Link href="/dashboard/posts">
+          <Link href="/posts">
             <button className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
               돌아가기
             </button>

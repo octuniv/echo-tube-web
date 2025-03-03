@@ -253,8 +253,8 @@ describe("Actions Module", () => {
 
       await CreatePost({}, formData);
 
-      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/posts");
-      expect(redirect).toHaveBeenCalledWith("/dashboard/posts");
+      expect(revalidatePath).toHaveBeenCalledWith("/posts");
+      expect(redirect).toHaveBeenCalledWith("/posts");
     });
 
     it("should handle validation errors", async () => {
