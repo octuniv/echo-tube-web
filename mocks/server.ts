@@ -2,7 +2,7 @@
 
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
-import { serverAddress, thisBaseUrl } from "../lib/util";
+import { serverAddress } from "../lib/util";
 import { PostDto } from "@/lib/definition";
 
 export const mockPosts: PostDto[] = [
@@ -33,11 +33,14 @@ export const server = setupServer(
   }),
 
   // Mock API for login
-  http.post(`${thisBaseUrl}/api/login`, () => {
+  http.post(`${serverAddress}/auth/login`, () => {
     return HttpResponse.json(
       {
         access_token: "valid-access-token",
         refresh_token: "valid-refresh-token",
+        name: "John Doe",
+        nickName: "John",
+        email: "john@example.com",
       },
       { status: 200 }
     );

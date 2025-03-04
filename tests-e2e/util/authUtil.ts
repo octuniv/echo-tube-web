@@ -34,16 +34,11 @@ export const signUpAndLogin = async ({
   await page.waitForURL("/dashboard", { timeout: 5000 });
 
   const cookies = await context.cookies();
-  const accessTokenCookie = cookies.find(
-    (cookie) => cookie.name === "access_token"
+  ["access_token", "refresh_token", "name", "nickName", "email"].forEach(
+    (cookieName) => {
+      const cookie = cookies.find((cookie) => cookie.name === cookieName);
+      expect(cookie).toBeDefined();
+      expect(cookie?.value).not.toBe("");
+    }
   );
-  const refreshTokenCookie = cookies.find(
-    (cookie) => cookie.name === "refresh_token"
-  );
-
-  expect(accessTokenCookie).toBeDefined();
-  expect(accessTokenCookie?.value).not.toBe("");
-
-  expect(refreshTokenCookie).toBeDefined();
-  expect(refreshTokenCookie?.value).not.toBe("");
 };

@@ -1,5 +1,5 @@
 // lib/authState.test.ts
-import { getAuthState, clearAuth, loginStatus } from "./authState";
+import { getAuthState, clearAuth, loginStatus, AuthInfo } from "./authState";
 import { cookies } from "next/headers";
 import { server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
@@ -11,10 +11,13 @@ jest.mock("next/headers", () => ({
       get: jest.fn((key: string) => {
         if (key === "access_token") return { value: "valid-access-token" };
         if (key === "refresh_token") return { value: "valid-refresh-token" };
+        if (key === "name") return { value: "John Doe" };
+        if (key === "nickName") return { value: "John" };
+        if (key === "email") return { value: "john@example.com" };
         return undefined;
       }),
-      set: jest.fn(),
-      delete: jest.fn(),
+      set: jest.fn().mockImplementation(() => {}),
+      delete: jest.fn().mockImplementation(() => {}),
     })
   ),
 }));
@@ -30,8 +33,13 @@ describe("AuthState Module", () => {
       get: jest.fn((key: string) => {
         if (key === "access_token") return { value: "valid-access-token" };
         if (key === "refresh_token") return { value: "valid-refresh-token" };
+        if (key === "name") return { value: "John Doe" };
+        if (key === "nickName") return { value: "John" };
+        if (key === "email") return { value: "john@example.com" };
         return undefined;
       }),
+      set: jest.fn().mockImplementation(() => {}),
+      delete: jest.fn().mockImplementation(() => {}),
     });
 
     // Mock API 응답을 성공으로 변경
@@ -45,8 +53,13 @@ describe("AuthState Module", () => {
     const authState = await getAuthState();
 
     // Assert: 인증 상태가 true여야 함
-    expect(authState.isAuthenticated).toBe(true);
-    expect(authState.message).toBe("Success validation!");
+    expect(authState).toEqual({
+      isAuthenticated: true,
+      message: "Success validation!",
+      name: "John Doe",
+      nickName: "John",
+      email: "john@example.com",
+    } satisfies AuthInfo);
   });
 
   it("should refresh tokens and return isAuthenticated: true when refresh token is valid", async () => {
@@ -55,9 +68,13 @@ describe("AuthState Module", () => {
       get: jest.fn((key: string) => {
         if (key === "access_token") return { value: "expired-access-token" };
         if (key === "refresh_token") return { value: "valid-refresh-token" };
+        if (key === "name") return { value: "John Doe" };
+        if (key === "nickName") return { value: "John" };
+        if (key === "email") return { value: "john@example.com" };
         return undefined;
       }),
       set: jest.fn().mockImplementation(() => {}),
+      delete: jest.fn().mockImplementation(() => {}),
     });
 
     // Mock API 응답을 실패로 변경 (액세스 토큰 검증 실패)
@@ -81,7 +98,13 @@ describe("AuthState Module", () => {
     const cookieStore = await cookies();
 
     // Assert: 인증 상태가 true여야 함 (리프레시 토큰으로 갱신 성공)
-    expect(authState.isAuthenticated).toBe(true);
+    expect(authState).toEqual({
+      isAuthenticated: true,
+      message: "Success validation!",
+      name: "John Doe",
+      nickName: "John",
+      email: "john@example.com",
+    } satisfies AuthInfo);
 
     // 쿠키가 새로 설정되었는지 확인
     expect(cookieStore.set).toHaveBeenCalledWith(
@@ -100,6 +123,7 @@ describe("AuthState Module", () => {
     // Arrange: 쿠키에 토큰이 없는 경우
     (cookies as jest.Mock).mockResolvedValue({
       get: jest.fn(() => undefined),
+      delete: jest.fn().mockImplementation(() => {}),
     });
 
     // Act: 인증 상태 확인
@@ -118,6 +142,7 @@ describe("AuthState Module", () => {
         if (key === "refresh_token") return { value: "expired-refresh-token" };
         return undefined;
       }),
+      delete: jest.fn().mockImplementation(() => {}),
     });
     server.use(
       http.get(`${serverAddress}/auth/validate-token`, () => {
@@ -139,9 +164,13 @@ describe("AuthState Module", () => {
       get: jest.fn((key: string) => {
         if (key === "access_token") return { value: "valid-access-token" };
         if (key === "refresh_token") return { value: "valid-refresh-token" };
+        if (key === "name") return { value: "John Doe" };
+        if (key === "nickName") return { value: "John" };
+        if (key === "email") return { value: "john@example.com" };
         return undefined;
       }),
-      set: jest.fn(),
+      set: jest.fn().mockImplementation(() => {}),
+      delete: jest.fn().mockImplementation(() => {}),
     });
 
     // Mock API 응답: 첫 번째 호출에서는 유효한 access_token
@@ -161,9 +190,12 @@ describe("AuthState Module", () => {
       get: jest.fn((key: string) => {
         if (key === "access_token") return { value: "expired-access-token" };
         if (key === "refresh_token") return { value: "valid-refresh-token" };
+        if (key === "name") return { value: "John Doe" };
+        if (key === "nickName") return { value: "John" };
+        if (key === "email") return { value: "john@example.com" };
         return undefined;
       }),
-      set: jest.fn(),
+      set: jest.fn().mockImplementation(() => {}),
     });
 
     // Mock API 응답: 두 번째 호출에서는 access_token 검증 실패 및 refresh_token으로 재발급 성공
@@ -209,9 +241,13 @@ describe("AuthState Module", () => {
       get: jest.fn((key: string) => {
         if (key === "access_token") return { value: "valid-access-token" };
         if (key === "refresh_token") return { value: "valid-refresh-token" };
+        if (key === "name") return { value: "John Doe" };
+        if (key === "nickName") return { value: "John" };
+        if (key === "email") return { value: "john@example.com" };
         return undefined;
       }),
-      delete: jest.fn(),
+      set: jest.fn().mockImplementation(() => {}),
+      delete: jest.fn().mockImplementation(() => {}),
     });
 
     // 초기 인증 상태 확인
@@ -225,6 +261,9 @@ describe("AuthState Module", () => {
     const cookieStore = await cookies();
     expect(cookieStore.delete).toHaveBeenCalledWith("access_token");
     expect(cookieStore.delete).toHaveBeenCalledWith("refresh_token");
+    expect(cookieStore.delete).toHaveBeenCalledWith("name");
+    expect(cookieStore.delete).toHaveBeenCalledWith("nickName");
+    expect(cookieStore.delete).toHaveBeenCalledWith("email");
   });
 });
 

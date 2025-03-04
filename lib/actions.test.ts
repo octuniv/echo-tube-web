@@ -13,7 +13,7 @@ import { notFound, redirect } from "next/navigation";
 import { clearAuth, getAuthState } from "./authState";
 import { mockPosts, server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
-import { serverAddress, thisBaseUrl } from "./util";
+import { serverAddress } from "./util";
 import { revalidatePath } from "next/cache";
 
 jest.mock("next/headers", () => ({
@@ -143,11 +143,14 @@ describe("Actions Module", () => {
       formData.append("password", "password123");
 
       server.use(
-        http.post(`${thisBaseUrl}/api/login`, () => {
+        http.post(`${serverAddress}/auth/login`, () => {
           return HttpResponse.json(
             {
               access_token: "valid-access-token",
               refresh_token: "valid-refresh-token",
+              name: "John Doe",
+              nickName: "John",
+              email: "john@example.com",
             },
             { status: 200 }
           );
@@ -167,6 +170,21 @@ describe("Actions Module", () => {
         "valid-refresh-token",
         expect.any(Object)
       );
+      expect(cookieStore.set).toHaveBeenCalledWith(
+        "name",
+        "John Doe",
+        expect.any(Object)
+      );
+      expect(cookieStore.set).toHaveBeenCalledWith(
+        "nickName",
+        "John",
+        expect.any(Object)
+      );
+      expect(cookieStore.set).toHaveBeenCalledWith(
+        "email",
+        "john@example.com",
+        expect.any(Object)
+      );
       expect(revalidatePath).toHaveBeenCalledWith("/");
       expect(redirect).toHaveBeenCalledWith("/dashboard");
     });
@@ -177,7 +195,7 @@ describe("Actions Module", () => {
       formData.append("password", "wrong-password");
 
       server.use(
-        http.post(`${thisBaseUrl}/api/login`, () => {
+        http.post(`${serverAddress}/auth/login`, () => {
           return HttpResponse.json(
             { error: "Invalid credentials" },
             { status: 401 }

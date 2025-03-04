@@ -8,7 +8,7 @@ import {
   userSchema,
   UserState,
 } from "./definition";
-import { serverAddress, thisBaseUrl } from "./util";
+import { serverAddress } from "./util";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { clearAuth, getAuthState } from "./authState";
@@ -127,7 +127,7 @@ export async function LoginAction(
   }
 
   const params = validatedFields.data;
-  const reqAddress = thisBaseUrl + "/api/login";
+  const reqAddress = serverAddress + "/auth/login";
   try {
     const response = await fetch(reqAddress, {
       method: "POST",
@@ -136,8 +136,15 @@ export async function LoginAction(
       },
       body: JSON.stringify(params),
     });
-    // const result = await response.json();
-    const { access_token, refresh_token } = await response.json();
+
+    if (!response.ok) {
+      return {
+        message: "Invalid credentials",
+      };
+    }
+
+    const { access_token, refresh_token, name, nickName, email } =
+      await response.json();
 
     const cookieStore = await cookies();
 
@@ -158,11 +165,19 @@ export async function LoginAction(
       maxAge: 60 * 60 * 24 * 7,
     });
 
-    if (!response.ok) {
-      return {
-        message: "Invalid credentials",
-      };
-    }
+    cookieStore.set("name", name, {
+      ...baseCookieOptions,
+      maxAge: 60 * 60 * 24 * 7, // 7일 동안 유효
+    });
+    cookieStore.set("nickName", nickName, {
+      ...baseCookieOptions,
+      maxAge: 60 * 60 * 24 * 7, // 7일 동안 유효
+    });
+
+    cookieStore.set("email", email, {
+      ...baseCookieOptions,
+      maxAge: 60 * 60 * 24 * 7, // 7일 동안 유효
+    });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return {

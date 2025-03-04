@@ -27,14 +27,12 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      const accessToken = insertedCookies.find(
-        (cookie) => cookie.name === "access_token"
+      ["access_token", "refresh_token", "name", "nickName", "email"].forEach(
+        (name) =>
+          expect(
+            insertedCookies.find((cookie) => cookie.name === name)
+          ).toBeDefined()
       );
-      const refreshToken = insertedCookies.find(
-        (cookie) => cookie.name === "refresh_token"
-      );
-      expect(accessToken).toBeDefined();
-      expect(refreshToken).toBeDefined();
     });
 
     test("failed to submit with valid data when signUpAndLogin is invalid", async ({

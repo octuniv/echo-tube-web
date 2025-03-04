@@ -21,12 +21,10 @@ test.describe("Logout Button", () => {
 
     // 쿠키 삭제 확인
     const cookies = await context.cookies();
-    expect(
-      cookies.some((cookie) => cookie.name === "access_token")
-    ).toBeFalsy();
-    expect(
-      cookies.some((cookie) => cookie.name === "refresh_token")
-    ).toBeFalsy();
+    ["access_token", "refresh_token", "name", "nickName", "email"].forEach(
+      (name) =>
+        expect(cookies.find((cookie) => cookie.name === name)).toBeFalsy()
+    );
 
     // 로그아웃 상태 적용 확인인
     await expect(page.getByLabel("Sign Up")).toBeVisible();

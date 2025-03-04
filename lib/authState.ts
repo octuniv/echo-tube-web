@@ -4,7 +4,18 @@ import { cookies } from "next/headers";
 import { serverAddress } from "./util";
 import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
 
-type AuthResult = { isAuthenticated: boolean; message: string };
+type AuthResult = {
+  isAuthenticated: boolean;
+  message: string;
+};
+
+type UserInfo = {
+  name?: string;
+  nickName?: string;
+  email?: string;
+};
+
+export type AuthInfo = AuthResult & UserInfo;
 
 export const loginStatus = async () => {
   const cookieStore = await cookies();
@@ -89,29 +100,53 @@ const refreshToken = async (
   }
 };
 
-export const getAuthState = cache(async (): Promise<AuthResult> => {
+export const getAuthState = cache(async (): Promise<AuthInfo> => {
   const cookieStore = await cookies();
   const access_token = cookieStore.get("access_token")?.value;
   const refresh_token = cookieStore.get("refresh_token")?.value;
+  const name = cookieStore.get("name")?.value;
+  const nickName = cookieStore.get("nickName")?.value;
+  const email = cookieStore.get("email")?.value;
 
   // access_token 유효성 검사
   if (access_token) {
     const isValid = await validateToken(access_token);
     if (isValid) {
-      return { isAuthenticated: true, message: "Success validation!" };
+      return {
+        isAuthenticated: true,
+        message: "Success validation!",
+        name,
+        nickName,
+        email,
+      };
     }
   }
 
   // refresh_token이 없는 경우
   if (!refresh_token) {
+    await clearAuth();
     return {
       isAuthenticated: false,
       message: "The token does not exist.",
+      name: undefined,
+      nickName: undefined,
+      email: undefined,
     };
   }
 
   // access_token이 만료되었고 refresh_token이 존재하면 refresh_token으로 재발급 시도
-  return await refreshToken(refresh_token, cookieStore);
+  const refreshTokenResult = await refreshToken(refresh_token, cookieStore);
+
+  if (!refreshTokenResult?.isAuthenticated) {
+    await clearAuth();
+  }
+
+  return {
+    ...refreshTokenResult,
+    name: refreshTokenResult.isAuthenticated ? name : undefined,
+    nickName: refreshTokenResult.isAuthenticated ? nickName : undefined,
+    email: refreshTokenResult.isAuthenticated ? email : undefined,
+  };
 });
 
 // 인증 상태 초기화 함수
@@ -119,4 +154,7 @@ export const clearAuth = async () => {
   const cookieStore = await cookies();
   cookieStore.delete("access_token");
   cookieStore.delete("refresh_token");
+  cookieStore.delete("name");
+  cookieStore.delete("nickName");
+  cookieStore.delete("email");
 };
