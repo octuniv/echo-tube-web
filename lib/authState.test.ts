@@ -1,5 +1,11 @@
 // lib/authState.test.ts
-import { getAuthState, clearAuth, loginStatus, AuthInfo } from "./authState";
+import {
+  getAuthState,
+  clearAuth,
+  loginStatus,
+  AuthInfo,
+  userStatus,
+} from "./authState";
 import { cookies } from "next/headers";
 import { server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
@@ -302,5 +308,96 @@ describe("loginStatus", () => {
 
     // Assert: Verify the result is false
     expect(result).toBe(false);
+  });
+});
+
+describe("userStatus", () => {
+  beforeEach(() => {
+    // 각 테스트 전에 mock을 초기화합니다.
+    (cookies as jest.Mock).mockClear();
+  });
+
+  it("should return empty strings when no cookies are present", async () => {
+    // Mock cookies()가 빈 객체를 반환하도록 설정
+    (cookies as jest.Mock).mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      get: jest.fn((key) => undefined), // 쿠키가 없는 경우
+    });
+
+    const result = await userStatus();
+
+    expect(result).toEqual({
+      name: "",
+      nickName: "",
+      email: "",
+    });
+  });
+
+  it("should return user data when cookies are present", async () => {
+    // Mock cookies()가 특정 값을 반환하도록 설정
+    (cookies as jest.Mock).mockReturnValue({
+      get: jest.fn((key) => {
+        switch (key) {
+          case "access_token":
+            return { value: "valid-token" };
+          case "name":
+            return { value: "John Doe" };
+          case "nickName":
+            return { value: "johndoe123" };
+          case "email":
+            return { value: "john.doe@example.com" };
+          default:
+            return undefined;
+        }
+      }),
+    });
+
+    const result = await userStatus();
+
+    expect(result).toEqual({
+      name: "John Doe",
+      nickName: "johndoe123",
+      email: "john.doe@example.com",
+    });
+  });
+
+  it("should return empty strings for missing optional cookies", async () => {
+    // access_token은 있지만, 나머지 쿠키는 없는 경우
+    (cookies as jest.Mock).mockReturnValue({
+      get: jest.fn((key) => {
+        if (key === "access_token") {
+          return { value: "valid-token" };
+        }
+        return undefined;
+      }),
+    });
+
+    const result = await userStatus();
+
+    expect(result).toEqual({
+      name: "",
+      nickName: "",
+      email: "",
+    });
+  });
+
+  it("should handle null or undefined values in cookies gracefully", async () => {
+    // access_token은 있지만, 나머지 쿠키 값이 null인 경우
+    (cookies as jest.Mock).mockReturnValue({
+      get: jest.fn((key) => {
+        if (key === "access_token") {
+          return { value: "valid-token" };
+        }
+        return { value: null }; // null 값을 반환
+      }),
+    });
+
+    const result = await userStatus();
+
+    expect(result).toEqual({
+      name: "",
+      nickName: "",
+      email: "",
+    });
   });
 });

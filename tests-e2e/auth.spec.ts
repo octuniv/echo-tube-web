@@ -119,4 +119,96 @@ test.describe("Auth Test", () => {
       expect(currentCookies).toEqual(cookies);
     });
   });
+
+  test.describe("About Deleting Post", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.context().clearCookies();
+      await page.context().addCookies(currentCookies);
+      const insertedCookies = await page.context().cookies();
+      ["access_token", "refresh_token", "name", "nickName", "email"].forEach(
+        (name) =>
+          expect(
+            insertedCookies.find((cookie) => cookie.name === name)
+          ).toBeDefined()
+      );
+    });
+
+    test("should not be able to be deleted post by someone who manipulates cookies", async ({
+      page,
+    }) => {
+      // 첫 번째 사용자: 게시물 작성
+      await page.goto("/posts/create");
+
+      await page.fill(
+        "input#title",
+        "Test to confirm that this post cannot be deleted"
+      );
+      await page.fill("textarea#content", "Test Content");
+
+      await page.click('button[type="submit"]');
+
+      // 게시물 목록 페이지로 리다이렉트 확인
+      await expect(page).toHaveURL("/posts");
+
+      // 쿠키 가져오기 및 초기화
+      const cookies = await page.context().cookies();
+      await page.context().clearCookies();
+
+      // 새로운 access_token 및 refresh_token 설정
+      const newAccessToken = "new-access-token-value";
+      const newRefreshToken = "new-refresh-token-value";
+
+      // 쿠키 재설정
+      const manipulatedCookies = cookies.map((cookie) => {
+        if (cookie.name === "access_token") {
+          return { ...cookie, value: newAccessToken }; // access_token 업데이트
+        }
+        if (cookie.name === "refresh_token") {
+          return { ...cookie, value: newRefreshToken }; // refresh_token 업데이트
+        }
+        return cookie; // 나머지 쿠키는 그대로 유지
+      });
+
+      // 업데이트된 쿠키를 브라우저에 추가
+      await page.context().addCookies(manipulatedCookies);
+
+      await page.goto("/posts");
+
+      // 작성된 게시물 클릭
+      const post = page
+        .getByText("Test to confirm that this post cannot be deleted")
+        .first();
+      await post.click();
+
+      // 게시물 상세 페이지 URL 검증
+      await expect(page).toHaveURL(/\/posts\/\d+/);
+
+      // 삭제 버튼 상태 확인
+      const deleteButton = page.getByRole("button", {
+        name: "게시물 삭제",
+      });
+      const isButtonEnabled = await deleteButton.isEnabled();
+
+      expect(isButtonEnabled).toBeTruthy();
+
+      // confirm 대화상자 처리 준비
+      page.on("dialog", async (dialog) => {
+        await dialog.accept(); // "확인" 버튼 클릭
+      });
+
+      // 버튼 클릭
+      await deleteButton.click();
+
+      // 모든 상태 초기화 확인
+      // 페이지 홈으로 변경되었는지 확인
+      await page.waitForURL("/", { timeout: 10000 });
+
+      // 모든 쿠키 삭제되었는지 확인
+      const remainingCookies = await page.context().cookies();
+      console.log("Remaining Cookies:", remainingCookies);
+
+      // 쿠키 배열이 비어 있는지 검증
+      expect(remainingCookies.length).toBe(0);
+    });
+  });
 });

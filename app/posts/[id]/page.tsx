@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { FetchPost } from "@/lib/actions";
 import PostPage from "@/components/posts/Post";
+import DeleteButton from "@/components/posts/DeleteButton";
+import { userStatus } from "@/lib/authState";
 
 interface PostPageProps {
   params: {
@@ -17,6 +19,12 @@ export default async function Page({ params }: PostPageProps) {
   }
 
   const post = await FetchPost(postId);
+  const { nickName } = await userStatus();
+  const isEditable = nickName === post.nickName;
 
-  return <PostPage post={post} />;
+  return (
+    <PostPage post={post}>
+      {<DeleteButton postId={post.id} isEditable={isEditable} />}
+    </PostPage>
+  );
 }

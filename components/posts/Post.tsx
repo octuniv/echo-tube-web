@@ -4,9 +4,10 @@ import { PostDto } from "@/lib/definition";
 
 interface PostPageProps {
   post: PostDto; // URL에서 전달되는 게시물 ID
+  children: React.ReactNode;
 }
 
-export default function PostPage({ post }: PostPageProps) {
+export default function PostPage({ post, children }: PostPageProps) {
   return (
     <div className="container mx-auto p-6">
       {/* 제목 */}
@@ -58,6 +59,8 @@ export default function PostPage({ post }: PostPageProps) {
       <div className="text-xs text-gray-400" aria-label="게시물 마지막 수정일">
         마지막 수정일: {new Date(post.updatedAt).toLocaleDateString()}
       </div>
+
+      <div className="mt-6">{children}</div>
     </div>
   );
 }

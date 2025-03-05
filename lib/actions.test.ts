@@ -7,6 +7,7 @@ import {
   ensureAuthenticated,
   authenticatedFetch,
   FetchPost,
+  DeletePost,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -385,6 +386,95 @@ describe("Actions Module", () => {
       const result = await CreatePost({}, formData);
 
       expect(result.message).toBe("Create post failed.");
+    });
+  });
+
+  describe("DeletePost", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it("should delete a post successfully and redirect to /posts", async () => {
+      const postId = 1;
+
+      // Mock the server response for a successful DELETE request
+      server.use(
+        http.delete(`${serverAddress}/posts/${postId}`, () => {
+          return HttpResponse.json(
+            { message: "Post deleted successfully." },
+            { status: 200 }
+          );
+        })
+      );
+
+      await DeletePost(postId);
+
+      // Verify revalidation and redirection
+      expect(revalidatePath).toHaveBeenCalledWith("/posts");
+      expect(redirect).toHaveBeenCalledWith("/posts");
+    });
+
+    it("should handle unauthorized access during post deletion", async () => {
+      const postId = 1;
+
+      // Mock the server response for a 401 Unauthorized error
+      server.use(
+        http.delete(`${serverAddress}/posts/${postId}`, () => {
+          return HttpResponse.json(
+            { statusCode: 401, message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+
+      await DeletePost(postId);
+
+      // Verify logout and redirection to login page
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/");
+    });
+
+    it("should handle unexpected errors during post deletion", async () => {
+      const postId = 1;
+
+      // Mock the server response for a 500 Internal Server Error
+      server.use(
+        http.delete(`${serverAddress}/posts/${postId}`, () => {
+          return HttpResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+          );
+        })
+      );
+
+      await DeletePost(postId);
+
+      // Verify logout and redirection to home page
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/");
+    });
+
+    it("should handle invalid post ID gracefully", async () => {
+      const postId = 999; // Non-existent post ID
+
+      // Mock the server response for a 404 Not Found error
+      server.use(
+        http.delete(`${serverAddress}/posts/${postId}`, () => {
+          return HttpResponse.json(
+            { error: "Post not found" },
+            { status: 404 }
+          );
+        })
+      );
+
+      await DeletePost(postId);
+
+      // Verify logout and redirection to home page
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/");
     });
   });
 });

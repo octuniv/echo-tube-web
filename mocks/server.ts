@@ -90,5 +90,12 @@ export const server = setupServer(
 
   http.get("https://example.com", () => {
     return HttpResponse.json({}, { status: 200 });
+  }),
+
+  http.delete(`${serverAddress}/posts/:id`, () => {
+    return HttpResponse.json(
+      { message: "Post deleted successfully." },
+      { status: 200 }
+    );
   })
 );

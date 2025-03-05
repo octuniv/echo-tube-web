@@ -286,3 +286,34 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
   revalidatePath("/posts");
   redirect("/posts");
 }
+
+export async function DeletePost(id: number) {
+  const reqAddress = serverAddress + `/posts/${id}`;
+
+  try {
+    const response = await authenticatedFetch(reqAddress, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response) {
+      throw new Error("Internal Server Error");
+    }
+
+    const result = await response.json();
+
+    if (!response.ok || result?.error) {
+      throw new Error(result?.error);
+    }
+  } catch (error) {
+    console.error(error);
+    await clearAuth();
+    revalidatePath("/");
+    redirect("/");
+  }
+
+  revalidatePath("/posts");
+  redirect("/posts");
+}

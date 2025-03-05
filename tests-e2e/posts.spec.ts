@@ -187,3 +187,98 @@ test.describe("Posts E2E Tests", () => {
     ).toBeGreaterThanOrEqual(new Date(extractDate(lastPostDateText)).getTime());
   });
 });
+
+test.describe("Delete Post Tests", () => {
+  test("should be able to be deleted post by the author", async ({ page }) => {
+    await page.goto("/posts/create");
+
+    await page.fill("input#title", "Test to delete this post");
+    await page.fill("textarea#content", "Test Content");
+
+    await page.click('button[type="submit"]');
+
+    await expect(page).toHaveURL("/posts");
+
+    const post = page
+      .getByLabel("Post title: Test to delete this post")
+      .first();
+    await post.click();
+
+    await expect(page).toHaveURL(/\/posts\/\d+/);
+
+    const thisPage = new URL(page.url()).pathname;
+
+    const deleteButton = page.getByRole("button", { name: "게시물 삭제" });
+    const isButtonEnabled = await deleteButton.isEnabled();
+
+    expect(isButtonEnabled).toBeTruthy();
+
+    // confirm 대화상자 처리 준비
+    page.on("dialog", async (dialog) => {
+      await dialog.accept(); // "확인" 버튼 클릭
+    });
+
+    await deleteButton.click();
+
+    await expect(page).toHaveURL("/posts");
+
+    await page.goto(thisPage);
+    await expect(page).toHaveURL(thisPage);
+
+    // 1. 제목 검증 (Next.js 기본 404 페이지는 제목이 "404: This page could not be found."임)
+    const title = await page.title();
+    console.log("Page Title:", title);
+    expect(title).toBe("404: This page could not be found.");
+
+    // 2. 특정 텍스트 검증 (404 페이지의 본문에 포함된 텍스트 확인)
+    const notFoundText = page.locator("text=This page could not be found.");
+    await expect(notFoundText).toBeVisible();
+  });
+
+  test("should not be able to be deleted post by someone who is not the author", async ({
+    page,
+  }) => {
+    // 첫 번째 사용자: 게시물 작성
+    await page.goto("/posts/create");
+
+    await page.fill(
+      "input#title",
+      "Test to confirm that this post cannot be deleted"
+    );
+    await page.fill("textarea#content", "Test Content");
+
+    await page.click('button[type="submit"]');
+
+    // 게시물 목록 페이지로 리다이렉트 확인
+    await expect(page).toHaveURL("/posts");
+
+    const cookies = await page.context().cookies();
+    await page.context().clearCookies();
+    try {
+      await page.goto("/posts");
+
+      // 특정 게시물 클릭
+      const post = page
+        .getByText("Test to confirm that this post cannot be deleted")
+        .first();
+      await post.click();
+
+      // 게시물 상세 페이지 URL 검증
+      await expect(page).toHaveURL(/\/posts\/\d+/);
+
+      // 삭제 버튼 상태 확인
+      const deleteButton = page.getByRole("button", {
+        name: "게시물 삭제",
+      });
+      const isButtonEnabled = await deleteButton.isEnabled();
+
+      // 삭제 버튼이 비활성화되었는지 확인
+      expect(isButtonEnabled).toBeFalsy();
+    } catch (e) {
+      throw e;
+    } finally {
+      await page.context().addCookies(cookies);
+      await page.goto("/posts");
+    }
+  });
+});

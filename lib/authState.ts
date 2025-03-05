@@ -17,10 +17,36 @@ type UserInfo = {
 
 export type AuthInfo = AuthResult & UserInfo;
 
-export const loginStatus = async () => {
+export const loginStatus = async (): Promise<boolean> => {
   const cookieStore = await cookies();
   const access_token = cookieStore.get("access_token")?.value;
   return !!access_token;
+};
+
+interface userStatusProps {
+  name: string;
+  nickName: string;
+  email: string;
+}
+
+export const userStatus = async (): Promise<userStatusProps> => {
+  const cookieStore = await cookies();
+  const access_token = cookieStore.get("access_token")?.value;
+  if (!access_token) {
+    return {
+      name: "",
+      nickName: "",
+      email: "",
+    };
+  }
+  const name = cookieStore.get("name")?.value;
+  const nickName = cookieStore.get("nickName")?.value;
+  const email = cookieStore.get("email")?.value;
+  return {
+    name: name ?? "",
+    nickName: nickName ?? "",
+    email: email ?? "",
+  };
 };
 
 const validateToken = async (access_token: string): Promise<boolean> => {
