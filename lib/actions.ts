@@ -231,6 +231,8 @@ export async function FetchPost(id: number): Promise<PostDto> {
 }
 
 export async function CreatePost(prevState: PostState, formData: FormData) {
+  let authenticatedFailure: boolean = false;
+
   const validatedFields = postSchema.safeParse({
     title: formData.get("title"),
     content: formData.get("content"),
@@ -262,18 +264,20 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
     });
 
     if (!response) {
-      redirect("/login");
-    }
+      authenticatedFailure = true;
+    } else {
+      authenticatedFailure = false;
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (!response.ok || result?.error) {
-      if (result?.statusCode === 400) {
-        return {
-          message: `${result.message}`,
-        };
-      } else {
-        throw new Error(result.error);
+      if (!response.ok || result?.error) {
+        if (result?.statusCode === 400) {
+          return {
+            message: `${result.message}`,
+          };
+        } else {
+          throw new Error(result.error);
+        }
       }
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -283,8 +287,12 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
     };
   }
 
-  revalidatePath("/posts");
-  redirect("/posts");
+  if (authenticatedFailure) {
+    redirect("/login");
+  } else {
+    revalidatePath("/posts");
+    redirect("/posts");
+  }
 }
 
 export async function DeletePost(id: number) {
@@ -307,8 +315,8 @@ export async function DeletePost(id: number) {
     if (!response.ok || result?.error) {
       throw new Error(result?.error);
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error(error);
     await clearAuth();
     revalidatePath("/");
     redirect("/");
@@ -316,4 +324,72 @@ export async function DeletePost(id: number) {
 
   revalidatePath("/posts");
   redirect("/posts");
+}
+
+export async function EditPost(
+  id: number,
+  prevState: PostState,
+  formData: FormData
+) {
+  let authenticatedFailure: boolean = false;
+
+  const validatedFields = postSchema.safeParse({
+    title: formData.get("title"),
+    content: formData.get("content"),
+    videoUrl: formData.get("videoUrl"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing Fields. Failed to edit posts.",
+    };
+  }
+
+  const params = validatedFields.data;
+
+  if (params.videoUrl === "") {
+    delete params.videoUrl;
+  }
+
+  const reqAddress = serverAddress + `/posts/${id}`;
+
+  try {
+    const response = await authenticatedFetch(reqAddress, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response) {
+      authenticatedFailure = true;
+    } else {
+      authenticatedFailure = false;
+      const result = await response.json();
+
+      if (!response.ok || result?.error) {
+        if (result?.statusCode === 400) {
+          return {
+            message: `${result.message}`,
+          };
+        } else {
+          throw new Error(result.error);
+        }
+      }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    return {
+      message: "Edit post failed.",
+    };
+  }
+
+  if (authenticatedFailure) {
+    redirect("/login");
+  } else {
+    revalidatePath("/posts");
+    redirect("/posts");
+  }
 }

@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { FetchPost } from "@/lib/actions";
-import PostPage from "@/components/posts/PostPage";
 import { userStatus } from "@/lib/authState";
+import EditPostPage from "@/components/posts/edit/EditPostPage";
 
 interface PostPageProps {
   params: Promise<{
@@ -21,5 +21,9 @@ export default async function Page({ params }: PostPageProps) {
   const { nickName } = await userStatus();
   const isEditable = nickName === post.nickName;
 
-  return <PostPage post={post} isEditable={isEditable} />;
+  if (!isEditable) {
+    redirect("/posts");
+  }
+
+  return <EditPostPage postId={postId} post={post} />;
 }

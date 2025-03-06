@@ -1,12 +1,13 @@
-import { PostState as ErrorState } from "@/lib/definition";
+import { PostState as ErrorState, PostDto } from "@/lib/definition";
 import Link from "next/link";
 
-interface CreatePostFormProps {
+interface PostFormProps {
   state: ErrorState;
   formAction: (payload: FormData) => void;
+  post?: PostDto;
 }
 
-function CreatePostForm({ state, formAction }: CreatePostFormProps) {
+function PostForm({ state, formAction, post }: PostFormProps) {
   return (
     <div className="max-w-md mx-auto p-4 border rounded-lg shadow-md space-y-4">
       <h1 className="text-2xl font-bold text-center">새 게시물 작성</h1>
@@ -25,6 +26,7 @@ function CreatePostForm({ state, formAction }: CreatePostFormProps) {
             id="title"
             name="title"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            defaultValue={post?.title || ""}
           />
           {state?.errors?.title && (
             <p className="text-red-500 text-sm">{state.errors.title[0]}</p>
@@ -44,6 +46,7 @@ function CreatePostForm({ state, formAction }: CreatePostFormProps) {
             name="content"
             rows={4}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            defaultValue={post?.content || ""}
           ></textarea>
           {state?.errors?.content && (
             <p className="text-red-500 text-sm">{state.errors.content[0]}</p>
@@ -63,6 +66,7 @@ function CreatePostForm({ state, formAction }: CreatePostFormProps) {
             id="videoUrl"
             name="videoUrl"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            defaultValue={post?.videoUrl || ""}
           />
         </div>
 
@@ -92,4 +96,4 @@ function CreatePostForm({ state, formAction }: CreatePostFormProps) {
   );
 }
 
-export default CreatePostForm;
+export default PostForm;

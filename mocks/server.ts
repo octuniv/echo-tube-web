@@ -26,6 +26,12 @@ export const mockPosts: PostDto[] = [
   },
 ];
 
+export const mockEditPostForm = {
+  title: "Changed",
+  content: "Content of Changed",
+  videoUrl: "https://example.com/changed",
+};
+
 export const server = setupServer(
   // Mock API for user sign-up
   http.post(`${serverAddress}/users`, () => {
@@ -67,6 +73,7 @@ export const server = setupServer(
     return HttpResponse.json(mockPosts, { status: 200 });
   }),
 
+  // Mock API for fetch post
   http.get(`${serverAddress}/posts/:id`, ({ params }) => {
     const postId = Number(params.id);
 
@@ -88,13 +95,23 @@ export const server = setupServer(
     return HttpResponse.json({ error: "Post not found" }, { status: 404 });
   }),
 
+  // Mock API for authenicatedFetch
   http.get("https://example.com", () => {
     return HttpResponse.json({}, { status: 200 });
   }),
 
+  // Mock API for delete post
   http.delete(`${serverAddress}/posts/:id`, () => {
     return HttpResponse.json(
       { message: "Post deleted successfully." },
+      { status: 200 }
+    );
+  }),
+
+  // Mock API for edit post
+  http.patch(`${serverAddress}/posts/:id`, () => {
+    return HttpResponse.json(
+      { ...mockPosts[0], ...mockEditPostForm },
       { status: 200 }
     );
   })

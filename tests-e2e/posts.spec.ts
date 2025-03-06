@@ -227,7 +227,6 @@ test.describe("Delete Post Tests", () => {
 
     // 1. 제목 검증 (Next.js 기본 404 페이지는 제목이 "404: This page could not be found."임)
     const title = await page.title();
-    console.log("Page Title:", title);
     expect(title).toBe("404: This page could not be found.");
 
     // 2. 특정 텍스트 검증 (404 페이지의 본문에 포함된 텍스트 확인)
@@ -274,6 +273,162 @@ test.describe("Delete Post Tests", () => {
 
       // 삭제 버튼이 비활성화되었는지 확인
       expect(isButtonEnabled).toBeFalsy();
+    } catch (e) {
+      throw e;
+    } finally {
+      await page.context().addCookies(cookies);
+      await page.goto("/posts");
+    }
+  });
+});
+
+test.describe("Edit Post Test", () => {
+  let postPage: string;
+
+  // 테스트 필요한 페이지 작성
+  test.beforeAll(async ({ page }) => {
+    await page.goto("/posts/create");
+    await page.waitForURL("/posts/create", { timeout: 5000 });
+
+    const titleInput = page.locator("input#title");
+    const contentTextarea = page.locator("textarea#content");
+    const submitButton = page.locator('button[type="submit"]');
+
+    await titleInput.fill("Test Title for edit");
+    await contentTextarea.fill("Test Content for edit");
+
+    await submitButton.click();
+
+    await expect(page).toHaveURL("/posts");
+
+    const post = page.getByLabel("Post title: Test Title for edit").first();
+    await post.click();
+
+    await expect(page).toHaveURL(/\/posts\/\d+/);
+
+    postPage = new URL(page.url()).pathname;
+  });
+
+  test("displays validation errors when fields are empty", async ({ page }) => {
+    // 초기 게시물 페이지 방문
+    await page.goto(postPage);
+    await page.waitForURL(postPage, { timeout: 5000 });
+
+    // 수정 버튼 클릭
+    const editLink = page.getByRole("link", { name: "게시물 수정" });
+    await editLink.click();
+    await expect(page).toHaveURL(/\/posts\/edit\/\d+/);
+
+    // 폼 비우기
+    await page.fill("input#title", "");
+    await page.fill("textarea#content", "");
+    await page.fill("input#videoUrl", "");
+
+    // 폼 제출 시도
+    const submitButton = page.locator('button[type="submit"]');
+    await submitButton.click();
+
+    // 에러 메시지 확인
+    const titleError = page.locator('p:text("Please enter your title.")');
+    const contentError = page.locator('p:text("Please enter your content.")');
+    const generalError = page.locator(
+      'p:text("Missing Fields. Failed to edit posts.")'
+    );
+
+    await expect(titleError).toBeVisible();
+    await expect(contentError).toBeVisible();
+    await expect(generalError).toBeVisible();
+  });
+
+  test("submits the form successfully with valid data", async ({ page }) => {
+    // 초기 게시물 페이지 방문
+    await page.goto(postPage);
+    await expect(page).toHaveURL(postPage);
+
+    // 첫 번째 수정 버튼 클릭
+    let editLink = page.getByRole("link", { name: "게시물 수정" });
+    await editLink.click();
+    await expect(page).toHaveURL(/\/posts\/edit\/\d+/);
+
+    // 폼 데이터 입력 및 제출
+    const presentPage = new URL(page.url()).pathname;
+    await page.fill("input#title", "Edited Title");
+    await page.fill("textarea#content", "Edited content");
+    await page.fill("input#videoUrl", "https://youtu.be/editedVideo");
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL("/posts");
+
+    // 다시 게시물 페이지 방문
+    await page.goto(postPage);
+    await expect(page).toHaveURL(postPage);
+
+    // 두 번째 수정 버튼 클릭
+    editLink = page.getByRole("link", { name: "게시물 수정" });
+    await editLink.click();
+    await expect(page).toHaveURL(presentPage);
+
+    // 입력값 유지 확인
+    await expect(page.locator("input#title")).toHaveValue("Edited Title");
+    await expect(page.locator("textarea#content")).toHaveValue(
+      "Edited content"
+    );
+    await expect(page.locator("input#videoUrl")).toHaveValue(
+      "https://youtu.be/editedVideo"
+    );
+  });
+
+  test("Edit button should be disabled if userInfo is empty or someone else is different from author in Post Page", async ({
+    page,
+  }) => {
+    // 쿠키(유저 정보) 삭제 및 백업
+    const cookies = await page.context().cookies();
+    await page.context().clearCookies();
+    try {
+      // 조회 페이지 방문
+      await page.goto(postPage);
+      await expect(page).toHaveURL(/\/posts\/\d+/);
+
+      // 편집 버튼 상태 확인
+      const editLink = page.getByRole("link", {
+        name: "게시물 수정",
+      });
+      const isLinkEnabled = await editLink.isEnabled();
+
+      // 편집 버튼이 비활성화되었는지 확인
+      expect(isLinkEnabled).toBeFalsy();
+    } catch (e) {
+      throw e;
+    } finally {
+      await page.context().addCookies(cookies);
+      await page.goto("/posts");
+    }
+  });
+
+  test("NotFound should come out for non-existent posts.", async ({ page }) => {
+    await page.goto("/edit/2223345");
+
+    const title = await page.title();
+    expect(title).toBe("404: This page could not be found.");
+
+    const notFoundText = page.locator("text=This page could not be found.");
+    await expect(notFoundText).toBeVisible();
+  });
+
+  test("should be redirect to the login page when non-author visits the edit page.", async ({
+    page,
+  }) => {
+    const postId = postPage.match(/\/posts\/(\d+)/)?.[1];
+    if (!postId) throw new Error("Invalid postPage URL format");
+
+    const editPage = `/posts/edit/${postId}`;
+
+    // 쿠키(유저 정보) 삭제 및 백업
+    const cookies = await page.context().cookies();
+    await page.context().clearCookies();
+    try {
+      // 조회 페이지 방문
+      await page.goto(editPage);
+      await page.waitForURL("/posts", { timeout: 10000 });
     } catch (e) {
       throw e;
     } finally {

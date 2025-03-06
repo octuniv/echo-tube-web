@@ -26,7 +26,7 @@ export default function DeleteButton({
       className={`flex items-center font-bold py-2 px-4 rounded focus:outline-none ${
         isEditable
           ? "bg-red-500 hover:bg-red-700 text-white cursor-pointer"
-          : "bg-gray-300 text-gray-500 cursor-not-allowed" // 비활성화 상태 스타일
+          : "text-gray-500 cursor-not-allowed" // 비활성화 상태 스타일
       }`}
       aria-label="게시물 삭제"
       disabled={!isEditable} // 버튼 비활성화

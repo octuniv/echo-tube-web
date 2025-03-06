@@ -8,6 +8,7 @@ import {
   authenticatedFetch,
   FetchPost,
   DeletePost,
+  EditPost,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -475,6 +476,146 @@ describe("Actions Module", () => {
       expect(clearAuth).toHaveBeenCalled();
       expect(revalidatePath).toHaveBeenCalledWith("/");
       expect(redirect).toHaveBeenCalledWith("/");
+    });
+  });
+
+  describe("EditPost", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it("should edit a post successfully", async () => {
+      const formData = new FormData();
+      formData.append("title", "Updated Title");
+      formData.append("content", "Updated content");
+      formData.append("videoUrl", "https://example.com/new-video");
+
+      server.use(
+        http.patch(`${serverAddress}/posts/1`, () => {
+          return HttpResponse.json(
+            {
+              ...mockPosts[0],
+              title: formData.get("title"),
+              content: formData.get("content"),
+              videoUrl: formData.get("videoUrl"),
+            },
+            { status: 200 }
+          );
+        })
+      );
+
+      (cookies as jest.Mock).mockResolvedValue({
+        get: jest.fn((key: string) => {
+          if (key === "access_token") return { value: "valid-access-token" };
+          if (key === "refresh_token") return { value: "valid-refresh-token" };
+          return undefined;
+        }),
+      });
+
+      await EditPost(1, {}, formData);
+
+      expect(revalidatePath).toHaveBeenCalledWith("/posts");
+      expect(redirect).toHaveBeenCalledWith("/posts");
+    });
+
+    it("should omit videoUrl when empty", async () => {
+      const formData = new FormData();
+      formData.append("title", "Updated Title");
+      formData.append("content", "Updated content");
+      formData.append("videoUrl", "");
+
+      interface CapturedBody {
+        title: string;
+        content: string;
+        videoUrl?: string;
+      }
+
+      let capturedBody: CapturedBody = { title: "", content: "" };
+
+      server.use(
+        http.patch(`${serverAddress}/posts/1`, async ({ request }) => {
+          capturedBody = (await request.json()) as CapturedBody;
+          return HttpResponse.json(
+            {
+              ...mockPosts[0],
+              title: formData.get("title"),
+              content: formData.get("content"),
+            },
+            { status: 200 }
+          );
+        })
+      );
+
+      (cookies as jest.Mock).mockResolvedValue({
+        get: jest.fn((key: string) => {
+          if (key === "access_token") return { value: "valid-access-token" };
+          if (key === "refresh_token") return { value: "valid-refresh-token" };
+          return undefined;
+        }),
+      });
+
+      await EditPost(1, {}, formData);
+
+      expect(capturedBody).toEqual({
+        title: "Updated Title",
+        content: "Updated content",
+      });
+      expect(capturedBody.videoUrl).toBeUndefined();
+      expect(revalidatePath).toHaveBeenCalledWith("/posts");
+      expect(redirect).toHaveBeenCalledWith("/posts");
+    });
+
+    it("should handle validation errors", async () => {
+      const formData = new FormData();
+      formData.append("title", "");
+      formData.append("content", "Valid content");
+      formData.append("videoUrl", "");
+
+      const result = await EditPost(1, {}, formData);
+
+      expect(result.errors?.title).toBeDefined();
+      expect(result.message).toBe("Missing Fields. Failed to edit posts.");
+    });
+
+    it("should handle unauthorized access", async () => {
+      const formData = new FormData();
+      formData.append("title", "Updated Title");
+      formData.append("content", "Updated content");
+      formData.append("videoUrl", "");
+
+      server.use(
+        http.patch(`${serverAddress}/posts/1`, () => {
+          return HttpResponse.json(
+            { statusCode: 401, message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+
+      await EditPost(1, {}, formData);
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+
+    it("should handle server error", async () => {
+      const formData = new FormData();
+      formData.append("title", "Updated Title");
+      formData.append("content", "Updated content");
+      formData.append("videoUrl", "");
+
+      server.use(
+        http.patch(`${serverAddress}/posts/1`, () => {
+          return HttpResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+          );
+        })
+      );
+
+      const result = await EditPost(1, {}, formData);
+
+      expect(result.message).toBe("Edit post failed.");
     });
   });
 });
