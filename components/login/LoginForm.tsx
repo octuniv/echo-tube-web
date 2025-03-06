@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ErrorText, LabelInput } from "../common";
 import { LoginInfoState as ErrorState } from "@/lib/definition";
 
@@ -27,6 +28,18 @@ function LoginForm({
         Login
       </button>
       {state?.message && <p className="text-red-500 mt-2">{state.message}</p>}
+
+      {/* 회원가입 링크 */}
+      <div className="text-center text-sm text-gray-600 mt-4">
+        Don&apos;t have an account?{" "}
+        <Link
+          href="/signup"
+          className="text-blue-600 hover:underline hover:text-blue-700"
+          aria-label="Signup"
+        >
+          Sign up here
+        </Link>
+      </div>
     </form>
   );
 }

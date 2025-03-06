@@ -11,7 +11,7 @@ test.describe("Login Page", () => {
     await expect(
       page.getByRole("button", { name: "Logout" })
     ).not.toBeVisible();
-    await expect(page.getByLabel("Sign Up")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Signup" })).toBeVisible();
     await expect(page.getByLabel("Login")).toBeVisible();
   });
 

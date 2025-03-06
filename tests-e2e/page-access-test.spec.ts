@@ -17,14 +17,17 @@ test.describe("Page-to-page movement test", () => {
     await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
     await expect(page.getByText("Email")).toBeVisible();
     await expect(page.getByText("Password")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Signup" })).toBeVisible();
     await page.getByLabel("Go To Home").click();
     await expect(page).not.toHaveURL("/login");
   });
 
   test("SignUp Page Access Test", async ({ page }) => {
-    await page.getByLabel("Sign Up").click();
+    await page.getByLabel("Login").click();
+    await expect(page).toHaveURL("/login");
+    await expect(page.getByRole("link", { name: "Signup" })).toBeVisible();
+    await page.getByRole("link", { name: "Signup" }).click();
     await expect(page).toHaveURL("/signup");
-    await expect(page.getByLabel("Sign Up")).toBeVisible();
     await page.getByLabel("Go To Home").click();
     await expect(page).not.toHaveURL("/signup");
   });

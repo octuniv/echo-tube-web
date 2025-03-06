@@ -407,8 +407,10 @@ test.describe("Edit Post Test", () => {
   test("NotFound should come out for non-existent posts.", async ({ page }) => {
     await page.goto("/edit/2223345");
 
-    const title = await page.title();
-    expect(title).toBe("404: This page could not be found.");
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "This page could not be found." })
+    ).toBeVisible();
 
     const notFoundText = page.locator("text=This page could not be found.");
     await expect(notFoundText).toBeVisible();

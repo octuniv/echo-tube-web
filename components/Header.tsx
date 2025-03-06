@@ -36,13 +36,6 @@ const Header = ({ isLogined }: HeaderProps) => {
             ) : (
               <>
                 <Link
-                  href="/signup"
-                  className="text-gray-600 hover:text-blue-500 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                  aria-label="Sign Up"
-                >
-                  SignUp
-                </Link>
-                <Link
                   href="/login"
                   className="text-gray-600 hover:text-blue-500 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   aria-label="Login"
