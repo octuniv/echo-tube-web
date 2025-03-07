@@ -1,16 +1,18 @@
+"use client";
 import { LogoutAction } from "@/lib/actions";
-import { MakeFormButton } from "../common";
-
-function LogoutShape() {
-  return (
-    <button className="text-gray-600 hover:text-blue-500 transition">
-      Logout
-    </button>
-  );
-}
+import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/solid";
 
 function LogoutButton() {
-  return <MakeFormButton action={LogoutAction} ButtonShape={LogoutShape} />;
+  return (
+    <button
+      className="flex items-center text-red-600 hover:bg-red-50 rounded-full p-2"
+      onClick={LogoutAction}
+      aria-label="Logout"
+    >
+      <ArrowLeftStartOnRectangleIcon className="w-5 h-5" />
+      <span className="ml-2 hidden md:block">Logout</span>
+    </button>
+  );
 }
 
 export default LogoutButton;

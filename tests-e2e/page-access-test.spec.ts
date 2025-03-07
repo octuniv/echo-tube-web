@@ -40,7 +40,9 @@ test.describe("Page-to-page movement test", () => {
   });
 
   test("Posts Page Access Test", async ({ page }) => {
-    await page.getByLabel("Go To Post").click();
+    await page.getByRole("button", { name: "Sidebar Activation" }).click();
+    await expect(page.getByRole("link", { name: "posts" })).toBeVisible();
+    await page.getByRole("link", { name: "posts" }).click();
     await expect(page).toHaveURL("/posts");
   });
 

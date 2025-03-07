@@ -18,4 +18,41 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  @apply transition-all duration-300;
+}
+
+/* 모바일 메뉴 열릴 때 메인 컨텐츠 오른쪽으로 밀기 */
+body.sidebar-open {
+  @apply md:ml-64;
+}
+
+/* 스크롤바 숨기기 */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-lg;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-lg;
+}
+
+/* 버튼 호버 효과 강화 */
+button:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* 아이콘 버튼 스타일 */
+.icon-button {
+  @apply p-2 rounded-full transition-colors duration-200;
+}
+
+.icon-button:hover {
+  @apply bg-gray-100;
+}
+
+.icon-button:active {
+  @apply bg-gray-200;
 }
