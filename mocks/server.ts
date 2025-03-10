@@ -11,7 +11,7 @@ export const mockPosts: PostDto[] = [
     title: "Post 1",
     content: "Content of Post 1",
     videoUrl: "https://example.com/video1",
-    nickName: "UserA",
+    nickname: "UserA",
     createdAt: "2023-10-01T12:00:00Z",
     updatedAt: "2023-10-01T12:00:00Z",
   },
@@ -20,7 +20,7 @@ export const mockPosts: PostDto[] = [
     title: "Post 2",
     content: "Content of Post 2",
     videoUrl: undefined,
-    nickName: "UserB",
+    nickname: "UserB",
     createdAt: "2023-09-30T12:00:00Z",
     updatedAt: "2023-09-30T12:00:00Z",
   },
@@ -45,7 +45,7 @@ export const server = setupServer(
         access_token: "valid-access-token",
         refresh_token: "valid-refresh-token",
         name: "John Doe",
-        nickName: "John",
+        nickname: "John",
         email: "john@example.com",
       },
       { status: 200 }
@@ -84,7 +84,7 @@ export const server = setupServer(
           title: "Post 1",
           content: "Content of Post 1",
           videoUrl: "https://example.com/video1",
-          nickName: "UserA",
+          nickname: "UserA",
           createdAt: "2023-10-01T12:00:00Z",
           updatedAt: "2023-10-01T12:00:00Z",
         },
@@ -114,5 +114,26 @@ export const server = setupServer(
       { ...mockPosts[0], ...mockEditPostForm },
       { status: 200 }
     );
+  }),
+
+  // Mock API for delete user
+  http.delete(`${serverAddress}/users`, () => {
+    return HttpResponse.json(
+      { message: "Successfully deleted account" },
+      { status: 200 }
+    );
+  }),
+
+  // Mock API for update nickname
+  http.patch(`${serverAddress}/users/nickname`, () => {
+    return HttpResponse.json(
+      { message: "Nickname change successful." },
+      { status: 200 }
+    );
+  }),
+
+  // Mock API for testing authenticatedFetch
+  http.get(`${serverAddress}/test-endpoint`, () => {
+    return HttpResponse.json({ data: "success" }, { status: 200 });
   })
 );

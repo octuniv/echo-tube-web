@@ -4,15 +4,14 @@ import {
   LogoutAction,
   FetchAllPosts,
   CreatePost,
-  ensureAuthenticated,
-  authenticatedFetch,
   FetchPost,
   DeletePost,
   EditPost,
+  DeleteUser,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { clearAuth, getAuthState } from "./authState";
+import { clearAuth } from "./authState";
 import { mockPosts, server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "./util";
@@ -34,7 +33,6 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("./authState", () => ({
-  getAuthState: jest.fn(),
   clearAuth: jest.fn(),
 }));
 
@@ -47,61 +45,11 @@ describe("Actions Module", () => {
     jest.clearAllMocks();
   });
 
-  describe("ensureAuthenticated", () => {
-    it("should return true when authenticated", async () => {
-      (getAuthState as jest.Mock).mockResolvedValue({ isAuthenticated: true });
-      const result = await ensureAuthenticated();
-      expect(result).toBe(true);
-    });
-
-    it("should return false and clear auth when not authenticated", async () => {
-      (getAuthState as jest.Mock).mockResolvedValue({ isAuthenticated: false });
-      const result = await ensureAuthenticated();
-      expect(clearAuth).toHaveBeenCalled();
-      expect(result).toBe(false);
-    });
-  });
-
-  describe("authenticatedFetch", () => {
-    it("should make a successful request with valid token", async () => {
-      (getAuthState as jest.Mock).mockResolvedValue({ isAuthenticated: true });
-      (cookies as jest.Mock).mockReturnValue({
-        get: jest.fn((name: string) => ({ value: `${name}-valid-token` })),
-      });
-
-      server.use(
-        http.get("https://example.com", () => {
-          return HttpResponse.json({}, { status: 201 });
-        })
-      );
-
-      const response = await authenticatedFetch("https://example.com");
-      expect(response?.ok).toBe(true);
-    });
-
-    it("should handle 401 Unauthorized response", async () => {
-      (getAuthState as jest.Mock).mockResolvedValue({ isAuthenticated: true });
-      (cookies as jest.Mock).mockReturnValue({
-        get: jest.fn((name: string) => ({ value: `${name}-expired-token` })),
-      });
-
-      server.use(
-        http.get("https://example.com", () => {
-          return HttpResponse.json({}, { status: 401 });
-        })
-      );
-
-      const response = await authenticatedFetch("https://example.com");
-      expect(clearAuth).toHaveBeenCalled();
-      expect(response).toBeNull();
-    });
-  });
-
   describe("signUpAction", () => {
     it("should handle successful sign-up", async () => {
       const formData = new FormData();
       formData.append("name", "John Doe");
-      formData.append("nickName", "John");
+      formData.append("nickname", "John");
       formData.append("email", "john@example.com");
       formData.append("password", "password123");
 
@@ -120,14 +68,14 @@ describe("Actions Module", () => {
     it("should handle failed sign-up due to invalid fields", async () => {
       const formData = new FormData();
       formData.append("name", "");
-      formData.append("nickName", "");
+      formData.append("nickname", "");
       formData.append("email", "invalid-email");
       formData.append("password", "short");
 
       const result = await signUpAction({}, formData);
 
       expect(result.errors?.name).toBeDefined();
-      expect(result.errors?.nickName).toBeDefined();
+      expect(result.errors?.nickname).toBeDefined();
       expect(result.errors?.email).toBeDefined();
       expect(result.errors?.password).toBeDefined();
       expect(result.message).toBe("Missing Fields. Failed to Sign Up.");
@@ -151,7 +99,7 @@ describe("Actions Module", () => {
               access_token: "valid-access-token",
               refresh_token: "valid-refresh-token",
               name: "John Doe",
-              nickName: "John",
+              nickname: "John",
               email: "john@example.com",
             },
             { status: 200 }
@@ -178,7 +126,7 @@ describe("Actions Module", () => {
         expect.any(Object)
       );
       expect(cookieStore.set).toHaveBeenCalledWith(
-        "nickName",
+        "nickname",
         "John",
         expect.any(Object)
       );
@@ -259,7 +207,7 @@ describe("Actions Module", () => {
         title: "Post 1",
         content: "Content of Post 1",
         videoUrl: "https://example.com/video1",
-        nickName: "UserA",
+        nickname: "UserA",
         createdAt: "2023-10-01T12:00:00Z",
         updatedAt: "2023-10-01T12:00:00Z",
       };
@@ -331,7 +279,6 @@ describe("Actions Module", () => {
 
       await CreatePost({}, formData);
 
-      expect(revalidatePath).toHaveBeenCalledWith("/posts");
       expect(redirect).toHaveBeenCalledWith("/posts");
     });
 
@@ -411,7 +358,6 @@ describe("Actions Module", () => {
       await DeletePost(postId);
 
       // Verify revalidation and redirection
-      expect(revalidatePath).toHaveBeenCalledWith("/posts");
       expect(redirect).toHaveBeenCalledWith("/posts");
     });
 
@@ -432,8 +378,7 @@ describe("Actions Module", () => {
 
       // Verify logout and redirection to login page
       expect(clearAuth).toHaveBeenCalled();
-      expect(revalidatePath).toHaveBeenCalledWith("/");
-      expect(redirect).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/login");
     });
 
     it("should handle unexpected errors during post deletion", async () => {
@@ -451,10 +396,9 @@ describe("Actions Module", () => {
 
       await DeletePost(postId);
 
-      // Verify logout and redirection to home page
+      // Verify logout and redirection to login page
       expect(clearAuth).toHaveBeenCalled();
-      expect(revalidatePath).toHaveBeenCalledWith("/");
-      expect(redirect).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/login");
     });
 
     it("should handle invalid post ID gracefully", async () => {
@@ -472,10 +416,9 @@ describe("Actions Module", () => {
 
       await DeletePost(postId);
 
-      // Verify logout and redirection to home page
+      // Verify logout and redirection to login page
       expect(clearAuth).toHaveBeenCalled();
-      expect(revalidatePath).toHaveBeenCalledWith("/");
-      expect(redirect).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/login");
     });
   });
 
@@ -514,11 +457,10 @@ describe("Actions Module", () => {
 
       await EditPost(1, {}, formData);
 
-      expect(revalidatePath).toHaveBeenCalledWith("/posts");
       expect(redirect).toHaveBeenCalledWith("/posts");
     });
 
-    it("should omit videoUrl when empty", async () => {
+    it("should be able to omit videoUrl when empty", async () => {
       const formData = new FormData();
       formData.append("title", "Updated Title");
       formData.append("content", "Updated content");
@@ -561,7 +503,6 @@ describe("Actions Module", () => {
         content: "Updated content",
       });
       expect(capturedBody.videoUrl).toBeUndefined();
-      expect(revalidatePath).toHaveBeenCalledWith("/posts");
       expect(redirect).toHaveBeenCalledWith("/posts");
     });
 
@@ -616,6 +557,62 @@ describe("Actions Module", () => {
       const result = await EditPost(1, {}, formData);
 
       expect(result.message).toBe("Edit post failed.");
+    });
+  });
+
+  describe("DeleteUser", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it("should delete a user successfully and redirect to /", async () => {
+      // Mock the server response for a successful DELETE request
+      server.use(
+        http.delete(`${serverAddress}/users`, () => {
+          return HttpResponse.json(
+            { message: "Successfully deleted account" },
+            { status: 200 }
+          );
+        })
+      );
+
+      await DeleteUser();
+
+      // Validation of functions that run when successfully progressed
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/");
+    });
+
+    it("should handle unauthorized access during user deletion", async () => {
+      // Mock the server response for a 401 Unauthorized error
+      server.use(
+        http.delete(`${serverAddress}/users`, () => {
+          return HttpResponse.json(
+            { statusCode: 401, message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+
+      await DeleteUser();
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+
+    it("should handle unexpected errors during user deletion", async () => {
+      // Mock the server response for a 500 Internal Server Error
+      server.use(
+        http.delete(`${serverAddress}/users`, () => {
+          return HttpResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+          );
+        })
+      );
+
+      expect(DeleteUser()).rejects.toThrow();
     });
   });
 });

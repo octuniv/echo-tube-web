@@ -10,7 +10,7 @@ const authFile = path.join(__dirname, "./.auth/user.json");
 
 const account = {
   name: process.env.tester_name as string,
-  nickName: process.env.tester_nickName as string,
+  nickname: process.env.tester_nickname as string,
   email: process.env.tester_email as string,
   password: process.env.tester_password as string,
 } satisfies User;

@@ -4,7 +4,7 @@ import { User } from "@/lib/definition";
 
 const authTestAccount = {
   name: "authTest",
-  nickName: "authTest",
+  nickname: "authTest",
   email: "authTest@test.com",
   password: "authTest",
 } satisfies User;
@@ -27,7 +27,7 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickName", "email"].forEach(
+      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
         (name) =>
           expect(
             insertedCookies.find((cookie) => cookie.name === name)
@@ -125,7 +125,7 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickName", "email"].forEach(
+      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
         (name) =>
           expect(
             insertedCookies.find((cookie) => cookie.name === name)
@@ -200,8 +200,8 @@ test.describe("Auth Test", () => {
       await deleteButton.click();
 
       // 모든 상태 초기화 확인
-      // 페이지 홈으로 변경되었는지 확인
-      await page.waitForURL("/", { timeout: 10000 });
+      // 로그인 페이지로 변경되었는지 확인
+      await page.waitForURL("/login", { timeout: 10000 });
 
       // 모든 쿠키 삭제되었는지 확인
       const remainingCookies = await page.context().cookies();
@@ -217,7 +217,7 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickName", "email"].forEach(
+      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
         (name) =>
           expect(
             insertedCookies.find((cookie) => cookie.name === name)

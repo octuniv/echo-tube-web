@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export interface User {
   name: string;
-  nickName: string;
+  nickname: string;
   email: string;
   password: string;
 }
@@ -14,16 +14,16 @@ export interface UserState {
   message?: string | null;
 }
 
-export type LoginInfo = Omit<User, "name" | "nickName">;
-
 export const userSchema = z.object({
   name: z.string().min(1, { message: "Please enter your valid name." }),
-  nickName: z.string().min(1, { message: "Please enter your nickName." }),
+  nickname: z.string().min(1, { message: "Please enter your nickname." }),
   email: z.string().email({ message: "This email is invalid" }),
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters" }),
 });
+
+export type LoginInfo = Omit<User, "name" | "nickname">;
 
 export interface LoginInfoState {
   errors?: {
@@ -32,12 +32,25 @@ export interface LoginInfoState {
   message?: string | null;
 }
 
+export const LoginInfoSchema = userSchema.omit({ name: true, nickname: true });
+
+export type NicknameUpdateInfo = Pick<User, "nickname">;
+
+export interface NicknameUpdateState {
+  errors?: {
+    [key in keyof NicknameUpdateInfo]?: string[];
+  };
+  message?: string | null;
+}
+
+export const nicknameUpdateSchema = userSchema.pick({ nickname: true });
+
 export interface PostDto {
   id: number;
   title: string;
   content: string;
   videoUrl?: string;
-  nickName: string;
+  nickname: string;
   createdAt: string;
   updatedAt: string;
 }

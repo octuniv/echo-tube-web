@@ -15,7 +15,7 @@ export const signUpAndLogin = async ({
   await page.goto("/signup");
 
   await page.fill('input[name="name"]', account.name);
-  await page.fill('input[name="nickName"]', account.nickName);
+  await page.fill('input[name="nickname"]', account.nickname);
   await page.fill('input[name="email"]', account.email);
   await page.fill('input[name="password"]', account.password);
   await page.click('button[type="submit"]');
@@ -34,7 +34,7 @@ export const signUpAndLogin = async ({
   await page.waitForURL("/dashboard", { timeout: 5000 });
 
   const cookies = await context.cookies();
-  ["access_token", "refresh_token", "name", "nickName", "email"].forEach(
+  ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
     (cookieName) => {
       const cookie = cookies.find((cookie) => cookie.name === cookieName);
       expect(cookie).toBeDefined();

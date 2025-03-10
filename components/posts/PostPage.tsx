@@ -25,7 +25,7 @@ export default function PostPage({ post, isEditable }: PostPageProps) {
         className="flex items-center text-sm text-gray-500 mb-6"
         aria-label="작성자 및 작성일 정보"
       >
-        <span className="mr-2">작성자: {post.nickName}</span>
+        <span className="mr-2">작성자: {post.nickname}</span>
         <span>작성일: {new Date(post.createdAt).toLocaleDateString()}</span>
       </div>
 

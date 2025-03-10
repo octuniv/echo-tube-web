@@ -18,8 +18,8 @@ export default async function Page({ params }: PostPageProps) {
   }
 
   const post = await FetchPost(postId);
-  const { nickName } = await userStatus();
-  const isEditable = nickName === post.nickName;
+  const { nickname } = await userStatus();
+  const isEditable = nickname === post.nickname;
 
   return <PostPage post={post} isEditable={isEditable} />;
 }

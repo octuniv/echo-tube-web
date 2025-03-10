@@ -7,7 +7,7 @@ export default function VideoCard({
   const {
     id,
     title,
-    nickName: author,
+    nickname: author,
     createdAt: date,
     videoUrl: link,
   } = video;

@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  LoginInfoSchema,
   LoginInfoState,
   PostDto,
   postSchema,
@@ -11,60 +12,15 @@ import {
 import { serverAddress } from "./util";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { clearAuth, getAuthState } from "./authState";
+import { clearAuth } from "./authState";
+import { authenticatedFetch } from "./authService";
 import { revalidatePath } from "next/cache";
-
-export const ensureAuthenticated = async (): Promise<boolean> => {
-  const authState = await getAuthState();
-
-  if (!authState.isAuthenticated) {
-    // 인증 실패 시 인증 정보 초기화
-    await clearAuth();
-    return false;
-  }
-
-  return true;
-};
-
-export const authenticatedFetch = async (
-  url: string,
-  options: RequestInit = {}
-): Promise<Response | null> => {
-  const isAuthenticated = await ensureAuthenticated();
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("access_token")?.value;
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (response.status === 401) {
-      // 401 Unauthorized: 토큰이 만료되었거나 유효하지 않음
-      await clearAuth();
-      return null;
-    }
-
-    return response;
-  } catch (error) {
-    console.error("Failed to make authenticated request:", error);
-    return null;
-  }
-};
+import { isCustomError } from "./errors";
 
 export async function signUpAction(prevState: UserState, formData: FormData) {
   const validatedFields = userSchema.safeParse({
     name: formData.get("name"),
-    nickName: formData.get("nickName"),
+    nickname: formData.get("nickname"),
     email: formData.get("email"),
     password: formData.get("password"),
   });
@@ -108,8 +64,6 @@ export async function signUpAction(prevState: UserState, formData: FormData) {
   redirect("/login");
 }
 
-const LoginInfoSchema = userSchema.omit({ name: true, nickName: true });
-
 export async function LoginAction(
   prevState: LoginInfoState,
   formData: FormData
@@ -143,7 +97,7 @@ export async function LoginAction(
       };
     }
 
-    const { access_token, refresh_token, name, nickName, email } =
+    const { access_token, refresh_token, name, nickname, email } =
       await response.json();
 
     const cookieStore = await cookies();
@@ -169,7 +123,7 @@ export async function LoginAction(
       ...baseCookieOptions,
       maxAge: 60 * 60 * 24 * 7, // 7일 동안 유효
     });
-    cookieStore.set("nickName", nickName, {
+    cookieStore.set("nickname", nickname, {
       ...baseCookieOptions,
       maxAge: 60 * 60 * 24 * 7, // 7일 동안 유효
     });
@@ -253,77 +207,53 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
   }
 
   const reqAddress = serverAddress + "/posts";
-
   try {
-    const response = await authenticatedFetch(reqAddress, {
+    await authenticatedFetch(reqAddress, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(params),
     });
-
-    if (!response) {
+  } catch (error) {
+    if (isCustomError(error) && error.type === "InvalidJwtToken") {
       authenticatedFailure = true;
     } else {
-      authenticatedFailure = false;
-
-      const result = await response.json();
-
-      if (!response.ok || result?.error) {
-        if (result?.statusCode === 400) {
-          return {
-            message: `${result.message}`,
-          };
-        } else {
-          throw new Error(result.error);
-        }
-      }
+      return {
+        message: "Create post failed.",
+      };
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    return {
-      message: "Create post failed.",
-    };
   }
-
   if (authenticatedFailure) {
+    await clearAuth();
     redirect("/login");
   } else {
-    revalidatePath("/posts");
     redirect("/posts");
   }
 }
 
 export async function DeletePost(id: number) {
+  let authenticatedFailure: boolean = false;
   const reqAddress = serverAddress + `/posts/${id}`;
 
   try {
-    const response = await authenticatedFetch(reqAddress, {
+    await authenticatedFetch(reqAddress, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
       },
     });
-
-    if (!response) {
-      throw new Error("Internal Server Error");
-    }
-
-    const result = await response.json();
-
-    if (!response.ok || result?.error) {
-      throw new Error(result?.error);
-    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    await clearAuth();
-    revalidatePath("/");
-    redirect("/");
+    authenticatedFailure = true;
   }
 
-  revalidatePath("/posts");
-  redirect("/posts");
+  if (authenticatedFailure) {
+    await clearAuth();
+    redirect("/login");
+  } else {
+    redirect("/posts");
+  }
 }
 
 export async function EditPost(
@@ -355,41 +285,54 @@ export async function EditPost(
   const reqAddress = serverAddress + `/posts/${id}`;
 
   try {
-    const response = await authenticatedFetch(reqAddress, {
+    await authenticatedFetch(reqAddress, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(params),
     });
-
-    if (!response) {
+  } catch (error) {
+    if (isCustomError(error) && error.type === "InvalidJwtToken") {
       authenticatedFailure = true;
     } else {
-      authenticatedFailure = false;
-      const result = await response.json();
-
-      if (!response.ok || result?.error) {
-        if (result?.statusCode === 400) {
-          return {
-            message: `${result.message}`,
-          };
-        } else {
-          throw new Error(result.error);
-        }
-      }
+      return {
+        message: "Edit post failed.",
+      };
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    return {
-      message: "Edit post failed.",
-    };
   }
 
   if (authenticatedFailure) {
+    await clearAuth();
     redirect("/login");
   } else {
-    revalidatePath("/posts");
     redirect("/posts");
+  }
+}
+
+export async function DeleteUser(): Promise<void> {
+  let authenticatedFailure: boolean = false;
+  const reqAddress = `${serverAddress}/users`;
+  try {
+    await authenticatedFetch(reqAddress, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error) {
+    if (isCustomError(error) && error.type === "InvalidJwtToken") {
+      authenticatedFailure = true;
+    } else {
+      throw error;
+    }
+  }
+
+  await clearAuth();
+  if (authenticatedFailure) {
+    redirect("/login");
+  } else {
+    revalidatePath("/");
+    redirect("/");
   }
 }
