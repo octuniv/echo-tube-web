@@ -52,11 +52,6 @@ export const server = setupServer(
     );
   }),
 
-  // Mock API for token validation
-  http.get(`${serverAddress}/auth/validate-token`, () => {
-    return HttpResponse.json({ valid: true }, { status: 200 });
-  }),
-
   // Mock API for token refresh
   http.post(`${serverAddress}/auth/refresh`, () => {
     return HttpResponse.json(
@@ -93,11 +88,6 @@ export const server = setupServer(
     }
 
     return HttpResponse.json({ error: "Post not found" }, { status: 404 });
-  }),
-
-  // Mock API for authenicatedFetch
-  http.get("https://example.com", () => {
-    return HttpResponse.json({}, { status: 200 });
   }),
 
   // Mock API for delete post
