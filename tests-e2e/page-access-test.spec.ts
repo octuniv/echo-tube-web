@@ -52,4 +52,19 @@ test.describe("Page-to-page movement test", () => {
     await page.goto("/posts/create");
     await expect(page).toHaveURL("/login");
   });
+
+  test.describe("Settings Page can't access (if you don't login)", () => {
+    test("'/settings' page can't access", async ({ page }) => {
+      await page.goto("/settings");
+      await expect(page).toHaveURL("/");
+    });
+    test("'/settings/nickname' page can't access", async ({ page }) => {
+      await page.goto("/settings/nickname");
+      await expect(page).toHaveURL("/");
+    });
+    test("'/settings/password' page can't access", async ({ page }) => {
+      await page.goto("/settings/password");
+      await expect(page).toHaveURL("/");
+    });
+  });
 });

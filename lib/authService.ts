@@ -66,6 +66,7 @@ export async function authenticatedFetch(
 ) {
   const { access_token: token } = await getTokens(await cookies());
   const InvalidJwtTokenError = createError.bind(null, "InvalidJwtToken");
+  const ConflictedValueError = createError.bind(null, "ConflictError");
 
   // Send the initial request with the current token
   let response = await fetch(url, {
@@ -108,6 +109,10 @@ export async function authenticatedFetch(
 
   if (!response.ok) {
     // Handle other HTTP errors
+    if (Number(response.status) === 409) {
+      const responseBody = await response.json();
+      throw ConflictedValueError(responseBody.message || "Conflict occurred");
+    }
     throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
   } else {
     return response;

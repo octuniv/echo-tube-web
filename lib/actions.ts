@@ -3,13 +3,15 @@
 import {
   LoginInfoSchema,
   LoginInfoState,
+  nicknameUpdateSchema,
+  NicknameUpdateState,
   PostDto,
   postSchema,
   PostState,
   userSchema,
   UserState,
 } from "./definition";
-import { serverAddress } from "./util";
+import { baseCookieOptions, serverAddress } from "./util";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { clearAuth } from "./authState";
@@ -46,10 +48,24 @@ export async function signUpAction(prevState: UserState, formData: FormData) {
     const result = await response.json();
 
     if (!response.ok || result?.error) {
-      if (result.error === "Bad Request" || result?.statusCode === 400) {
-        return {
-          message: `${result.message}`,
-        };
+      if (result.error === "Conflict" || result?.statusCode === 409) {
+        if (String(result.message).startsWith("This nickname")) {
+          return {
+            message: "Invalid field value.",
+            errors: {
+              nickname: ["This nickname currently exists."],
+            },
+          };
+        } else if (String(result.message).startsWith("This email")) {
+          return {
+            message: "Invalid field value.",
+            errors: {
+              email: ["This email currently exists."],
+            },
+          };
+        } else {
+          throw new Error(result.error);
+        }
       } else {
         throw new Error(result.error);
       }
@@ -57,7 +73,7 @@ export async function signUpAction(prevState: UserState, formData: FormData) {
   } catch (error) {
     console.error(error);
     return {
-      message: "Login failed",
+      message: "Signup failed",
     };
   }
 
@@ -101,14 +117,6 @@ export async function LoginAction(
       await response.json();
 
     const cookieStore = await cookies();
-
-    const baseCookieOptions = {
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax" as const,
-      secure: process.env.NODE_ENV === "production",
-      domain: "localhost",
-    };
 
     cookieStore.set("access_token", access_token, {
       ...baseCookieOptions,
@@ -334,5 +342,72 @@ export async function DeleteUser(): Promise<void> {
   } else {
     revalidatePath("/");
     redirect("/");
+  }
+}
+
+export async function UpdateNicknameAction(
+  prevState: NicknameUpdateState,
+  formData: FormData
+) {
+  let authenticatedFailure: boolean = false;
+  const validatedFields = nicknameUpdateSchema.safeParse({
+    nickname: formData.get("nickname"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing Fields. Failed to update nickname.",
+    };
+  }
+
+  const params = validatedFields.data;
+  const reqAddress = `${serverAddress}/users/nickname`;
+  try {
+    await authenticatedFetch(reqAddress, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    });
+  } catch (error) {
+    if (!isCustomError(error)) {
+      return {
+        message: "Nickname update failed. Please try again a little later",
+      };
+    } else {
+      switch (error.type) {
+        case "InvalidJwtToken":
+          authenticatedFailure = true;
+          break;
+
+        case "ConflictError":
+          return {
+            message: error.message || "Duplicate value detected",
+            errors: {
+              nickname: ["The nickname is already in use"],
+            },
+          };
+
+        default:
+          return {
+            message: "Fault found on that page",
+          };
+      }
+    }
+  }
+
+  if (authenticatedFailure) {
+    await clearAuth();
+    redirect("/login");
+  } else {
+    const cookieStore = await cookies();
+    cookieStore.set("nickname", params.nickname, {
+      ...baseCookieOptions,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
   }
 }

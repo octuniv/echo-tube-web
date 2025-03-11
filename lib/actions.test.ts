@@ -8,6 +8,7 @@ import {
   DeletePost,
   EditPost,
   DeleteUser,
+  UpdateNicknameAction,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -16,6 +17,7 @@ import { mockPosts, server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "./util";
 import { revalidatePath } from "next/cache";
+import { createError } from "./errors";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -79,6 +81,66 @@ describe("Actions Module", () => {
       expect(result.errors?.email).toBeDefined();
       expect(result.errors?.password).toBeDefined();
       expect(result.message).toBe("Missing Fields. Failed to Sign Up.");
+    });
+
+    it("should handle to input duplicated nickname", async () => {
+      const formData = new FormData();
+      formData.append("name", "John Doe");
+      formData.append("nickname", "Duplicated");
+      formData.append("email", "john@example.com");
+      formData.append("password", "password123");
+
+      server.use(
+        http.post(`${serverAddress}/users`, () => {
+          return HttpResponse.json(
+            {
+              message: "This nickname Duplicated is already existed!",
+              error: "Conflict",
+              statusCode: 409,
+            },
+            { status: 409 }
+          );
+        })
+      );
+
+      const result = await signUpAction({}, formData);
+
+      expect(result).toEqual({
+        message: "Invalid field value.",
+        errors: {
+          nickname: ["This nickname currently exists."],
+        },
+      });
+    });
+
+    it("should handle to input duplicated email", async () => {
+      const formData = new FormData();
+      formData.append("name", "John Doe");
+      formData.append("nickname", "John");
+      formData.append("email", "duplicated@example.com");
+      formData.append("password", "password123");
+
+      server.use(
+        http.post(`${serverAddress}/users`, () => {
+          return HttpResponse.json(
+            {
+              message: "This email duplicated@example.com is already existed!",
+              error: "Conflict",
+              statusCode: 409,
+            },
+            { status: 409 }
+          );
+        })
+      );
+
+      const result = await signUpAction({}, formData);
+
+      expect(result).toEqual({
+        message: "Invalid field value.",
+        errors: {
+          email: ["This email currently exists."],
+        },
+      });
     });
   });
 
@@ -613,6 +675,108 @@ describe("Actions Module", () => {
       );
 
       expect(DeleteUser()).rejects.toThrow();
+    });
+  });
+
+  describe("UpdateNicknameAction", () => {
+    it("should update nickname successfully", async () => {
+      (cookies as jest.Mock).mockResolvedValue({
+        get: jest.fn((key: string) => {
+          if (key === "access_token") return { value: "valid-access-token" };
+          if (key === "refresh_token") return { value: "valid-refresh-token" };
+          return undefined;
+        }),
+        set: jest.fn(),
+      });
+
+      const formData = new FormData();
+      formData.append("nickname", "newnickname");
+
+      server.use(
+        http.patch(`${serverAddress}/users/nickname`, () => {
+          return HttpResponse.json(
+            { message: "Nickname change successful." },
+            { status: 200 }
+          );
+        })
+      );
+
+      const res = await UpdateNicknameAction({}, formData);
+      const cookieStore = await cookies();
+
+      expect(res).toBeUndefined();
+      expect(cookieStore.set).toHaveBeenCalledWith(
+        "nickname",
+        "newnickname",
+        expect.any(Object)
+      );
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
+      expect(redirect).toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("should handle unauthorized request about updating nickname", async () => {
+      const formData = new FormData();
+      formData.append("nickname", "newnickname");
+
+      server.use(
+        http.patch(`${serverAddress}/users/nickname`, () => {
+          return HttpResponse.json(
+            { error: "Invalid credentials" },
+            { status: 401 }
+          );
+        })
+      );
+
+      const res = await UpdateNicknameAction({}, formData);
+      expect(res).toBeUndefined();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+
+    it("should handle conflict error when nickname already exists", async () => {
+      const duplicatedNick = "duplicated";
+      const formData = new FormData();
+      formData.append("nickname", duplicatedNick);
+
+      const expectedError = createError(
+        "ConflictError",
+        `This nickname ${duplicatedNick} is already existed!`
+      );
+
+      server.use(
+        http.patch(`${serverAddress}/users/nickname`, () => {
+          return HttpResponse.json(
+            { message: `This nickname ${duplicatedNick} is already existed!` },
+            { status: 409 }
+          );
+        })
+      );
+
+      const res = await UpdateNicknameAction({}, formData);
+      expect(res).toMatchObject({
+        message: expectedError.message,
+        errors: {
+          nickname: ["The nickname is already in use"],
+        },
+      });
+    });
+
+    it("should handle network errors", async () => {
+      const formData = new FormData();
+      formData.append("nickname", "newnickname");
+      server.use(
+        http.patch(`${serverAddress}/users/nickname`, () => {
+          return HttpResponse.json(
+            { message: `Internal Server Error` },
+            { status: 500 }
+          );
+        })
+      );
+
+      const res = await UpdateNicknameAction({}, formData);
+      expect(res).toMatchObject({
+        message: "Nickname update failed. Please try again a little later",
+      });
     });
   });
 });

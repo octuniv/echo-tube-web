@@ -60,9 +60,11 @@ test.describe("SignUp Form E2E Tests", () => {
 
     await page.click('button[type="submit"]');
 
-    await expect(page.locator("p.text-red-500")).toHaveText(
-      `This email john.doe@example.com is already existed!`
+    await expect(page.locator("#email-error")).toHaveText(
+      "This email currently exists."
     );
+
+    await expect(page.getByText("Invalid field value.")).toBeVisible();
   });
 
   test("should display server error message on failure if you put an nickname that already exists on the server ", async ({
@@ -75,8 +77,10 @@ test.describe("SignUp Form E2E Tests", () => {
 
     await page.click('button[type="submit"]');
 
-    await expect(page.locator("p.text-red-500")).toHaveText(
-      `This nickname John is already existed!`
+    await expect(page.locator("#nickname-error")).toHaveText(
+      "This nickname currently exists."
     );
+
+    await expect(page.getByText("Invalid field value.")).toBeVisible();
   });
 });

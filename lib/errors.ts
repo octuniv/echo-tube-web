@@ -1,24 +1,28 @@
-type ErrorType = "InvalidJwtToken" | "HTTPRequest";
+type ErrorType = "InvalidJwtToken" | "ConflictError";
+
+type ErrorTypeMap = {
+  ConflictError: ConflictError;
+  InvalidJwtToken: InvalidJwtTokenError;
+};
 
 interface CustomError {
   type: ErrorType;
   message: string;
 }
 
-export interface InvalidJwtTokenError extends CustomError {
-  type: "InvalidJwtToken";
+export interface ConflictError extends CustomError {
+  type: "ConflictError";
 }
 
-export interface HttpRequestError extends CustomError {
-  type: "HTTPRequest";
+export interface InvalidJwtTokenError extends CustomError {
+  type: "InvalidJwtToken";
 }
 
 export const createError = <T extends ErrorType>(
   type: T,
   message: string
-): Error & Extract<CustomError, { type: T }> => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const error = new Error(message) as any;
+): Error & ErrorTypeMap[T] => {
+  const error = new Error(message) as Error & ErrorTypeMap[T];
   error.type = type;
   return error;
 };

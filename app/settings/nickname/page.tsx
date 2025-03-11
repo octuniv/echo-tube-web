@@ -1,4 +1,4 @@
-import { ChangeNicknamePage } from "@/components/settings/nickname/ChangeNicknamePage";
+import ChangeNicknamePage from "@/components/settings/nickname/ChangeNicknamePage";
 import { loginStatus } from "@/lib/authState";
 import { redirect } from "next/navigation";
 

@@ -131,12 +131,17 @@ describe("authenticatedFetch", () => {
       })
     );
 
+    const expectedError = createError(
+      "InvalidJwtToken",
+      "Refreshing Token causes error."
+    );
     // Act & Assert
     await expect(
       authenticatedFetch(`${serverAddress}/test-endpoint`)
-    ).rejects.toThrow(
-      createError("InvalidJwtToken", "Refreshing Token causes error.")
-    );
+    ).rejects.toMatchObject({
+      type: expectedError.type,
+      message: expectedError.message,
+    });
   });
 
   it("should throw error for non-401 HTTP errors after token refresh", async () => {
@@ -184,5 +189,25 @@ describe("authenticatedFetch", () => {
     await expect(
       authenticatedFetch(`${serverAddress}/test-endpoint`)
     ).rejects.toThrow("HTTP Error: 403 - Forbidden");
+  });
+
+  it("should throw ConflictCustomError for 409 conflict error", async () => {
+    const expectedError = createError("ConflictError", "This conflict error");
+
+    server.use(
+      http.get(`${serverAddress}/test-endpoint`, () => {
+        return HttpResponse.json(
+          { message: expectedError.message },
+          { status: 409 }
+        );
+      })
+    );
+
+    await expect(
+      authenticatedFetch(`${serverAddress}/test-endpoint`)
+    ).rejects.toMatchObject({
+      type: expectedError.type,
+      message: expectedError.message,
+    });
   });
 });
