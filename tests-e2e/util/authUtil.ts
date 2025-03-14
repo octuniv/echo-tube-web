@@ -16,8 +16,17 @@ export const signUpAndLogin = async ({
 
   await page.fill('input[name="name"]', account.name);
   await page.fill('input[name="nickname"]', account.nickname);
+  await page.getByRole("button", { name: "중복 확인" }).nth(0).click();
   await page.fill('input[name="email"]', account.email);
+  await page.getByRole("button", { name: "중복 확인" }).nth(1).click();
   await page.fill('input[name="password"]', account.password);
+
+  const nicknameCheck = page.locator('[aria-labelledby="nickname-validation"]');
+  const emailCheck = page.locator('[aria-labelledby="email-validation"]');
+
+  await expect(nicknameCheck).toHaveText("사용 가능");
+  await expect(emailCheck).toHaveText("사용 가능");
+
   await page.click('button[type="submit"]');
 
   await page.waitForTimeout(1000);

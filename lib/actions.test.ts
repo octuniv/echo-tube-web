@@ -9,6 +9,8 @@ import {
   EditPost,
   DeleteUser,
   UpdateNicknameAction,
+  checkEmailExists,
+  checkNicknameExists,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -778,5 +780,61 @@ describe("Actions Module", () => {
         message: "Nickname update failed. Please try again a little later",
       });
     });
+  });
+});
+
+describe("CheckEmailExist", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should check userExist by email successfully", async () => {
+    server.use(
+      http.post(`${serverAddress}/users/check-email`, () => {
+        return HttpResponse.json({ exists: true }, { status: 200 });
+      })
+    );
+
+    const res = await checkEmailExists("exists@email.com");
+    expect(res).toEqual({ exists: true });
+  });
+
+  it("should check non-exists user by email successfully", async () => {
+    server.use(
+      http.post(`${serverAddress}/users/check-email`, () => {
+        return HttpResponse.json({ exists: false }, { status: 200 });
+      })
+    );
+
+    const res = await checkEmailExists("non-exists@email.com");
+    expect(res).toEqual({ exists: false });
+  });
+});
+
+describe("CheckNicknameExist", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should check userExist by nickname successfully", async () => {
+    server.use(
+      http.post(`${serverAddress}/users/check-nickname`, () => {
+        return HttpResponse.json({ exists: true }, { status: 200 });
+      })
+    );
+
+    const res = await checkNicknameExists("exists");
+    expect(res).toEqual({ exists: true });
+  });
+
+  it("should check non-exists user by nickname successfully", async () => {
+    server.use(
+      http.post(`${serverAddress}/users/check-nickname`, () => {
+        return HttpResponse.json({ exists: false }, { status: 200 });
+      })
+    );
+
+    const res = await checkNicknameExists("non-exists");
+    expect(res).toEqual({ exists: false });
   });
 });

@@ -125,5 +125,15 @@ export const server = setupServer(
   // Mock API for testing authenticatedFetch
   http.get(`${serverAddress}/test-endpoint`, () => {
     return HttpResponse.json({ data: "success" }, { status: 200 });
+  }),
+
+  // Mock API for testing checkEmailExists
+  http.post(`${serverAddress}/users/check-email`, () => {
+    return HttpResponse.json({ exists: true }, { status: 200 });
+  }),
+
+  // Mock API for testing checkNicknameExists
+  http.post(`${serverAddress}/users/check-nickname`, () => {
+    return HttpResponse.json({ exists: true }, { status: 200 });
   })
 );

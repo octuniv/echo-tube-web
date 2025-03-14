@@ -2,10 +2,12 @@ import { JSX } from "react";
 
 export function LabelInput({
   name,
+  className,
   ...rest
 }: {
   name: string;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
+} & React.InputHTMLAttributes<HTMLInputElement> &
+  React.RefAttributes<HTMLInputElement>) {
   return (
     <div key={name}>
       <label htmlFor={name} className="block text-sm font-medium text-gray-700">
@@ -15,7 +17,9 @@ export function LabelInput({
         type="text"
         name={name}
         id={name}
-        className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className ?? undefined
+        }`}
         {...rest}
       />
     </div>

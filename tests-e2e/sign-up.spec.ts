@@ -45,6 +45,17 @@ test.describe("SignUp Form E2E Tests", () => {
     await page.fill('input[name="email"]', "john.doe@example.com");
     await page.fill('input[name="password"]', "password123");
 
+    await page.getByRole("button", { name: "중복 확인" }).nth(0).click();
+    await page.getByRole("button", { name: "중복 확인" }).nth(1).click();
+
+    const nicknameCheck = page.locator(
+      '[aria-labelledby="nickname-validation"]'
+    );
+    const emailCheck = page.locator('[aria-labelledby="email-validation"]');
+
+    await expect(nicknameCheck).toHaveText("사용 가능");
+    await expect(emailCheck).toHaveText("사용 가능");
+
     await page.click('button[type="submit"]');
 
     await expect(page).toHaveURL("/login");
@@ -82,5 +93,37 @@ test.describe("SignUp Form E2E Tests", () => {
     );
 
     await expect(page.getByText("Invalid field value.")).toBeVisible();
+  });
+
+  test("should display 'Enter a value' text if the duplicate confirmation button is pressed while the input space for duplicate confirmation is empty.", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "중복 확인" }).nth(0).click();
+    await page.getByRole("button", { name: "중복 확인" }).nth(1).click();
+
+    const nicknameCheck = page.locator(
+      '[aria-labelledby="nickname-validation"]'
+    );
+    const emailCheck = page.locator('[aria-labelledby="email-validation"]');
+
+    await expect(nicknameCheck).toHaveText("값을 입력해주세요");
+    await expect(emailCheck).toHaveText("값을 입력해주세요");
+  });
+
+  test("should display text that is already in use when a duplicate confirmation button is pressed and duplicate input values are entered.", async ({
+    page,
+  }) => {
+    await page.fill('input[name="nickname"]', "John");
+    await page.fill('input[name="email"]', "john.doe@example.com");
+    await page.getByRole("button", { name: "중복 확인" }).nth(0).click();
+    await page.getByRole("button", { name: "중복 확인" }).nth(1).click();
+
+    const nicknameCheck = page.locator(
+      '[aria-labelledby="nickname-validation"]'
+    );
+    const emailCheck = page.locator('[aria-labelledby="email-validation"]');
+
+    await expect(nicknameCheck).toHaveText("이미 사용 중");
+    await expect(emailCheck).toHaveText("이미 사용 중");
   });
 });

@@ -411,3 +411,50 @@ export async function UpdateNicknameAction(
     redirect("/dashboard");
   }
 }
+
+export async function checkEmailExists(value: string) {
+  const reqAddress = `${serverAddress}/users/check-email`;
+
+  try {
+    const response = await fetch(reqAddress, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: value }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || result?.error) {
+      throw new Error(result.error);
+    }
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function checkNicknameExists(value: string) {
+  const reqAddress = `${serverAddress}/users/check-nickname`;
+
+  try {
+    const response = await fetch(reqAddress, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ nickname: value }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || result?.error) {
+      throw new Error(result.error);
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
