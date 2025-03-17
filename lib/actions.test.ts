@@ -11,6 +11,7 @@ import {
   UpdateNicknameAction,
   checkEmailExists,
   checkNicknameExists,
+  UpdatePasswordAction,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -778,6 +779,144 @@ describe("Actions Module", () => {
       const res = await UpdateNicknameAction({}, formData);
       expect(res).toMatchObject({
         message: "Nickname update failed. Please try again a little later",
+      });
+    });
+  });
+
+  describe("UpdatePasswordAction", () => {
+    it("should update password successfully", async () => {
+      (cookies as jest.Mock).mockResolvedValue({
+        get: jest.fn((key: string) => {
+          if (key === "access_token") return { value: "valid-access-token" };
+          if (key === "refresh_token") return { value: "valid-refresh-token" };
+          return undefined;
+        }),
+        set: jest.fn(),
+      });
+
+      const formData = new FormData();
+      formData.append("password", "newpassword");
+      formData.append("confirmPassword", "newpassword");
+
+      server.use(
+        http.patch(`${serverAddress}/users/password`, () => {
+          return HttpResponse.json(
+            { message: "Passcode change successful." },
+            { status: 200 }
+          );
+        })
+      );
+
+      const res = await UpdatePasswordAction({}, formData);
+
+      expect(res).toBeUndefined();
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
+      expect(redirect).toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("should throw error if you don't follow the password standard ", async () => {
+      (cookies as jest.Mock).mockResolvedValue({
+        get: jest.fn((key: string) => {
+          if (key === "access_token") return { value: "valid-access-token" };
+          if (key === "refresh_token") return { value: "valid-refresh-token" };
+          return undefined;
+        }),
+        set: jest.fn(),
+      });
+
+      const formData = new FormData();
+      formData.append("password", "12");
+      formData.append("confirmPassword", "12");
+
+      server.use(
+        http.patch(`${serverAddress}/users/password`, () => {
+          return HttpResponse.json(
+            { message: "Passcode change successful." },
+            { status: 200 }
+          );
+        })
+      );
+
+      const res = await UpdatePasswordAction({}, formData);
+
+      expect(res).toEqual({
+        errors: {
+          password: ["Password must be at least 6 characters"],
+          confirmPassword: ["Password must be at least 6 characters"],
+        },
+        message: "Missing Fields. Failed to update password.",
+      });
+    });
+
+    it("should throw error if the password you entered and the confirmation password do not match", async () => {
+      (cookies as jest.Mock).mockResolvedValue({
+        get: jest.fn((key: string) => {
+          if (key === "access_token") return { value: "valid-access-token" };
+          if (key === "refresh_token") return { value: "valid-refresh-token" };
+          return undefined;
+        }),
+        set: jest.fn(),
+      });
+
+      const formData = new FormData();
+      formData.append("password", "newpassword");
+      formData.append("confirmPassword", "differpassword");
+
+      server.use(
+        http.patch(`${serverAddress}/users/password`, () => {
+          return HttpResponse.json(
+            { message: "Passcode change successful." },
+            { status: 200 }
+          );
+        })
+      );
+
+      const res = await UpdatePasswordAction({}, formData);
+
+      expect(res).toEqual({
+        errors: {
+          confirmPassword: ["The password you entered does not match"],
+        },
+        message: "Missing Fields. Failed to update password.",
+      });
+    });
+
+    it("should handle unauthorized request about updating password", async () => {
+      const formData = new FormData();
+      formData.append("password", "newpassword");
+      formData.append("confirmPassword", "newpassword");
+
+      server.use(
+        http.patch(`${serverAddress}/users/password`, () => {
+          return HttpResponse.json(
+            { error: "Invalid credentials" },
+            { status: 401 }
+          );
+        })
+      );
+
+      const res = await UpdatePasswordAction({}, formData);
+      expect(res).toBeUndefined();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+
+    it("should handle network errors", async () => {
+      const formData = new FormData();
+      formData.append("password", "newpassword");
+      formData.append("confirmPassword", "newpassword");
+      server.use(
+        http.patch(`${serverAddress}/users/password`, () => {
+          return HttpResponse.json(
+            { message: `Internal Server Error` },
+            { status: 500 }
+          );
+        })
+      );
+
+      const res = await UpdatePasswordAction({}, formData);
+      expect(res).toMatchObject({
+        message: "Password update failed. Please try again a little later",
       });
     });
   });

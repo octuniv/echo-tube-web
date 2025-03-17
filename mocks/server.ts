@@ -135,5 +135,13 @@ export const server = setupServer(
   // Mock API for testing checkNicknameExists
   http.post(`${serverAddress}/users/check-nickname`, () => {
     return HttpResponse.json({ exists: true }, { status: 200 });
+  }),
+
+  // Mock API for testing passowrd
+  http.patch(`${serverAddress}/users/check-nickname`, () => {
+    return HttpResponse.json(
+      { message: "Passcode change successful." },
+      { status: 200 }
+    );
   })
 );

@@ -5,6 +5,8 @@ import {
   LoginInfoState,
   nicknameUpdateSchema,
   NicknameUpdateState,
+  PasswordUpdateSchema,
+  PasswordUpdateState,
   PostDto,
   postSchema,
   PostState,
@@ -407,6 +409,61 @@ export async function UpdateNicknameAction(
       ...baseCookieOptions,
       maxAge: 60 * 60 * 24 * 7,
     });
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
+  }
+}
+
+export async function UpdatePasswordAction(
+  prevState: PasswordUpdateState,
+  formData: FormData
+) {
+  let authenticatedFailure: boolean = false;
+  const validatedFields = PasswordUpdateSchema.safeParse({
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing Fields. Failed to update password.",
+    };
+  }
+
+  const params = validatedFields.data;
+  const reqAddress = `${serverAddress}/users/password`;
+  try {
+    await authenticatedFetch(reqAddress, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: params.password }),
+    });
+  } catch (error) {
+    if (!isCustomError(error)) {
+      return {
+        message: "Password update failed. Please try again a little later",
+      };
+    } else {
+      switch (error.type) {
+        case "InvalidJwtToken":
+          authenticatedFailure = true;
+          break;
+
+        default:
+          return {
+            message: "Fault found on that page",
+          };
+      }
+    }
+  }
+
+  if (authenticatedFailure) {
+    await clearAuth();
+    redirect("/login");
+  } else {
     revalidatePath("/dashboard");
     redirect("/dashboard");
   }

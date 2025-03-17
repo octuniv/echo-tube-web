@@ -45,6 +45,31 @@ export interface NicknameUpdateState {
 
 export const nicknameUpdateSchema = userSchema.pick({ nickname: true });
 
+export type PasswordUpdateInfo = Pick<User, "password"> & {
+  confirmPassword: string;
+};
+
+export interface PasswordUpdateState {
+  errors?: {
+    [key in keyof PasswordUpdateInfo]?: string[];
+  };
+  message?: string | null;
+}
+
+export const PasswordUpdateSchema = z
+  .object({
+    password: z
+      .string()
+      .min(6, { message: "Password must be at least 6 characters" }),
+    confirmPassword: z
+      .string()
+      .min(6, { message: "Password must be at least 6 characters" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "The password you entered does not match",
+    path: ["confirmPassword"],
+  });
+
 export interface PostDto {
   id: number;
   title: string;

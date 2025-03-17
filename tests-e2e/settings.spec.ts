@@ -53,9 +53,9 @@ test.describe("Settings Test", () => {
       const updatePasswordLink = page.getByRole("link", {
         name: "비밀번호 변경",
       });
-      const deleteAccountButton = page.getByRole("button", {
-        name: "회원탈퇴",
-      });
+      const deleteAccountButton = page.locator(
+        '[aria-label="DeleteUserButton"]'
+      );
 
       await expect(updateNicknameLink).toBeVisible();
       await expect(updatePasswordLink).toBeVisible();
@@ -74,9 +74,7 @@ test.describe("Settings Test", () => {
             insertedCookies.find((cookie) => cookie.name === name)
           ).toBeDefined()
       );
-    });
 
-    test("should update nickname successfully", async ({ page }) => {
       await page.goto("/settings");
       const updateNicknameLink = page.getByRole("link", {
         name: "닉네임 변경",
@@ -84,6 +82,9 @@ test.describe("Settings Test", () => {
       await updateNicknameLink.click();
 
       expect(page).toHaveURL("/settings/nickname");
+    });
+
+    test("should update nickname successfully", async ({ page }) => {
       await page.fill('input[name="nickname"]', "newnickname");
       await page.click('button[type="submit"]');
 
@@ -102,13 +103,6 @@ test.describe("Settings Test", () => {
     test("should handle when trying to change to duplicate nicknames", async ({
       page,
     }) => {
-      await page.goto("/settings");
-      const updateNicknameLink = page.getByRole("link", {
-        name: "닉네임 변경",
-      });
-      await updateNicknameLink.click();
-
-      expect(page).toHaveURL("/settings/nickname");
       await page.fill('input[name="nickname"]', existingAccount.nickname);
       await page.click('button[type="submit"]');
 
@@ -121,6 +115,105 @@ test.describe("Settings Test", () => {
           `This nickname ${existingAccount.nickname} is already existed!`
         )
       ).toBeVisible();
+    });
+  });
+
+  test.describe("Updating Password", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.context().clearCookies();
+      await page.context().addCookies(currentCookies);
+      const insertedCookies = await page.context().cookies();
+      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
+        (name) =>
+          expect(
+            insertedCookies.find((cookie) => cookie.name === name)
+          ).toBeDefined()
+      );
+
+      await page.goto("/settings");
+      const updatePasswordLink = page.getByRole("link", {
+        name: "비밀번호 변경",
+      });
+      await updatePasswordLink.click();
+
+      expect(page).toHaveURL("/settings/password");
+    });
+
+    test("should reject request to change invalid password", async ({
+      page,
+    }) => {
+      await page.fill('input[name="password"]', "short");
+      await page.fill('input[name="confirmPassword"]', "short");
+      await page.click('button[type="submit"]');
+
+      await expect(page.locator("#password-error")).toHaveText(
+        "Password must be at least 6 characters"
+      );
+      await expect(page.locator("#confirmPassword-error")).toHaveText(
+        "Password must be at least 6 characters"
+      );
+      await expect(
+        page.getByText("Missing Fields. Failed to update password.")
+      ).toBeVisible();
+    });
+
+    test("should reject request if the password you entered and the verification number do not match", async ({
+      page,
+    }) => {
+      await page.fill('input[name="password"]', "newpassword");
+      await page.fill('input[name="confirmPassword"]', "newdifferpw");
+      await page.click('button[type="submit"]');
+
+      await expect(page.locator("#confirmPassword-error")).toHaveText(
+        "The password you entered does not match"
+      );
+      await expect(
+        page.getByText("Missing Fields. Failed to update password.")
+      ).toBeVisible();
+    });
+
+    test("should update password successfully", async ({ page }) => {
+      await page.fill('input[name="password"]', "newpassword");
+      await page.fill('input[name="confirmPassword"]', "newpassword");
+      await page.click('button[type="submit"]');
+
+      await page.waitForURL("/dashboard", { timeout: 1000 });
+    });
+  });
+
+  test.describe("Delete User", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.context().clearCookies();
+      await page.context().addCookies(currentCookies);
+      const insertedCookies = await page.context().cookies();
+      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
+        (name) =>
+          expect(
+            insertedCookies.find((cookie) => cookie.name === name)
+          ).toBeDefined()
+      );
+
+      await page.goto("/settings");
+    });
+
+    test("should delete userInfo if user press delete button.", async ({
+      page,
+    }) => {
+      page.on("dialog", async (dialog) => {
+        await dialog.accept();
+      });
+
+      const deleteUserButton = page.locator('[aria-label="DeleteUserButton"]');
+      await deleteUserButton.click();
+
+      await page.waitForURL("/", { timeout: 1000 });
+      const insertedCookies = await page.context().cookies();
+      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
+        (name) =>
+          expect(
+            insertedCookies.find((cookie) => cookie.name === name)
+          ).toBeUndefined()
+      );
     });
   });
 });

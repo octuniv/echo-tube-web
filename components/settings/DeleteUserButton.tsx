@@ -1,3 +1,4 @@
+"use client";
 import { DeleteUser } from "@/lib/actions";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
@@ -6,11 +7,15 @@ export default function DefaultUserButton() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleDeleteAccount = async () => {
-    try {
-      await DeleteUser();
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      setErrorMessage("회원탈퇴에 실패했습니다. 다시 시도해주세요.");
+    if (
+      confirm("정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+    ) {
+      try {
+        await DeleteUser();
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        setErrorMessage("회원탈퇴에 실패했습니다. 다시 시도해주세요.");
+      }
     }
   };
 
@@ -19,6 +24,7 @@ export default function DefaultUserButton() {
       <div className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
         <button
           onClick={handleDeleteAccount}
+          aria-label="DeleteUserButton"
           className="flex justify-between items-center w-full text-left"
         >
           <div>
