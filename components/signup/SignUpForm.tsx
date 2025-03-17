@@ -27,7 +27,6 @@ const InputWithValidation = ({
         type="button"
         onClick={() => handleClick(type)}
         className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
-        disabled={!!status}
       >
         중복 확인
       </button>
