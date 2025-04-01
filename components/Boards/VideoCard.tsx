@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { VideoCardInfo } from "@/lib/definition";
 
-export default function VideoCard({
-  video,
-}: Readonly<{ video: VideoCardInfo }>) {
+interface CardProps {
+  boardSlug: string;
+  video: VideoCardInfo;
+}
+
+export default function VideoCard({ boardSlug, video }: Readonly<CardProps>) {
   const {
     id,
     title,
@@ -16,7 +19,7 @@ export default function VideoCard({
     <div className="border p-4 rounded-lg shadow-md hover:bg-gray-50 transition">
       {/* Link 컴포넌트를 사용하여 전체 카드 클릭 가능 */}
       <Link
-        href={`/posts/${id}`}
+        href={`/boards/${boardSlug}/${id}`}
         aria-label={`Go to post ${id}: ${title}`}
         className="block"
       >

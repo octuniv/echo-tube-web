@@ -78,6 +78,8 @@ export interface PostDto {
   nickname: string;
   createdAt: string;
   updatedAt: string;
+  board: BoardListItemDto;
+  hotScore: number;
 }
 
 export type VideoCardInfo = Omit<PostDto, "content" | "updatedAt">;
@@ -94,4 +96,18 @@ export interface PostState {
     content?: string[];
   };
   message?: string | null;
+}
+
+export interface CreatePostRequestBody {
+  title: string;
+  content: string;
+  videoUrl: string;
+  boardSlug: string;
+}
+
+export interface BoardListItemDto {
+  id: number;
+  slug: string;
+  name: string;
+  description?: string;
 }

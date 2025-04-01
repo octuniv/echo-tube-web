@@ -12,7 +12,9 @@ test.describe("Sidebar test", () => {
     await page.getByRole("button", { name: "Sidebar Activation" }).click();
     await expect(page.getByRole("link", { name: "dashboard" })).toBeVisible();
     await expect(page.getByRole("link", { name: "settings" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "posts" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: `Boards section - 자유 게시판 category` })
+    ).toBeVisible();
   });
 
   test("Only permitted buttons should be shown in the logout state.", async ({
@@ -27,7 +29,11 @@ test.describe("Sidebar test", () => {
       await expect(
         page.getByRole("link", { name: "settings" })
       ).not.toBeVisible();
-      await expect(page.getByRole("link", { name: "posts" })).toBeVisible();
+      await expect(
+        page.getByRole("link", {
+          name: `Boards section - 자유 게시판 category`,
+        })
+      ).toBeVisible();
     });
   });
 });

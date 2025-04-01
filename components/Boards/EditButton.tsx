@@ -3,14 +3,19 @@ import { PencilIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 
 interface EditButtonProps {
+  boardSlug: string;
   postId: number;
   isEditable: boolean;
 }
 
-export default function EditButton({ postId, isEditable }: EditButtonProps) {
+export default function EditButton({
+  boardSlug,
+  postId,
+  isEditable,
+}: EditButtonProps) {
   return (
     <Link
-      href={isEditable ? `/posts/edit/${postId}` : "#"}
+      href={isEditable ? `/boards/${boardSlug}/edit/${postId}` : "#"}
       className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200
         ${
           isEditable

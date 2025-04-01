@@ -39,17 +39,21 @@ test.describe("Page-to-page movement test", () => {
     await expect(page).toHaveURL("/login");
   });
 
-  test("Posts Page Access Test", async ({ page }) => {
+  test("Board Page Access Test", async ({ page }) => {
     await page.getByRole("button", { name: "Sidebar Activation" }).click();
-    await expect(page.getByRole("link", { name: "posts" })).toBeVisible();
-    await page.getByRole("link", { name: "posts" }).click();
-    await expect(page).toHaveURL("/posts");
+    await expect(
+      page.getByRole("link", { name: `Boards section - 자유 게시판 category` })
+    ).toBeVisible();
+    await page
+      .getByRole("link", { name: `Boards section - 자유 게시판 category` })
+      .click();
+    await expect(page).toHaveURL("/boards/free");
   });
 
   test("Redirect to login page when ths user is not logged in and access page about creating post", async ({
     page,
   }) => {
-    await page.goto("/posts/create");
+    await page.goto("/boards/free/create");
     await expect(page).toHaveURL("/login");
   });
 

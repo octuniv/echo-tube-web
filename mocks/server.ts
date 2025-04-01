@@ -14,6 +14,12 @@ export const mockPosts: PostDto[] = [
     nickname: "UserA",
     createdAt: "2023-10-01T12:00:00Z",
     updatedAt: "2023-10-01T12:00:00Z",
+    board: {
+      id: 1,
+      slug: "free",
+      name: "자유 게시판",
+    },
+    hotScore: 150.5,
   },
   {
     id: 2,
@@ -23,6 +29,12 @@ export const mockPosts: PostDto[] = [
     nickname: "UserB",
     createdAt: "2023-09-30T12:00:00Z",
     updatedAt: "2023-09-30T12:00:00Z",
+    board: {
+      id: 1,
+      slug: "free",
+      name: "자유 게시판",
+    },
+    hotScore: 150.5,
   },
 ];
 
@@ -63,9 +75,11 @@ export const server = setupServer(
     );
   }),
 
-  // Mock API for fetch posts
-  http.get(`${serverAddress}/posts`, () => {
-    return HttpResponse.json(mockPosts, { status: 200 });
+  // Mock API for fetch posts with Board Slug
+  http.get(`${serverAddress}/posts/board/:boardId`, ({ params }) => {
+    const boardId = Number(params.boardId);
+    const filteredPosts = mockPosts.filter((post) => post.board.id === boardId);
+    return HttpResponse.json(filteredPosts, { status: 200 });
   }),
 
   // Mock API for fetch post
@@ -88,6 +102,49 @@ export const server = setupServer(
     }
 
     return HttpResponse.json({ error: "Post not found" }, { status: 404 });
+  }),
+
+  // Mock API for creating Post
+  http.post(`${serverAddress}/posts`, async ({ request }) => {
+    let body: unknown; // 1. unknown 타입으로 선언
+
+    try {
+      body = await request.json();
+    } catch {
+      return HttpResponse.json(
+        { error: "Invalid JSON format" },
+        { status: 400 }
+      );
+    }
+
+    // 2. null 및 기본 타입 검증
+    if (body === null) {
+      return HttpResponse.json(
+        { error: "Request body cannot be null" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof body !== "object") {
+      return HttpResponse.json(
+        { error: "Request body must be an object" },
+        { status: 400 }
+      );
+    }
+
+    // 3. 타입 단언으로 Record 타입 확정
+    const postData = body as Record<string, any>;
+
+    // 4. 필수 필드 검증
+    if (!postData.boardSlug) {
+      return HttpResponse.json(
+        { error: "boardSlug is required" },
+        { status: 400 }
+      );
+    }
+
+    // 5. 안전한 객체 병합
+    return HttpResponse.json({ ...mockPosts[0], ...postData }, { status: 201 });
   }),
 
   // Mock API for delete post
@@ -143,5 +200,11 @@ export const server = setupServer(
       { message: "Passcode change successful." },
       { status: 200 }
     );
+  }),
+
+  http.get(`${serverAddress}/boards`, () => {
+    return HttpResponse.json([{ id: 1, slug: "free", name: "자유 게시판" }], {
+      status: 200,
+    });
   })
 );

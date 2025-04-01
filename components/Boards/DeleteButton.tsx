@@ -6,17 +6,20 @@ import { TrashIcon } from "@heroicons/react/24/solid"; // 휴지통 아이콘 �
 
 interface DeleteButtonProps {
   postId: number; // 삭제할 게시물 ID
+
+  boardSlug: string; // 현재 게시판의 slug
   isEditable: boolean; // 편집 가능 여부
 }
 
 export default function DeleteButton({
   postId,
+  boardSlug,
   isEditable,
 }: DeleteButtonProps) {
   // 삭제 핸들러
   const handleDelete = async () => {
     if (confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
-      await DeletePost(postId); // 서버 액션 호출
+      await DeletePost(postId, boardSlug); // 서버 액션 호출
     }
   };
 

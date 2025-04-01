@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  BoardListItemDto,
   LoginInfoSchema,
   LoginInfoState,
   nicknameUpdateSchema,
@@ -158,8 +159,8 @@ export async function LogoutAction() {
   redirect("/login");
 }
 
-export async function FetchAllPosts(): Promise<PostDto[]> {
-  const reqAddress = serverAddress + "/posts";
+export async function FetchPostsByBoardId(boardId: number): Promise<PostDto[]> {
+  const reqAddress = `${serverAddress}/posts/board/${boardId}`;
   const response = await fetch(reqAddress, {
     method: "GET",
     headers: {
@@ -168,9 +169,7 @@ export async function FetchAllPosts(): Promise<PostDto[]> {
     cache: "no-store", // 실시간 데이터를 위해 캐시 비활성화
   });
 
-  if (!response.ok) {
-    notFound();
-  }
+  if (!response.ok) throw new Error("Failed to fetch posts");
 
   const data = await response.json();
   return data.length ? data : [];
@@ -194,7 +193,11 @@ export async function FetchPost(id: number): Promise<PostDto> {
   return data;
 }
 
-export async function CreatePost(prevState: PostState, formData: FormData) {
+export async function CreatePost(
+  boardSlug: string,
+  prevState: PostState,
+  formData: FormData
+) {
   let authenticatedFailure: boolean = false;
 
   const validatedFields = postSchema.safeParse({
@@ -210,7 +213,10 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
     };
   }
 
-  const params = validatedFields.data;
+  const params = {
+    ...validatedFields.data,
+    boardSlug,
+  };
 
   if (params.videoUrl === "") {
     delete params.videoUrl;
@@ -238,11 +244,11 @@ export async function CreatePost(prevState: PostState, formData: FormData) {
     await clearAuth();
     redirect("/login");
   } else {
-    redirect("/posts");
+    redirect(`/boards/${boardSlug}`);
   }
 }
 
-export async function DeletePost(id: number) {
+export async function DeletePost(id: number, boardSlug: string) {
   let authenticatedFailure: boolean = false;
   const reqAddress = serverAddress + `/posts/${id}`;
 
@@ -262,12 +268,13 @@ export async function DeletePost(id: number) {
     await clearAuth();
     redirect("/login");
   } else {
-    redirect("/posts");
+    redirect(`/boards/${boardSlug}`);
   }
 }
 
 export async function EditPost(
   id: number,
+  boardSlug: string,
   prevState: PostState,
   formData: FormData
 ) {
@@ -316,7 +323,7 @@ export async function EditPost(
     await clearAuth();
     redirect("/login");
   } else {
-    redirect("/posts");
+    redirect(`/boards/${boardSlug}`);
   }
 }
 
@@ -514,4 +521,15 @@ export async function checkNicknameExists(value: string) {
   } catch (error) {
     throw error;
   }
+}
+
+export async function FetchAllBoards(): Promise<BoardListItemDto[]> {
+  const response = await fetch(`${serverAddress}/boards`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    next: { revalidate: 3600 },
+  });
+
+  if (!response.ok) throw new Error("Failed to fetch boards");
+  return await response.json();
 }

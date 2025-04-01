@@ -1,16 +1,17 @@
 import { notFound, redirect } from "next/navigation";
 import { FetchPost } from "@/lib/actions";
 import { userStatus } from "@/lib/authState";
-import EditPostPage from "@/components/posts/edit/EditPostPage";
+import EditPostPage from "@/components/Boards/edit/EditPostPage";
 
 interface PostPageProps {
   params: Promise<{
+    boardSlug: string;
     id: string; // URL에서 전달되는 게시물 ID
   }>;
 }
 
 export default async function Page({ params }: PostPageProps) {
-  const { id } = await params;
+  const { boardSlug, id } = await params;
   const postId = Number(id); // 문자열 ID를 숫자로 변환
 
   if (isNaN(postId)) {
@@ -22,8 +23,8 @@ export default async function Page({ params }: PostPageProps) {
   const isEditable = nickname === post.nickname;
 
   if (!isEditable) {
-    redirect("/posts");
+    redirect(`/boards/${boardSlug}`);
   }
 
-  return <EditPostPage postId={postId} post={post} />;
+  return <EditPostPage postId={postId} boardSlug={boardSlug} post={post} />;
 }

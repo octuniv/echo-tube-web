@@ -39,8 +39,8 @@ test.describe("Auth Test", () => {
       page,
     }) => {
       // 페이지에 컴포넌트 마운트
-      await page.goto("/posts/create");
-      await page.waitForURL("/posts/create", { timeout: 5000 });
+      await page.goto("/boards/free/create");
+      await page.waitForURL("/boards/free/create", { timeout: 5000 });
 
       // Authentication 쿠키 제거
       await page.context().clearCookies();
@@ -65,8 +65,8 @@ test.describe("Auth Test", () => {
       page,
     }) => {
       // Arrange: 페이지에 컴포넌트 마운트
-      await page.goto("/posts/create");
-      await page.waitForURL("/posts/create", { timeout: 5000 });
+      await page.goto("/boards/free/create");
+      await page.waitForURL("/boards/free/create", { timeout: 5000 });
 
       // 기존 access_token 저장
       const prevAccessToken = currentCookies.find(
@@ -104,7 +104,7 @@ test.describe("Auth Test", () => {
       await submitButton.click();
 
       // Assert: 리다이렉션 확인 (게시물 목록 페이지로 이동)
-      await page.waitForURL("/posts", { timeout: 5000 });
+      await page.waitForURL("/boards/free", { timeout: 5000 });
 
       // Optional: 새로 발급된 access_token이 쿠키에 저장되었는지 확인
       const cookies = await page.context().cookies();
@@ -137,7 +137,7 @@ test.describe("Auth Test", () => {
       page,
     }) => {
       // 첫 번째 사용자: 게시물 작성
-      await page.goto("/posts/create");
+      await page.goto("/boards/free/create");
 
       await page.fill(
         "input#title",
@@ -148,7 +148,7 @@ test.describe("Auth Test", () => {
       await page.click('button[type="submit"]');
 
       // 게시물 목록 페이지로 리다이렉트 확인
-      await expect(page).toHaveURL("/posts");
+      await expect(page).toHaveURL("/boards/free");
 
       // 쿠키 가져오기 및 초기화
       const cookies = await page.context().cookies();
@@ -172,7 +172,7 @@ test.describe("Auth Test", () => {
       // 업데이트된 쿠키를 브라우저에 추가
       await page.context().addCookies(manipulatedCookies);
 
-      await page.goto("/posts");
+      await page.goto("/boards/free");
 
       // 작성된 게시물 클릭
       const post = page
@@ -181,7 +181,7 @@ test.describe("Auth Test", () => {
       await post.click();
 
       // 게시물 상세 페이지 URL 검증
-      await expect(page).toHaveURL(/\/posts\/\d+/);
+      await expect(page).toHaveURL(/\/boards\/free\/\d+/);
 
       // 삭제 버튼 상태 확인
       const deleteButton = page.getByRole("button", {
@@ -229,7 +229,7 @@ test.describe("Auth Test", () => {
       page,
     }) => {
       // 첫 번째 사용자: 게시물 작성
-      await page.goto("/posts/create");
+      await page.goto("/boards/free/create");
 
       await page.fill(
         "input#title",
@@ -240,7 +240,7 @@ test.describe("Auth Test", () => {
       await page.click('button[type="submit"]');
 
       // 게시물 목록 페이지로 리다이렉트 확인
-      await expect(page).toHaveURL("/posts");
+      await expect(page).toHaveURL("/boards/free");
 
       // 쿠키 가져오기 및 초기화
       const cookies = await page.context().cookies();
@@ -264,7 +264,7 @@ test.describe("Auth Test", () => {
       // 업데이트된 쿠키를 브라우저에 추가
       await page.context().addCookies(manipulatedCookies);
 
-      await page.goto("/posts");
+      await page.goto("/boards/free");
 
       // 작성된 게시물 클릭
       const post = page
@@ -273,7 +273,7 @@ test.describe("Auth Test", () => {
       await post.click();
 
       // 게시물 상세 페이지 URL 검증
-      await expect(page).toHaveURL(/\/posts\/\d+/);
+      await expect(page).toHaveURL(/\/boards\/free\/\d+/);
 
       // 편집 페이지 링크 상태 확인
       const editLink = page.getByRole("link", {
@@ -287,7 +287,7 @@ test.describe("Auth Test", () => {
       await editLink.click();
 
       // 편집 페이지 진입 확인
-      await page.waitForURL(/\/posts\/edit\/\d+/, { timeout: 10000 });
+      await page.waitForURL(/\/boards\/free\/edit\/\d+/, { timeout: 10000 });
 
       // 편집 내용 입력
       await page.fill("input#title", "This text should not be seen.");

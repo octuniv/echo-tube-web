@@ -7,9 +7,14 @@ import EditButton from "./EditButton";
 interface PostPageProps {
   post: PostDto; // URL에서 전달되는 게시물 ID
   isEditable: boolean;
+  boardSlug: string;
 }
 
-export default function PostPage({ post, isEditable }: PostPageProps) {
+export default function PostPage({
+  post,
+  isEditable,
+  boardSlug,
+}: PostPageProps) {
   return (
     <div className="container mx-auto p-6">
       {/* 제목 */}
@@ -64,8 +69,16 @@ export default function PostPage({ post, isEditable }: PostPageProps) {
 
       {/* 버튼 컨테이너 */}
       <div className="mt-6 flex justify-end gap-4">
-        <EditButton postId={post.id} isEditable={isEditable} />
-        <DeleteButton postId={post.id} isEditable={isEditable} />
+        <EditButton
+          postId={post.id}
+          isEditable={isEditable}
+          boardSlug={boardSlug}
+        />
+        <DeleteButton
+          postId={post.id}
+          isEditable={isEditable}
+          boardSlug={boardSlug}
+        />
       </div>
     </div>
   );

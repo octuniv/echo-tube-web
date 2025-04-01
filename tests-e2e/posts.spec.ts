@@ -22,8 +22,8 @@ function extractDate(dateText: string) {
 test.describe("Create Post Test", () => {
   test.beforeEach(async ({ page }) => {
     // 게시판 목록 이동
-    await page.goto("/posts");
-    await page.waitForURL("/posts", { timeout: 5000 });
+    await page.goto("/boards/free");
+    await page.waitForURL("/boards/free", { timeout: 5000 });
     await page.reload();
   });
 
@@ -39,20 +39,20 @@ test.describe("Create Post Test", () => {
     await page.getByRole("button", { name: "게시물 작성" }).click();
 
     // 게시물 작성 페이지 리다이렉트 확인
-    await expect(page).toHaveURL("/posts/create");
+    await expect(page).toHaveURL("/boards/free/create");
   });
 
   test("renders the form correctly", async ({ page }) => {
     // 페이지에 컴포넌트 마운트
-    await page.goto("/posts/create");
-    await page.waitForURL("/posts/create", { timeout: 5000 });
+    await page.goto("/boards/free/create");
+    await page.waitForURL("/boards/free/create", { timeout: 5000 });
 
     // 폼 요소 확인
     const titleInput = page.locator("input#title");
     const contentTextarea = page.locator("textarea#content");
     const videoUrlInput = page.locator("input#videoUrl");
     const submitButton = page.locator('button[type="submit"]');
-    const backButton = page.locator('a[href="/posts"] button');
+    const backButton = page.locator('a[href="/boards/free"] button');
 
     await expect(titleInput).toBeVisible();
     await expect(contentTextarea).toBeVisible();
@@ -63,8 +63,8 @@ test.describe("Create Post Test", () => {
 
   test("displays validation errors when fields are empty", async ({ page }) => {
     // 페이지에 컴포넌트 마운트
-    await page.goto("/posts/create");
-    await page.waitForURL("/posts/create", { timeout: 5000 });
+    await page.goto("/boards/free/create");
+    await page.waitForURL("/boards/free/create", { timeout: 5000 });
 
     // 폼 제출 시도
     const submitButton = page.locator('button[type="submit"]');
@@ -84,8 +84,8 @@ test.describe("Create Post Test", () => {
 
   test("submits the form successfully with valid data", async ({ page }) => {
     // 페이지에 컴포넌트 마운트
-    await page.goto("/posts/create");
-    await page.waitForURL("/posts/create", { timeout: 5000 });
+    await page.goto("/boards/free/create");
+    await page.waitForURL("/boards/free/create", { timeout: 5000 });
 
     // 폼 입력값 채우기
     const titleInput = page.locator("input#title");
@@ -99,14 +99,14 @@ test.describe("Create Post Test", () => {
     await submitButton.click();
 
     // 리다이렉션 확인
-    await expect(page).toHaveURL("/posts");
+    await expect(page).toHaveURL("/boards/free");
   });
 });
 
 test.describe("Posts E2E Tests", () => {
   // 게시물 작성 테스트
   test("should create a new post with valid videoUrl", async ({ page }) => {
-    await page.goto("/posts/create");
+    await page.goto("/boards/free/create");
 
     await page.fill("input#title", "New Post Title");
     await page.fill("textarea#content", "New Post Content");
@@ -116,7 +116,7 @@ test.describe("Posts E2E Tests", () => {
     );
 
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL("/posts");
+    await expect(page).toHaveURL("/boards/free");
 
     const newPost = page.getByLabel("Post title: New Post Title").first();
     await expect(newPost).toBeVisible();
@@ -126,18 +126,18 @@ test.describe("Posts E2E Tests", () => {
   test("should navigate to post details page when a post card is clicked", async ({
     page,
   }) => {
-    await page.goto("/posts");
+    await page.goto("/boards/free");
     const post = page.getByLabel("Post title: New Post Title").first();
     await post.click();
 
-    await expect(page).toHaveURL(/\/posts\/\d+/);
+    await expect(page).toHaveURL(/\/boards\/free\/\d+/);
     await expect(page.getByText("New Post Title")).toBeVisible();
   });
 
   test("should display embedded YouTube video if valid video URL is provided", async ({
     page,
   }) => {
-    await page.goto("/posts");
+    await page.goto("/boards/free");
     const post = page.getByLabel("Post title: New Post Title").first();
     await post.click();
 
@@ -148,7 +148,7 @@ test.describe("Posts E2E Tests", () => {
   test("should display error message if invalid video URL is provided", async ({
     page,
   }) => {
-    await page.goto("/posts/create");
+    await page.goto("/boards/free/create");
 
     await page.fill("input#title", "Invalid Video URL Test");
     await page.fill("textarea#content", "Test Content");
@@ -156,8 +156,8 @@ test.describe("Posts E2E Tests", () => {
 
     await page.click('button[type="submit"]');
 
-    // await page.goto("/posts");
-    await expect(page).toHaveURL("/posts");
+    // await page.goto("/boards/free");
+    await expect(page).toHaveURL("/boards/free");
 
     const post = page.getByLabel("Post title: Invalid Video URL Test").first();
     await post.click();
@@ -173,7 +173,7 @@ test.describe("Posts E2E Tests", () => {
   test("should display posts in descending order by creation date", async ({
     page,
   }) => {
-    await page.goto("/posts");
+    await page.goto("/boards/free");
     const firstPost = page
       .locator('p[aria-label^="Post creation date"]')
       .first();
@@ -190,21 +190,21 @@ test.describe("Posts E2E Tests", () => {
 
 test.describe("Delete Post Tests", () => {
   test("should be able to be deleted post by the author", async ({ page }) => {
-    await page.goto("/posts/create");
+    await page.goto("/boards/free/create");
 
     await page.fill("input#title", "Test to delete this post");
     await page.fill("textarea#content", "Test Content");
 
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL("/posts");
+    await expect(page).toHaveURL("/boards/free");
 
     const post = page
       .getByLabel("Post title: Test to delete this post")
       .first();
     await post.click();
 
-    await expect(page).toHaveURL(/\/posts\/\d+/);
+    await expect(page).toHaveURL(/\/boards\/free\/\d+/);
 
     const thisPage = new URL(page.url()).pathname;
 
@@ -220,7 +220,7 @@ test.describe("Delete Post Tests", () => {
 
     await deleteButton.click();
 
-    await expect(page).toHaveURL("/posts");
+    await expect(page).toHaveURL("/boards/free");
 
     await page.goto(thisPage);
     await expect(page).toHaveURL(thisPage);
@@ -238,7 +238,7 @@ test.describe("Delete Post Tests", () => {
     page,
   }) => {
     // 첫 번째 사용자: 게시물 작성
-    await page.goto("/posts/create");
+    await page.goto("/boards/free/create");
 
     await page.fill(
       "input#title",
@@ -249,12 +249,12 @@ test.describe("Delete Post Tests", () => {
     await page.click('button[type="submit"]');
 
     // 게시물 목록 페이지로 리다이렉트 확인
-    await expect(page).toHaveURL("/posts");
+    await expect(page).toHaveURL("/boards/free");
 
     const cookies = await page.context().cookies();
     await page.context().clearCookies();
     try {
-      await page.goto("/posts");
+      await page.goto("/boards/free");
 
       // 특정 게시물 클릭
       const post = page
@@ -263,7 +263,7 @@ test.describe("Delete Post Tests", () => {
       await post.click();
 
       // 게시물 상세 페이지 URL 검증
-      await expect(page).toHaveURL(/\/posts\/\d+/);
+      await expect(page).toHaveURL(/\/boards\/free\/\d+/);
 
       // 삭제 버튼 상태 확인
       const deleteButton = page.getByRole("button", {
@@ -277,7 +277,7 @@ test.describe("Delete Post Tests", () => {
       throw e;
     } finally {
       await page.context().addCookies(cookies);
-      await page.goto("/posts");
+      await page.goto("/boards/free");
     }
   });
 });
@@ -287,8 +287,8 @@ test.describe("Edit Post Test", () => {
 
   // 테스트 필요한 페이지 작성
   test.beforeAll(async ({ page }) => {
-    await page.goto("/posts/create");
-    await page.waitForURL("/posts/create", { timeout: 5000 });
+    await page.goto("/boards/free/create");
+    await page.waitForURL("/boards/free/create", { timeout: 5000 });
 
     const titleInput = page.locator("input#title");
     const contentTextarea = page.locator("textarea#content");
@@ -299,12 +299,12 @@ test.describe("Edit Post Test", () => {
 
     await submitButton.click();
 
-    await expect(page).toHaveURL("/posts");
+    await expect(page).toHaveURL("/boards/free");
 
     const post = page.getByLabel("Post title: Test Title for edit").first();
     await post.click();
 
-    await expect(page).toHaveURL(/\/posts\/\d+/);
+    await expect(page).toHaveURL(/\/boards\/free\/\d+/);
 
     postPage = new URL(page.url()).pathname;
   });
@@ -317,7 +317,7 @@ test.describe("Edit Post Test", () => {
     // 수정 버튼 클릭
     const editLink = page.getByRole("link", { name: "게시물 수정" });
     await editLink.click();
-    await expect(page).toHaveURL(/\/posts\/edit\/\d+/);
+    await expect(page).toHaveURL(/\/boards\/free\/edit\/\d+/);
 
     // 폼 비우기
     await page.fill("input#title", "");
@@ -348,7 +348,7 @@ test.describe("Edit Post Test", () => {
     // 첫 번째 수정 버튼 클릭
     let editLink = page.getByRole("link", { name: "게시물 수정" });
     await editLink.click();
-    await expect(page).toHaveURL(/\/posts\/edit\/\d+/);
+    await expect(page).toHaveURL(/\/boards\/free\/edit\/\d+/);
 
     // 폼 데이터 입력 및 제출
     const presentPage = new URL(page.url()).pathname;
@@ -356,7 +356,7 @@ test.describe("Edit Post Test", () => {
     await page.fill("textarea#content", "Edited content");
     await page.fill("input#videoUrl", "https://youtu.be/editedVideo");
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL("/posts");
+    await expect(page).toHaveURL("/boards/free");
 
     // 다시 게시물 페이지 방문
     await page.goto(postPage);
@@ -386,7 +386,7 @@ test.describe("Edit Post Test", () => {
     try {
       // 조회 페이지 방문
       await page.goto(postPage);
-      await expect(page).toHaveURL(/\/posts\/\d+/);
+      await expect(page).toHaveURL(/\/boards\/free\/\d+/);
 
       // 편집 버튼 상태 확인
       const editLink = page.getByRole("link", {
@@ -400,7 +400,7 @@ test.describe("Edit Post Test", () => {
       throw e;
     } finally {
       await page.context().addCookies(cookies);
-      await page.goto("/posts");
+      await page.goto("/boards/free");
     }
   });
 
@@ -419,10 +419,10 @@ test.describe("Edit Post Test", () => {
   test("should be redirect to the login page when non-author visits the edit page.", async ({
     page,
   }) => {
-    const postId = postPage.match(/\/posts\/(\d+)/)?.[1];
+    const postId = postPage.match(/\/boards\/free\/(\d+)/)?.[1];
     if (!postId) throw new Error("Invalid postPage URL format");
 
-    const editPage = `/posts/edit/${postId}`;
+    const editPage = `/boards/free/edit/${postId}`;
 
     // 쿠키(유저 정보) 삭제 및 백업
     const cookies = await page.context().cookies();
@@ -430,12 +430,12 @@ test.describe("Edit Post Test", () => {
     try {
       // 조회 페이지 방문
       await page.goto(editPage);
-      await page.waitForURL("/posts", { timeout: 10000 });
+      await page.waitForURL("/boards/free", { timeout: 10000 });
     } catch (e) {
       throw e;
     } finally {
       await page.context().addCookies(cookies);
-      await page.goto("/posts");
+      await page.goto("/boards/free");
     }
   });
 });

@@ -5,9 +5,10 @@ interface PostFormProps {
   state: ErrorState;
   formAction: (payload: FormData) => void;
   post?: PostDto;
+  boardSlug: string;
 }
 
-function PostForm({ state, formAction, post }: PostFormProps) {
+function PostForm({ state, formAction, post, boardSlug }: PostFormProps) {
   return (
     <div className="max-w-md mx-auto p-4 border rounded-lg shadow-md space-y-4">
       <h1 className="text-2xl font-bold text-center">새 게시물 작성</h1>
@@ -85,7 +86,7 @@ function PostForm({ state, formAction, post }: PostFormProps) {
           </button>
 
           {/* 돌아가기 */}
-          <Link href="/posts">
+          <Link href={`/boards/${boardSlug}`}>
             <button className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
               돌아가기
             </button>

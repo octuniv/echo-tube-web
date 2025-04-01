@@ -3,13 +3,15 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import { BoardListItemDto } from "@/lib/definition";
 
 interface AppShellProps {
   isLogined: boolean;
   children: React.ReactNode;
+  boards: BoardListItemDto[];
 }
 
-const AppShell = ({ isLogined, children }: AppShellProps) => {
+const AppShell = ({ isLogined, children, boards }: AppShellProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -18,6 +20,7 @@ const AppShell = ({ isLogined, children }: AppShellProps) => {
       <Sidebar
         isOpen={isSidebarOpen}
         isLogined={isLogined}
+        boards={boards}
         onClose={() => setIsSidebarOpen(false)}
       />
 

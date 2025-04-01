@@ -2,7 +2,7 @@ import {
   signUpAction,
   LoginAction,
   LogoutAction,
-  FetchAllPosts,
+  FetchPostsByBoardId,
   CreatePost,
   FetchPost,
   DeletePost,
@@ -12,6 +12,7 @@ import {
   checkEmailExists,
   checkNicknameExists,
   UpdatePasswordAction,
+  FetchAllBoards,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -21,6 +22,7 @@ import { http, HttpResponse } from "msw";
 import { serverAddress } from "./util";
 import { revalidatePath } from "next/cache";
 import { createError } from "./errors";
+import { BoardListItemDto, CreatePostRequestBody } from "./definition";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -235,31 +237,39 @@ describe("Actions Module", () => {
     });
   });
 
-  describe("FetchAllPosts", () => {
-    it("should fetch posts successfully", async () => {
-      const posts = await FetchAllPosts();
+  describe("FetchPostsByBoardId", () => {
+    it("should fetch posts by boardId successfully", async () => {
+      const boardId = 1;
+      server.use(
+        http.get(`${serverAddress}/posts/board/${boardId}`, () =>
+          HttpResponse.json(mockPosts, { status: 200 })
+        )
+      );
+      const posts = await FetchPostsByBoardId(boardId);
       expect(posts).toEqual(mockPosts);
     });
 
-    it("should throw an error when the response is not ok", async () => {
+    it("should throw error when response is not ok", async () => {
+      const boardId = 999;
       server.use(
-        http.get(`${serverAddress}/posts`, () => {
-          return HttpResponse.json({ status: 500 }, { status: 500 });
-        })
+        http.get(`${serverAddress}/posts/board/${boardId}`, () =>
+          HttpResponse.json({ error: "Not Found" }, { status: 404 })
+        )
       );
-
-      await FetchAllPosts();
-      expect(notFound).toHaveBeenCalled();
+      await expect(FetchPostsByBoardId(boardId)).rejects.toThrow(
+        "Failed to fetch posts"
+      );
     });
 
     it("should handle empty posts array", async () => {
+      const boardId = 1;
       server.use(
-        http.get(`${serverAddress}/posts`, () =>
+        http.get(`${serverAddress}/posts/board/${boardId}`, () =>
           HttpResponse.json([], { status: 200 })
         )
       );
 
-      const posts = await FetchAllPosts();
+      const posts = await FetchPostsByBoardId(boardId);
       expect(posts).toEqual([]);
     });
   });
@@ -322,14 +332,17 @@ describe("Actions Module", () => {
   });
 
   describe("CreatePost", () => {
-    it("should create a post successfully", async () => {
+    const boardSlug = "free";
+    it("should create a post successfully with boardSlug", async () => {
       const formData = new FormData();
+      let capturedBody!: CreatePostRequestBody;
       formData.append("title", "New Post");
       formData.append("content", "This is the content of the new post.");
       formData.append("videoUrl", "https://example.com/video");
 
       server.use(
-        http.post(`${serverAddress}/posts`, () => {
+        http.post(`${serverAddress}/posts`, async ({ request }) => {
+          capturedBody = (await request.json()) as CreatePostRequestBody;
           return HttpResponse.json({ success: true }, { status: 201 });
         })
       );
@@ -342,9 +355,10 @@ describe("Actions Module", () => {
         }),
       });
 
-      await CreatePost({}, formData);
+      await CreatePost(boardSlug, {}, formData);
 
-      expect(redirect).toHaveBeenCalledWith("/posts");
+      expect(capturedBody.boardSlug).toBe(boardSlug);
+      expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
     });
 
     it("should handle validation errors", async () => {
@@ -353,7 +367,7 @@ describe("Actions Module", () => {
       formData.append("content", "");
       formData.append("videoUrl", "");
 
-      const result = await CreatePost({}, formData);
+      const result = await CreatePost(boardSlug, {}, formData);
 
       expect(result.errors?.title).toBeDefined();
       expect(result.errors?.content).toBeDefined();
@@ -375,7 +389,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await CreatePost({}, formData);
+      await CreatePost(boardSlug, {}, formData);
 
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login");
@@ -396,18 +410,20 @@ describe("Actions Module", () => {
         })
       );
 
-      const result = await CreatePost({}, formData);
+      const result = await CreatePost(boardSlug, {}, formData);
 
       expect(result.message).toBe("Create post failed.");
     });
   });
 
   describe("DeletePost", () => {
+    const boardSlug = "free";
+
     beforeEach(() => {
       jest.clearAllMocks();
     });
 
-    it("should delete a post successfully and redirect to /posts", async () => {
+    it("should delete a post successfully and redirect to /boards/boardSlug", async () => {
       const postId = 1;
 
       // Mock the server response for a successful DELETE request
@@ -420,10 +436,10 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeletePost(postId);
+      await DeletePost(postId, boardSlug);
 
       // Verify revalidation and redirection
-      expect(redirect).toHaveBeenCalledWith("/posts");
+      expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
     });
 
     it("should handle unauthorized access during post deletion", async () => {
@@ -439,7 +455,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeletePost(postId);
+      await DeletePost(postId, boardSlug);
 
       // Verify logout and redirection to login page
       expect(clearAuth).toHaveBeenCalled();
@@ -459,7 +475,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeletePost(postId);
+      await DeletePost(postId, boardSlug);
 
       // Verify logout and redirection to login page
       expect(clearAuth).toHaveBeenCalled();
@@ -479,7 +495,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeletePost(postId);
+      await DeletePost(postId, boardSlug);
 
       // Verify logout and redirection to login page
       expect(clearAuth).toHaveBeenCalled();
@@ -488,6 +504,8 @@ describe("Actions Module", () => {
   });
 
   describe("EditPost", () => {
+    const boardSlug = "free";
+
     beforeEach(() => {
       jest.clearAllMocks();
     });
@@ -520,9 +538,9 @@ describe("Actions Module", () => {
         }),
       });
 
-      await EditPost(1, {}, formData);
+      await EditPost(1, boardSlug, {}, formData);
 
-      expect(redirect).toHaveBeenCalledWith("/posts");
+      expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
     });
 
     it("should be able to omit videoUrl when empty", async () => {
@@ -561,14 +579,14 @@ describe("Actions Module", () => {
         }),
       });
 
-      await EditPost(1, {}, formData);
+      await EditPost(1, boardSlug, {}, formData);
 
       expect(capturedBody).toEqual({
         title: "Updated Title",
         content: "Updated content",
       });
       expect(capturedBody.videoUrl).toBeUndefined();
-      expect(redirect).toHaveBeenCalledWith("/posts");
+      expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
     });
 
     it("should handle validation errors", async () => {
@@ -577,7 +595,7 @@ describe("Actions Module", () => {
       formData.append("content", "Valid content");
       formData.append("videoUrl", "");
 
-      const result = await EditPost(1, {}, formData);
+      const result = await EditPost(1, boardSlug, {}, formData);
 
       expect(result.errors?.title).toBeDefined();
       expect(result.message).toBe("Missing Fields. Failed to edit posts.");
@@ -598,7 +616,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await EditPost(1, {}, formData);
+      await EditPost(1, boardSlug, {}, formData);
 
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login");
@@ -619,7 +637,7 @@ describe("Actions Module", () => {
         })
       );
 
-      const result = await EditPost(1, {}, formData);
+      const result = await EditPost(1, boardSlug, {}, formData);
 
       expect(result.message).toBe("Edit post failed.");
     });
@@ -975,5 +993,36 @@ describe("CheckNicknameExist", () => {
 
     const res = await checkNicknameExists("non-exists");
     expect(res).toEqual({ exists: false });
+  });
+
+  describe("FetchAllBoards", () => {
+    it("should fetch all boards successfully", async () => {
+      const mockBoards: BoardListItemDto[] = [
+        { id: 1, slug: "free", name: "General" },
+        { id: 2, slug: "qna", name: "Q&A" },
+      ];
+
+      server.use(
+        http.get(`${serverAddress}/boards`, () =>
+          HttpResponse.json(mockBoards, { status: 200 })
+        )
+      );
+
+      const boards = await FetchAllBoards();
+      expect(boards).toEqual(mockBoards);
+      expect(boards[0]).toHaveProperty("id");
+      expect(boards[0]).toHaveProperty("slug");
+      expect(boards[0]).toHaveProperty("name");
+    });
+
+    it("should throw error on failure", async () => {
+      server.use(
+        http.get(`${serverAddress}/boards`, () =>
+          HttpResponse.json({ error: "Internal Server Error" }, { status: 500 })
+        )
+      );
+
+      await expect(FetchAllBoards()).rejects.toThrow("Failed to fetch boards");
+    });
   });
 });

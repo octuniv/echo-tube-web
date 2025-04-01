@@ -1,8 +1,11 @@
-import CreatePostPage from "@/components/posts/create/CreatePostPage";
+import CreatePostPage from "@/components/Boards/create/CreatePostPage";
 import { loginStatus } from "@/lib/authState";
 import { redirect } from "next/navigation";
 
-const page: React.FC = async () => {
+const page: React.FC<{
+  params: Promise<{ boardSlug: string }>;
+}> = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
+  const { boardSlug } = await params;
   // 로그인 상태 확인
   const isLogined = await loginStatus();
 
@@ -11,7 +14,7 @@ const page: React.FC = async () => {
     redirect("/login");
   }
 
-  return <CreatePostPage />;
+  return <CreatePostPage boardSlug={boardSlug} />;
 };
 
 export default page;
