@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export enum UserRole {
+  ADMIN = "admin",
+  USER = "user",
+  BOT = "bot",
+}
+
 export interface User {
   name: string;
   nickname: string;
@@ -22,6 +28,19 @@ export const userSchema = z.object({
     .string()
     .min(6, { message: "Password must be at least 6 characters" }),
 });
+
+export interface UserAuthInfo {
+  name: string;
+  nickname: string;
+  email: string;
+  role: UserRole | null;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: UserAuthInfo;
+}
 
 export type LoginInfo = Omit<User, "name" | "nickname">;
 
@@ -74,6 +93,8 @@ export interface PostDto {
   id: number;
   title: string;
   content: string;
+  views: string;
+  commentsCount: number;
   videoUrl?: string;
   nickname: string;
   createdAt: string;
@@ -82,7 +103,11 @@ export interface PostDto {
   hotScore: number;
 }
 
-export type VideoCardInfo = Omit<PostDto, "content" | "updatedAt">;
+// export type VideoCardInfo = Omit<PostDto, "content" | "updatedAt">;
+export type VideoCardInfo = Pick<
+  PostDto,
+  "id" | "title" | "nickname" | "createdAt" | "videoUrl"
+>;
 
 export const postSchema = z.object({
   title: z.string().min(1, { message: "Please enter your title." }),
@@ -110,4 +135,5 @@ export interface BoardListItemDto {
   slug: string;
   name: string;
   description?: string;
+  requireRole: UserRole;
 }

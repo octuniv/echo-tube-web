@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { FetchPost } from "@/lib/actions";
 import { userStatus } from "@/lib/authState";
 import EditPostPage from "@/components/Boards/edit/EditPostPage";
+import { canModifyPost } from "@/lib/util";
 
 interface PostPageProps {
   params: Promise<{
@@ -19,8 +20,8 @@ export default async function Page({ params }: PostPageProps) {
   }
 
   const post = await FetchPost(postId);
-  const { nickname } = await userStatus();
-  const isEditable = nickname === post.nickname;
+  const userStatusInfo = await userStatus();
+  const isEditable = canModifyPost({ user: userStatusInfo, post });
 
   if (!isEditable) {
     redirect(`/boards/${boardSlug}`);

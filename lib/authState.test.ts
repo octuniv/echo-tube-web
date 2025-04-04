@@ -1,6 +1,7 @@
 // lib/authState.test.ts
 import { loginStatus, userStatus } from "./authState";
 import { cookies } from "next/headers";
+import { UserAuthInfo, UserRole } from "./definition";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -8,9 +9,15 @@ jest.mock("next/headers", () => ({
       get: jest.fn((key: string) => {
         if (key === "access_token") return { value: "valid-access-token" };
         if (key === "refresh_token") return { value: "valid-refresh-token" };
-        if (key === "name") return { value: "John Doe" };
-        if (key === "nickname") return { value: "John" };
-        if (key === "email") return { value: "john@example.com" };
+        if (key === "user")
+          return {
+            value: JSON.stringify({
+              name: "John Doe",
+              nickname: "John",
+              email: "john@example.com",
+              role: UserRole.USER,
+            }),
+          };
         return undefined;
       }),
       set: jest.fn().mockImplementation(() => {}),
@@ -76,7 +83,8 @@ describe("userStatus", () => {
       name: "",
       nickname: "",
       email: "",
-    });
+      role: null,
+    } satisfies UserAuthInfo);
   });
 
   it("should return user data when cookies are present", async () => {
@@ -88,10 +96,15 @@ describe("userStatus", () => {
             return { value: "valid-token" };
           case "name":
             return { value: "John Doe" };
-          case "nickname":
-            return { value: "johndoe123" };
-          case "email":
-            return { value: "john.doe@example.com" };
+          case "user":
+            return {
+              value: JSON.stringify({
+                name: "John Doe",
+                nickname: "John",
+                email: "john@example.com",
+                role: UserRole.USER,
+              }),
+            };
           default:
             return undefined;
         }
@@ -102,19 +115,31 @@ describe("userStatus", () => {
 
     expect(result).toEqual({
       name: "John Doe",
-      nickname: "johndoe123",
-      email: "john.doe@example.com",
-    });
+      nickname: "John",
+      email: "john@example.com",
+      role: UserRole.USER,
+    } satisfies UserAuthInfo);
   });
 
   it("should return empty strings for missing optional cookies", async () => {
     // access_token은 있지만, 나머지 쿠키는 없는 경우
     (cookies as jest.Mock).mockReturnValue({
       get: jest.fn((key) => {
-        if (key === "access_token") {
-          return { value: "valid-token" };
+        switch (key) {
+          case "access_token":
+            return undefined;
+          case "user":
+            return {
+              value: JSON.stringify({
+                name: "John Doe",
+                nickname: "John",
+                email: "john@example.com",
+                role: UserRole.USER,
+              }),
+            };
+          default:
+            return undefined;
         }
-        return undefined;
       }),
     });
 
@@ -124,7 +149,8 @@ describe("userStatus", () => {
       name: "",
       nickname: "",
       email: "",
-    });
+      role: null,
+    } satisfies UserAuthInfo);
   });
 
   it("should handle null or undefined values in cookies gracefully", async () => {
@@ -144,6 +170,7 @@ describe("userStatus", () => {
       name: "",
       nickname: "",
       email: "",
-    });
+      role: null,
+    } satisfies UserAuthInfo);
   });
 });

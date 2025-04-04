@@ -22,7 +22,12 @@ import { http, HttpResponse } from "msw";
 import { serverAddress } from "./util";
 import { revalidatePath } from "next/cache";
 import { createError } from "./errors";
-import { BoardListItemDto, CreatePostRequestBody } from "./definition";
+import {
+  BoardListItemDto,
+  CreatePostRequestBody,
+  UserAuthInfo,
+  UserRole,
+} from "./definition";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -165,14 +170,24 @@ describe("Actions Module", () => {
             {
               access_token: "valid-access-token",
               refresh_token: "valid-refresh-token",
-              name: "John Doe",
-              nickname: "John",
-              email: "john@example.com",
+              user: {
+                name: "John Doe",
+                nickname: "John",
+                email: "john@example.com",
+                role: UserRole.USER,
+              },
             },
             { status: 200 }
           );
         })
       );
+
+      const userCookieValue = JSON.stringify({
+        name: "John Doe",
+        nickname: "John",
+        email: "john@example.com",
+        role: UserRole.USER,
+      });
 
       await LoginAction({}, formData);
 
@@ -188,18 +203,8 @@ describe("Actions Module", () => {
         expect.any(Object)
       );
       expect(cookieStore.set).toHaveBeenCalledWith(
-        "name",
-        "John Doe",
-        expect.any(Object)
-      );
-      expect(cookieStore.set).toHaveBeenCalledWith(
-        "nickname",
-        "John",
-        expect.any(Object)
-      );
-      expect(cookieStore.set).toHaveBeenCalledWith(
-        "email",
-        "john@example.com",
+        "user",
+        userCookieValue,
         expect.any(Object)
       );
       expect(revalidatePath).toHaveBeenCalledWith("/");
@@ -705,6 +710,15 @@ describe("Actions Module", () => {
         get: jest.fn((key: string) => {
           if (key === "access_token") return { value: "valid-access-token" };
           if (key === "refresh_token") return { value: "valid-refresh-token" };
+          if (key === "user")
+            return {
+              value: JSON.stringify({
+                name: "John Doe",
+                nickname: "John",
+                email: "john@example.com",
+                role: UserRole.USER,
+              }),
+            };
           return undefined;
         }),
         set: jest.fn(),
@@ -722,13 +736,20 @@ describe("Actions Module", () => {
         })
       );
 
+      const updatedUser = {
+        name: "John Doe",
+        nickname: "newnickname",
+        email: "john@example.com",
+        role: UserRole.USER,
+      } satisfies UserAuthInfo;
+
       const res = await UpdateNicknameAction({}, formData);
       const cookieStore = await cookies();
 
       expect(res).toBeUndefined();
       expect(cookieStore.set).toHaveBeenCalledWith(
-        "nickname",
-        "newnickname",
+        "user",
+        JSON.stringify(updatedUser),
         expect.any(Object)
       );
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
@@ -998,8 +1019,8 @@ describe("CheckNicknameExist", () => {
   describe("FetchAllBoards", () => {
     it("should fetch all boards successfully", async () => {
       const mockBoards: BoardListItemDto[] = [
-        { id: 1, slug: "free", name: "General" },
-        { id: 2, slug: "qna", name: "Q&A" },
+        { id: 1, slug: "free", name: "General", requireRole: UserRole.USER },
+        { id: 2, slug: "qna", name: "Q&A", requireRole: UserRole.USER },
       ];
 
       server.use(

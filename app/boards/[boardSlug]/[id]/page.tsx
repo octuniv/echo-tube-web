@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { FetchPost } from "@/lib/actions";
 import PostPage from "@/components/Boards/PostPage";
 import { userStatus } from "@/lib/authState";
+import { canModifyPost, isRoleHigherThan } from "@/lib/util";
 
 interface PostPageProps {
   params: Promise<{
@@ -19,8 +20,8 @@ export default async function Page({ params }: PostPageProps) {
   }
 
   const post = await FetchPost(postId);
-  const { nickname } = await userStatus();
-  const isEditable = nickname === post.nickname;
+  const userStatusInfo = await userStatus();
+  const isEditable = canModifyPost({ user: userStatusInfo, post });
 
   return <PostPage post={post} isEditable={isEditable} boardSlug={boardSlug} />;
 }

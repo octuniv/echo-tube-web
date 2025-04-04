@@ -116,8 +116,7 @@ export async function LoginAction(
       };
     }
 
-    const { access_token, refresh_token, name, nickname, email } =
-      await response.json();
+    const { access_token, refresh_token, user } = await response.json();
 
     const cookieStore = await cookies();
 
@@ -130,19 +129,11 @@ export async function LoginAction(
       maxAge: 60 * 60 * 24 * 7,
     });
 
-    cookieStore.set("name", name, {
-      ...baseCookieOptions,
-      maxAge: 60 * 60 * 24 * 7, // 7일 동안 유효
-    });
-    cookieStore.set("nickname", nickname, {
+    cookieStore.set("user", JSON.stringify(user), {
       ...baseCookieOptions,
       maxAge: 60 * 60 * 24 * 7, // 7일 동안 유효
     });
 
-    cookieStore.set("email", email, {
-      ...baseCookieOptions,
-      maxAge: 60 * 60 * 24 * 7, // 7일 동안 유효
-    });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return {
@@ -412,9 +403,12 @@ export async function UpdateNicknameAction(
     redirect("/login");
   } else {
     const cookieStore = await cookies();
-    cookieStore.set("nickname", params.nickname, {
+    const userCookie = cookieStore.get("user");
+    const user = userCookie ? JSON.parse(userCookie.value) : {};
+    user.nickname = params.nickname;
+    cookieStore.set("user", JSON.stringify(user), {
       ...baseCookieOptions,
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 7, // 7일 유지 (LoginAction과 일치)
     });
     revalidatePath("/dashboard");
     redirect("/dashboard");

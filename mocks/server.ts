@@ -3,7 +3,7 @@
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "../lib/util";
-import { PostDto } from "@/lib/definition";
+import { LoginResponse, PostDto, UserRole } from "../lib/definition";
 
 export const mockPosts: PostDto[] = [
   {
@@ -18,8 +18,11 @@ export const mockPosts: PostDto[] = [
       id: 1,
       slug: "free",
       name: "자유 게시판",
+      requireRole: UserRole.USER,
     },
     hotScore: 150.5,
+    views: "",
+    commentsCount: 0,
   },
   {
     id: 2,
@@ -33,8 +36,11 @@ export const mockPosts: PostDto[] = [
       id: 1,
       slug: "free",
       name: "자유 게시판",
+      requireRole: UserRole.USER,
     },
     hotScore: 150.5,
+    views: "",
+    commentsCount: 0,
   },
 ];
 
@@ -56,10 +62,13 @@ export const server = setupServer(
       {
         access_token: "valid-access-token",
         refresh_token: "valid-refresh-token",
-        name: "John Doe",
-        nickname: "John",
-        email: "john@example.com",
-      },
+        user: {
+          name: "John Doe",
+          nickname: "John",
+          email: "john@example.com",
+          role: UserRole.USER,
+        },
+      } satisfies LoginResponse,
       { status: 200 }
     );
   }),
