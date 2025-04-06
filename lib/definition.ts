@@ -89,19 +89,49 @@ export const PasswordUpdateSchema = z
     path: ["confirmPassword"],
   });
 
+export interface BoardListItemDto {
+  id: number;
+  slug: string;
+  name: string;
+  description?: string | null;
+  requiredRole: UserRole;
+}
+
+export const BoardListItemDtoSchema = z.object({
+  id: z.number(),
+  slug: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  requiredRole: z.nativeEnum(UserRole), // enum 검증
+});
+
 export interface PostDto {
   id: number;
   title: string;
   content: string;
-  views: string;
+  views: number;
   commentsCount: number;
-  videoUrl?: string;
+  videoUrl?: string | null;
   nickname: string;
   createdAt: string;
   updatedAt: string;
   board: BoardListItemDto;
   hotScore: number;
 }
+
+export const PostDtoSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  content: z.string(),
+  views: z.number(),
+  commentsCount: z.number(),
+  videoUrl: z.string().nullable().optional(),
+  nickname: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  board: BoardListItemDtoSchema,
+  hotScore: z.number(),
+});
 
 // export type VideoCardInfo = Omit<PostDto, "content" | "updatedAt">;
 export type VideoCardInfo = Pick<
@@ -128,12 +158,4 @@ export interface CreatePostRequestBody {
   content: string;
   videoUrl: string;
   boardSlug: string;
-}
-
-export interface BoardListItemDto {
-  id: number;
-  slug: string;
-  name: string;
-  description?: string;
-  requireRole: UserRole;
 }

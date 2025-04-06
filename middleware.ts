@@ -1,22 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// 보호된 페이지 목록
-const protectedRoutes = ["/dashboard"];
-
 export function middleware(req: NextRequest) {
-  const path = req.nextUrl.pathname;
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    path.startsWith(route)
-  );
-
-  // ✅ `req.cookies.get()`로 접근 (정상적으로 저장되었을 경우)
-  const accessToken = req.cookies.get("access_token")?.value;
-
-  // 보호된 페이지 접근 시 로그인 필요
-  if (isProtectedRoute && !accessToken) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl));
-  }
-
   return NextResponse.next();
 }
 

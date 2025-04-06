@@ -1,5 +1,10 @@
 import * as dotenv from "dotenv";
-import { PostDto, UserAuthInfo, UserRole } from "./definition";
+import {
+  BoardListItemDto,
+  PostDto,
+  UserAuthInfo,
+  UserRole,
+} from "./definition";
 
 dotenv.config();
 
@@ -13,19 +18,23 @@ export const baseCookieOptions = {
   domain: "localhost",
 };
 
+const roleHierarchy: UserRole[] = [UserRole.USER, UserRole.BOT, UserRole.ADMIN];
+
 export function isRoleHigherThan(
   userRole: UserRole,
   requiredRole: UserRole
 ): boolean {
-  const roleHierarchy: UserRole[] = [
-    UserRole.USER,
-    UserRole.BOT,
-    UserRole.ADMIN,
-  ];
   return roleHierarchy.indexOf(userRole) > roleHierarchy.indexOf(requiredRole);
 }
 
-function isValidUser(
+export function isRoleSufficient(
+  userRole: UserRole,
+  requiredRole: UserRole
+): boolean {
+  return roleHierarchy.indexOf(userRole) >= roleHierarchy.indexOf(requiredRole);
+}
+
+export function isValidUser(
   user: UserAuthInfo
 ): user is UserAuthInfo & { role: UserRole } {
   return (
@@ -46,6 +55,18 @@ export const canModifyPost = ({
 
   return (
     user.nickname === post.nickname ||
-    isRoleHigherThan(user.role, post.board.requireRole)
+    isRoleHigherThan(user.role, post.board.requiredRole)
   );
+};
+
+export const canCreatePost = ({
+  user,
+  board,
+}: {
+  user: UserAuthInfo;
+  board: BoardListItemDto;
+}): boolean => {
+  if (!isValidUser(user)) return false;
+
+  return isRoleSufficient(user.role, board.requiredRole);
 };

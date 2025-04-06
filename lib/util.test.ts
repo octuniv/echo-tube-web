@@ -11,7 +11,7 @@ describe("canModifyPost", () => {
     };
     const post = {
       nickname: "other",
-      board: { requireRole: UserRole.USER },
+      board: { requiredRole: UserRole.USER },
     } as PostDto;
 
     expect(canModifyPost({ user, post })).toBe(false);
@@ -26,7 +26,7 @@ describe("canModifyPost", () => {
     };
     const post = {
       nickname: "user",
-      board: { requireRole: UserRole.USER },
+      board: { requiredRole: UserRole.USER },
     } as PostDto;
 
     expect(canModifyPost({ user, post })).toBe(true);

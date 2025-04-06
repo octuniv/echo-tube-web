@@ -41,7 +41,9 @@ jest.mock("next/headers", () => ({
 
 jest.mock("next/navigation", () => ({
   redirect: jest.fn(),
-  notFound: jest.fn(),
+  notFound: jest.fn().mockImplementation(() => {
+    throw new Error("NOT_FOUND");
+  }),
 }));
 
 jest.mock("./authState", () => ({
@@ -243,6 +245,13 @@ describe("Actions Module", () => {
   });
 
   describe("FetchPostsByBoardId", () => {
+    const consoleErrorMock = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    afterEach(() => {
+      consoleErrorMock.mockClear();
+    });
     it("should fetch posts by boardId successfully", async () => {
       const boardId = 1;
       server.use(
@@ -277,9 +286,38 @@ describe("Actions Module", () => {
       const posts = await FetchPostsByBoardId(boardId);
       expect(posts).toEqual([]);
     });
+
+    it("should return empty array when response data is invalid", async () => {
+      const boardId = 1;
+      const invalidData = [
+        {
+          id: 1,
+          title: "Invalid Post",
+          content: "Content",
+          // requiredRole이 유효하지 않은 값 (enum에 없는 값)
+          board: { requiredRole: "invalid-role" },
+        },
+      ];
+      server.use(
+        http.get(`${serverAddress}/posts/board/${boardId}`, () =>
+          HttpResponse.json(invalidData, { status: 200 })
+        )
+      );
+      const posts = await FetchPostsByBoardId(boardId);
+      expect(posts).toEqual([]); // Zod 검증 실패 시 빈 배열 반환
+      expect(console.error).toHaveBeenCalled(); // 에러 로깅 확인
+    });
   });
 
   describe("FetchPost", () => {
+    const consoleErrorMock = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    afterEach(() => {
+      consoleErrorMock.mockClear();
+    });
+
     it("should fetch a post successfully", async () => {
       const postId = 1;
       const mockPost = {
@@ -287,9 +325,18 @@ describe("Actions Module", () => {
         title: "Post 1",
         content: "Content of Post 1",
         videoUrl: "https://example.com/video1",
+        views: 1,
+        commentsCount: 0,
         nickname: "UserA",
         createdAt: "2023-10-01T12:00:00Z",
         updatedAt: "2023-10-01T12:00:00Z",
+        board: {
+          id: 1,
+          slug: "free",
+          name: "General",
+          requiredRole: UserRole.USER, // UserRole enum 사용
+        },
+        hotScore: 100,
       };
 
       server.use(
@@ -315,7 +362,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await FetchPost(postId);
+      await expect(FetchPost(postId)).rejects.toThrow("NOT_FOUND");
       expect(notFound).toHaveBeenCalled();
     });
 
@@ -331,8 +378,27 @@ describe("Actions Module", () => {
         })
       );
 
-      await FetchPost(postId);
+      await expect(FetchPost(postId)).rejects.toThrow("NOT_FOUND");
       expect(notFound).toHaveBeenCalled();
+    });
+
+    it("should throw error when post data is invalid", async () => {
+      const postId = 1;
+      const invalidPostData = {
+        id: postId,
+        title: "Invalid Post",
+        content: "Content",
+        // requiredRole이 유효하지 않은 값
+        board: { requiredRole: "invalid-role" },
+      };
+      server.use(
+        http.get(`${serverAddress}/posts/${postId}`, () =>
+          HttpResponse.json(invalidPostData, { status: 200 })
+        )
+      );
+      await expect(FetchPost(postId)).rejects.toThrow(
+        "Invalid post data format"
+      );
     });
   });
 
@@ -1017,10 +1083,18 @@ describe("CheckNicknameExist", () => {
   });
 
   describe("FetchAllBoards", () => {
+    const consoleErrorMock = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    afterEach(() => {
+      consoleErrorMock.mockClear();
+    });
+
     it("should fetch all boards successfully", async () => {
       const mockBoards: BoardListItemDto[] = [
-        { id: 1, slug: "free", name: "General", requireRole: UserRole.USER },
-        { id: 2, slug: "qna", name: "Q&A", requireRole: UserRole.USER },
+        { id: 1, slug: "free", name: "General", requiredRole: UserRole.USER },
+        { id: 2, slug: "qna", name: "Q&A", requiredRole: UserRole.USER },
       ];
 
       server.use(
@@ -1044,6 +1118,26 @@ describe("CheckNicknameExist", () => {
       );
 
       await expect(FetchAllBoards()).rejects.toThrow("Failed to fetch boards");
+    });
+
+    it("should return empty array when board data is invalid", async () => {
+      const invalidBoards = [
+        {
+          id: 1,
+          slug: "free",
+          name: "General",
+          // requiredRole이 유효하지 않은 값
+          requiredRole: "invalid-role",
+        },
+      ];
+      server.use(
+        http.get(`${serverAddress}/boards`, () =>
+          HttpResponse.json(invalidBoards, { status: 200 })
+        )
+      );
+      const boards = await FetchAllBoards();
+      expect(boards).toEqual([]); // Zod 검증 실패 시 빈 배열 반환
+      expect(console.error).toHaveBeenCalled(); // 에러 로깅 확인
     });
   });
 });

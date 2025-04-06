@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { FetchPost } from "@/lib/actions";
 import PostPage from "@/components/Boards/PostPage";
 import { userStatus } from "@/lib/authState";
-import { canModifyPost, isRoleHigherThan } from "@/lib/util";
+import { canModifyPost } from "@/lib/util";
 
 interface PostPageProps {
   params: Promise<{

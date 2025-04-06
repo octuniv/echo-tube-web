@@ -2,6 +2,7 @@
 
 import {
   BoardListItemDto,
+  BoardListItemDtoSchema,
   LoginInfoSchema,
   LoginInfoState,
   nicknameUpdateSchema,
@@ -9,6 +10,7 @@ import {
   PasswordUpdateSchema,
   PasswordUpdateState,
   PostDto,
+  PostDtoSchema,
   postSchema,
   PostState,
   userSchema,
@@ -21,6 +23,7 @@ import { clearAuth } from "./authState";
 import { authenticatedFetch } from "./authService";
 import { revalidatePath } from "next/cache";
 import { isCustomError } from "./errors";
+import { z } from "zod";
 
 export async function signUpAction(prevState: UserState, formData: FormData) {
   const validatedFields = userSchema.safeParse({
@@ -162,8 +165,16 @@ export async function FetchPostsByBoardId(boardId: number): Promise<PostDto[]> {
 
   if (!response.ok) throw new Error("Failed to fetch posts");
 
-  const data = await response.json();
-  return data.length ? data : [];
+  const rawData = await response.json();
+
+  // 배열 전체 검증
+  const result = z.array(PostDtoSchema).safeParse(rawData);
+  if (!result.success) {
+    console.error("Validation failed:", result.error);
+    return [];
+  }
+
+  return result.data;
 }
 
 export async function FetchPost(id: number): Promise<PostDto> {
@@ -180,8 +191,15 @@ export async function FetchPost(id: number): Promise<PostDto> {
     notFound();
   }
 
-  const data = await response.json();
-  return data;
+  const rawData = await response.json();
+
+  const result = PostDtoSchema.safeParse(rawData);
+
+  if (!result.success) {
+    throw new Error("Invalid post data format");
+  }
+
+  return result.data;
 }
 
 export async function CreatePost(
@@ -525,5 +543,14 @@ export async function FetchAllBoards(): Promise<BoardListItemDto[]> {
   });
 
   if (!response.ok) throw new Error("Failed to fetch boards");
-  return await response.json();
+  const rawData = await response.json();
+
+  // 배열 전체 검증
+  const result = z.array(BoardListItemDtoSchema).safeParse(rawData);
+  if (!result.success) {
+    console.error("Validation failed:", result.error);
+    return [];
+  }
+
+  return result.data;
 }

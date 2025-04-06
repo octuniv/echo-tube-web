@@ -18,10 +18,10 @@ export const mockPosts: PostDto[] = [
       id: 1,
       slug: "free",
       name: "자유 게시판",
-      requireRole: UserRole.USER,
+      requiredRole: UserRole.USER,
     },
     hotScore: 150.5,
-    views: "",
+    views: 1,
     commentsCount: 0,
   },
   {
@@ -36,10 +36,10 @@ export const mockPosts: PostDto[] = [
       id: 1,
       slug: "free",
       name: "자유 게시판",
-      requireRole: UserRole.USER,
+      requiredRole: UserRole.USER,
     },
     hotScore: 150.5,
-    views: "",
+    views: 1,
     commentsCount: 0,
   },
 ];
@@ -96,18 +96,9 @@ export const server = setupServer(
     const postId = Number(params.id);
 
     if (postId === 1) {
-      return HttpResponse.json(
-        {
-          id: 1,
-          title: "Post 1",
-          content: "Content of Post 1",
-          videoUrl: "https://example.com/video1",
-          nickname: "UserA",
-          createdAt: "2023-10-01T12:00:00Z",
-          updatedAt: "2023-10-01T12:00:00Z",
-        },
-        { status: 200 }
-      );
+      return HttpResponse.json(mockPosts[0] satisfies PostDto, {
+        status: 200,
+      });
     }
 
     return HttpResponse.json({ error: "Post not found" }, { status: 404 });

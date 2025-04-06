@@ -205,7 +205,6 @@ test.describe("Auth Test", () => {
 
       // 모든 쿠키 삭제되었는지 확인
       const remainingCookies = await page.context().cookies();
-      console.log("Remaining Cookies:", remainingCookies);
 
       // 쿠키 배열이 비어 있는지 검증
       expect(remainingCookies.length).toBe(0);
@@ -303,7 +302,6 @@ test.describe("Auth Test", () => {
 
       // 모든 쿠키 삭제되었는지 확인
       const remainingCookies = await page.context().cookies();
-      console.log("Remaining Cookies:", remainingCookies);
 
       // 쿠키 배열이 비어 있는지 검증
       expect(remainingCookies.length).toBe(0);

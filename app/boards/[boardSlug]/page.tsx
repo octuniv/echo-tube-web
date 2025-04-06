@@ -1,6 +1,8 @@
 import Board from "@/components/Boards/Board";
 import { FetchAllBoards, FetchPostsByBoardId } from "@/lib/actions";
+import { userStatus } from "@/lib/authState";
 import { PostDto, VideoCardInfo } from "@/lib/definition";
+import { canCreatePost } from "@/lib/util";
 import { notFound } from "next/navigation";
 
 export async function generateStaticParams() {
@@ -23,16 +25,33 @@ const Page = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
   let videoData: VideoCardInfo[] = [];
 
   const posts = await FetchPostsByBoardId(currentBoard.id);
-  videoData = posts.map((post: PostDto) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { content, updatedAt, ...data } = post;
-    return data satisfies VideoCardInfo;
-  });
+  // page.tsx 내부의 posts 매핑 부분
+  videoData = posts.map((post: PostDto) => ({
+    id: post.id,
+    title: post.title,
+    nickname: post.nickname,
+    createdAt: post.createdAt,
+    videoUrl: post.videoUrl, // optional 필드 유지
+  }));
 
   const sortedVideoData = videoData.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
-  return <Board boardSlug={boardSlug} sortedVideos={sortedVideoData} />;
+
+  const userStatusInfo = await userStatus();
+
+  const isEditable = canCreatePost({
+    user: userStatusInfo,
+    board: currentBoard,
+  });
+
+  return (
+    <Board
+      boardSlug={boardSlug}
+      sortedVideos={sortedVideoData}
+      isEditable={isEditable}
+    />
+  );
 };
 
 export default Page;
