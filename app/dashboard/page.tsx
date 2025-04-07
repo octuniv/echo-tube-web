@@ -1,15 +1,19 @@
 import Dashboard from "@/components/dashboard/Dashboard";
+import { FetchDashboardSummary } from "@/lib/actions";
 import { userStatus } from "@/lib/authState";
 import { isValidUser } from "@/lib/util";
 import { redirect } from "next/navigation";
 
-const DashboardPage = async () => {
+const Page = async () => {
   const userStatusInfo = await userStatus();
 
   if (!isValidUser(userStatusInfo)) {
     redirect(`/login`);
   }
-  return <Dashboard />;
+
+  const dashboardData = await FetchDashboardSummary();
+
+  return <Dashboard user={userStatusInfo} data={dashboardData} />;
 };
 
-export default DashboardPage;
+export default Page;

@@ -11,6 +11,7 @@ export const loginStatus = async (): Promise<boolean> => {
   const access_token = cookieStore.get("access_token")?.value;
   return !!access_token;
 };
+
 export const userStatus = async (): Promise<UserAuthInfo> => {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value;

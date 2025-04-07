@@ -558,10 +558,11 @@ export async function FetchAllBoards(): Promise<BoardListItemDto[]> {
 }
 
 export async function FetchDashboardSummary(): Promise<DashboardSummaryDto> {
+  // need to control caching later......
   const response = await fetch(`${serverAddress}/dashboard/summary`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
-    next: { revalidate: 300 },
+    // next: { revalidate: 300 },
   });
 
   if (!response.ok) throw new Error("Failed to fetch DashboardSummary");
