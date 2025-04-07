@@ -1,5 +1,6 @@
 import { expect, Page, BrowserContext } from "@playwright/test";
 import { User } from "@/lib/definition";
+import { expectCookiesToBeDefined, expectValidUserCookie } from "./test-utils";
 
 interface authenticationProps {
   account: User;
@@ -35,9 +36,8 @@ export const signUpAndLogin = async ({
   await page.waitForURL("/dashboard", { timeout: 5000 });
 
   const cookies = await context.cookies();
-  ["access_token", "refresh_token", "user"].forEach((cookieName) => {
-    const cookie = cookies.find((cookie) => cookie.name === cookieName);
-    expect(cookie).toBeDefined();
-    expect(cookie?.value).not.toBe("");
-  });
+
+  expectCookiesToBeDefined(cookies, ["access_token", "refresh_token", "user"]);
+
+  expectValidUserCookie(cookies);
 };

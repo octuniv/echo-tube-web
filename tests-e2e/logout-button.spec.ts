@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectCookiesToNotExist } from "./util/test-utils";
 
 test.describe("Logout Button", () => {
   test.beforeEach(async ({ page }) => {
@@ -20,9 +21,7 @@ test.describe("Logout Button", () => {
 
     // 쿠키 삭제 확인
     const cookies = await context.cookies();
-    ["access_token", "refresh_token", "user"].forEach((name) =>
-      expect(cookies.find((cookie) => cookie.name === name)).toBeFalsy()
-    );
+    expectCookiesToNotExist(cookies, ["access_token", "refresh_token", "user"]);
 
     // 로그아웃 상태 적용 확인
     await expect(page.getByLabel("Login")).toBeVisible();

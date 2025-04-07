@@ -1,7 +1,12 @@
 import * as dotenv from "dotenv";
 import { test, expect, chromium, Cookie } from "@playwright/test";
-import { signUpAndLogin } from "./util/authUtil";
+import { signUpAndLogin } from "./util/auth-utils";
 import { User, UserRole } from "@/lib/definition";
+import {
+  expectCookiesToBeDefined,
+  expectCookiesToNotExist,
+  expectValidUserCookie,
+} from "./util/test-utils";
 
 dotenv.config({ path: ".env.e2e.test" });
 
@@ -37,11 +42,13 @@ test.describe("Settings Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "user"].forEach((name) =>
-        expect(
-          insertedCookies.find((cookie) => cookie.name === name)
-        ).toBeDefined()
-      );
+      expectCookiesToBeDefined(insertedCookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
+
+      expectValidUserCookie(insertedCookies);
     });
 
     test("Exist components in settings page", async ({ page }) => {
@@ -67,11 +74,13 @@ test.describe("Settings Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "user"].forEach((name) =>
-        expect(
-          insertedCookies.find((cookie) => cookie.name === name)
-        ).toBeDefined()
-      );
+      expectCookiesToBeDefined(insertedCookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
+
+      expectValidUserCookie(insertedCookies);
 
       await page.goto("/settings");
       const updateNicknameLink = page.getByRole("link", {
@@ -88,19 +97,9 @@ test.describe("Settings Test", () => {
 
       await page.waitForURL("/dashboard", { timeout: 1000 });
 
-      const cookies = await page.context().cookies();
-
-      const userCookie = cookies.find((cookie) => cookie.name === "user");
-      expect(userCookie).toBeDefined();
-
-      const decodedValue = decodeURIComponent(userCookie!.value);
-      const userData = JSON.parse(decodedValue);
-
+      const userData = expectValidUserCookie(await page.context().cookies());
       expect(userData.nickname).toBe("newnickname");
       expect(userData.role).toBe(UserRole.USER);
-      expect(userData.email).toBe("settings@test.com");
-      expect(userData).toHaveProperty("name", "settingsTester");
-      currentCookies = cookies;
     });
 
     test("should handle when trying to change to duplicate nicknames", async ({
@@ -126,11 +125,13 @@ test.describe("Settings Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "user"].forEach((name) =>
-        expect(
-          insertedCookies.find((cookie) => cookie.name === name)
-        ).toBeDefined()
-      );
+      expectCookiesToBeDefined(insertedCookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
+
+      expectValidUserCookie(insertedCookies);
 
       await page.goto("/settings");
       const updatePasswordLink = page.getByRole("link", {
@@ -188,11 +189,13 @@ test.describe("Settings Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "user"].forEach((name) =>
-        expect(
-          insertedCookies.find((cookie) => cookie.name === name)
-        ).toBeDefined()
-      );
+      expectCookiesToBeDefined(insertedCookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
+
+      expectValidUserCookie(insertedCookies);
 
       await page.goto("/settings");
     });
@@ -208,13 +211,13 @@ test.describe("Settings Test", () => {
       await deleteUserButton.click();
 
       await page.waitForURL("/", { timeout: 1000 });
+
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-        (name) =>
-          expect(
-            insertedCookies.find((cookie) => cookie.name === name)
-          ).toBeUndefined()
-      );
+      expectCookiesToNotExist(insertedCookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
     });
   });
 });

@@ -2,7 +2,7 @@ import { test as setup } from "@playwright/test";
 import path from "path";
 import * as dotenv from "dotenv";
 import { User } from "@/lib/definition";
-import { signUpAndLogin } from "./util/authUtil";
+import { signUpAndLogin } from "./util/auth-utils";
 
 dotenv.config({ path: ".env.e2e.test" });
 

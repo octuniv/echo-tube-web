@@ -1,6 +1,10 @@
 import { test, expect, Cookie, chromium } from "@playwright/test";
-import { signUpAndLogin } from "./util/authUtil";
+import { signUpAndLogin } from "./util/auth-utils";
 import { User } from "@/lib/definition";
+import {
+  expectCookiesToBeDefined,
+  expectValidUserCookie,
+} from "./util/test-utils";
 
 const authTestAccount = {
   name: "authTest",
@@ -27,11 +31,13 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "user"].forEach((name) =>
-        expect(
-          insertedCookies.find((cookie) => cookie.name === name)
-        ).toBeDefined()
-      );
+      expectCookiesToBeDefined(insertedCookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
+
+      expectValidUserCookie(insertedCookies);
     });
 
     test("failed to submit with valid data when signUpAndLogin is invalid", async ({
@@ -124,11 +130,13 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "user"].forEach((name) =>
-        expect(
-          insertedCookies.find((cookie) => cookie.name === name)
-        ).toBeDefined()
-      );
+      expectCookiesToBeDefined(insertedCookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
+
+      expectValidUserCookie(insertedCookies);
     });
 
     test("should not be able to be deleted post by someone who manipulates cookies", async ({
@@ -214,11 +222,13 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "user"].forEach((name) =>
-        expect(
-          insertedCookies.find((cookie) => cookie.name === name)
-        ).toBeDefined()
-      );
+      expectCookiesToBeDefined(insertedCookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
+
+      expectValidUserCookie(insertedCookies);
     });
 
     test("should not be able to be edited post by someone who manipulates cookies", async ({
