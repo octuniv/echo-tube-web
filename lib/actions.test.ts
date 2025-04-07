@@ -13,11 +13,12 @@ import {
   checkNicknameExists,
   UpdatePasswordAction,
   FetchAllBoards,
+  FetchDashboardSummary,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { clearAuth } from "./authState";
-import { mockPosts, server } from "../mocks/server";
+import { mockDashboardSummary, mockPosts, server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "./util";
 import { revalidatePath } from "next/cache";
@@ -1138,6 +1139,57 @@ describe("CheckNicknameExist", () => {
       const boards = await FetchAllBoards();
       expect(boards).toEqual([]); // Zod 검증 실패 시 빈 배열 반환
       expect(console.error).toHaveBeenCalled(); // 에러 로깅 확인
+    });
+  });
+
+  describe("FetchDashboardSummary", () => {
+    const consoleErrorMock = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    afterEach(() => {
+      consoleErrorMock.mockClear();
+    });
+
+    it("should fetch dashboard summary successfully", async () => {
+      const result = await FetchDashboardSummary();
+      expect(result).toEqual(mockDashboardSummary);
+      expect(result.recentPosts).toBeInstanceOf(Array);
+      expect(result.popularPosts).toBeInstanceOf(Array);
+      expect(result.noticesPosts).toBeInstanceOf(Array);
+    });
+
+    it("should throw error when response is invalid", async () => {
+      // invalid data (배열 대신 단일 객체 반환)
+      const invalidData = {
+        visitors: 150,
+        recentPosts: mockPosts[0], // 배열이 아닌 단일 객체
+        popularPosts: mockPosts[1],
+        noticesPosts: mockPosts[0],
+      };
+
+      server.use(
+        http.get(`${serverAddress}/dashboard/summary`, () =>
+          HttpResponse.json(invalidData, { status: 200 })
+        )
+      );
+
+      await expect(FetchDashboardSummary()).rejects.toThrow(
+        "Invalid data format for DashboardSummary"
+      );
+      expect(console.error).toHaveBeenCalled();
+    });
+
+    it("should throw error when server returns 500", async () => {
+      server.use(
+        http.get(`${serverAddress}/dashboard/summary`, () =>
+          HttpResponse.json({ error: "Internal Server Error" }, { status: 500 })
+        )
+      );
+
+      await expect(FetchDashboardSummary()).rejects.toThrow(
+        "Failed to fetch DashboardSummary"
+      );
     });
   });
 });

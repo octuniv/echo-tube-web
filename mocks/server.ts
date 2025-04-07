@@ -50,6 +50,13 @@ export const mockEditPostForm = {
   videoUrl: "https://example.com/changed",
 };
 
+export const mockDashboardSummary = {
+  visitors: 150,
+  recentPosts: [mockPosts[0]],
+  popularPosts: [mockPosts[1]],
+  noticesPosts: [mockPosts[0]],
+};
+
 export const server = setupServer(
   // Mock API for user sign-up
   http.post(`${serverAddress}/users`, () => {
@@ -206,5 +213,9 @@ export const server = setupServer(
     return HttpResponse.json([{ id: 1, slug: "free", name: "자유 게시판" }], {
       status: 200,
     });
+  }),
+
+  http.get(`${serverAddress}/dashboard/summary`, () => {
+    return HttpResponse.json(mockDashboardSummary, { status: 200 });
   })
 );

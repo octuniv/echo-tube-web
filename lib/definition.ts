@@ -159,3 +159,17 @@ export interface CreatePostRequestBody {
   videoUrl: string;
   boardSlug: string;
 }
+
+export interface DashboardSummaryDto {
+  visitors: number;
+  recentPosts: PostDto[];
+  popularPosts: PostDto[];
+  noticesPosts: PostDto[];
+}
+
+export const DashboardSummaryDtoSchema = z.object({
+  visitors: z.number(),
+  recentPosts: z.array(PostDtoSchema),
+  popularPosts: z.array(PostDtoSchema),
+  noticesPosts: z.array(PostDtoSchema),
+});
