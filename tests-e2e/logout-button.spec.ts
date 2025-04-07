@@ -20,9 +20,8 @@ test.describe("Logout Button", () => {
 
     // 쿠키 삭제 확인
     const cookies = await context.cookies();
-    ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-      (name) =>
-        expect(cookies.find((cookie) => cookie.name === name)).toBeFalsy()
+    ["access_token", "refresh_token", "user"].forEach((name) =>
+      expect(cookies.find((cookie) => cookie.name === name)).toBeFalsy()
     );
 
     // 로그아웃 상태 적용 확인

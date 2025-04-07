@@ -27,11 +27,10 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-        (name) =>
-          expect(
-            insertedCookies.find((cookie) => cookie.name === name)
-          ).toBeDefined()
+      ["access_token", "refresh_token", "user"].forEach((name) =>
+        expect(
+          insertedCookies.find((cookie) => cookie.name === name)
+        ).toBeDefined()
       );
     });
 
@@ -125,11 +124,10 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-        (name) =>
-          expect(
-            insertedCookies.find((cookie) => cookie.name === name)
-          ).toBeDefined()
+      ["access_token", "refresh_token", "user"].forEach((name) =>
+        expect(
+          insertedCookies.find((cookie) => cookie.name === name)
+        ).toBeDefined()
       );
     });
 
@@ -216,11 +214,10 @@ test.describe("Auth Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-        (name) =>
-          expect(
-            insertedCookies.find((cookie) => cookie.name === name)
-          ).toBeDefined()
+      ["access_token", "refresh_token", "user"].forEach((name) =>
+        expect(
+          insertedCookies.find((cookie) => cookie.name === name)
+        ).toBeDefined()
       );
     });
 

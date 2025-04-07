@@ -7,7 +7,7 @@ const DashboardPage = async () => {
   const userStatusInfo = await userStatus();
 
   if (!isValidUser(userStatusInfo)) {
-    redirect(`/`);
+    redirect(`/login`);
   }
   return <Dashboard />;
 };

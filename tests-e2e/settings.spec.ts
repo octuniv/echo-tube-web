@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 import { test, expect, chromium, Cookie } from "@playwright/test";
 import { signUpAndLogin } from "./util/authUtil";
-import { User } from "@/lib/definition";
+import { User, UserRole } from "@/lib/definition";
 
 dotenv.config({ path: ".env.e2e.test" });
 
@@ -37,11 +37,10 @@ test.describe("Settings Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-        (name) =>
-          expect(
-            insertedCookies.find((cookie) => cookie.name === name)
-          ).toBeDefined()
+      ["access_token", "refresh_token", "user"].forEach((name) =>
+        expect(
+          insertedCookies.find((cookie) => cookie.name === name)
+        ).toBeDefined()
       );
     });
 
@@ -68,11 +67,10 @@ test.describe("Settings Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-        (name) =>
-          expect(
-            insertedCookies.find((cookie) => cookie.name === name)
-          ).toBeDefined()
+      ["access_token", "refresh_token", "user"].forEach((name) =>
+        expect(
+          insertedCookies.find((cookie) => cookie.name === name)
+        ).toBeDefined()
       );
 
       await page.goto("/settings");
@@ -92,11 +90,16 @@ test.describe("Settings Test", () => {
 
       const cookies = await page.context().cookies();
 
-      const nicknameCookie = cookies.find(
-        (cookie) => cookie.name === "nickname"
-      );
-      expect(nicknameCookie).toBeDefined();
-      expect(nicknameCookie?.value).toBe("newnickname");
+      const userCookie = cookies.find((cookie) => cookie.name === "user");
+      expect(userCookie).toBeDefined();
+
+      const decodedValue = decodeURIComponent(userCookie!.value);
+      const userData = JSON.parse(decodedValue);
+
+      expect(userData.nickname).toBe("newnickname");
+      expect(userData.role).toBe(UserRole.USER);
+      expect(userData.email).toBe("settings@test.com");
+      expect(userData).toHaveProperty("name", "settingsTester");
       currentCookies = cookies;
     });
 
@@ -123,11 +126,10 @@ test.describe("Settings Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-        (name) =>
-          expect(
-            insertedCookies.find((cookie) => cookie.name === name)
-          ).toBeDefined()
+      ["access_token", "refresh_token", "user"].forEach((name) =>
+        expect(
+          insertedCookies.find((cookie) => cookie.name === name)
+        ).toBeDefined()
       );
 
       await page.goto("/settings");
@@ -186,11 +188,10 @@ test.describe("Settings Test", () => {
       await page.context().clearCookies();
       await page.context().addCookies(currentCookies);
       const insertedCookies = await page.context().cookies();
-      ["access_token", "refresh_token", "name", "nickname", "email"].forEach(
-        (name) =>
-          expect(
-            insertedCookies.find((cookie) => cookie.name === name)
-          ).toBeDefined()
+      ["access_token", "refresh_token", "user"].forEach((name) =>
+        expect(
+          insertedCookies.find((cookie) => cookie.name === name)
+        ).toBeDefined()
       );
 
       await page.goto("/settings");
