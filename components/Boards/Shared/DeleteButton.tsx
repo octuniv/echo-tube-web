@@ -6,7 +6,6 @@ import { TrashIcon } from "@heroicons/react/24/solid"; // 휴지통 아이콘 �
 
 interface DeleteButtonProps {
   postId: number; // 삭제할 게시물 ID
-
   boardSlug: string; // 현재 게시판의 slug
   isEditable: boolean; // 편집 가능 여부
 }

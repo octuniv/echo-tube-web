@@ -1,14 +1,14 @@
 import { PostState as ErrorState, PostDto } from "@/lib/definition";
 import Link from "next/link";
 
-interface PostFormProps {
+interface PostEditorProps {
   state: ErrorState;
   formAction: (payload: FormData) => void;
   post?: PostDto;
   boardSlug: string;
 }
 
-function PostForm({ state, formAction, post, boardSlug }: PostFormProps) {
+function PostEditor({ state, formAction, post, boardSlug }: PostEditorProps) {
   return (
     <div className="max-w-md mx-auto p-4 border rounded-lg shadow-md space-y-4">
       <h1 className="text-2xl font-bold text-center">새 게시물 작성</h1>
@@ -97,4 +97,4 @@ function PostForm({ state, formAction, post, boardSlug }: PostFormProps) {
   );
 }
 
-export default PostForm;
+export default PostEditor;

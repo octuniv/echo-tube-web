@@ -1,13 +1,15 @@
-import Board from "@/components/Boards/Board";
+import Board from "@/components/Boards/General/Board";
 import { FetchAllBoards, FetchPostsByBoardId } from "@/lib/actions";
 import { userStatus } from "@/lib/authState";
-import { PostDto, VideoCardInfo } from "@/lib/definition";
+import { BoardPurpose, PostDto, VideoCardInfo } from "@/lib/definition";
 import { canCreatePost } from "@/lib/util";
 import { notFound } from "next/navigation";
 
 export async function generateStaticParams() {
   const boards = await FetchAllBoards();
-  return boards.map((board) => ({ boardSlug: board.slug }));
+  return boards
+    .filter((board) => board.boardType === BoardPurpose.GENERAL)
+    .map((board) => ({ boardSlug: board.slug }));
 }
 
 export const revalidate = 3600;
@@ -16,7 +18,10 @@ const Page = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
   const { boardSlug } = await params;
 
   const boards = await FetchAllBoards();
-  const currentBoard = boards.find((board) => board.slug === boardSlug);
+  const currentBoard = boards.find(
+    (board) =>
+      board.slug === boardSlug && board.boardType === BoardPurpose.GENERAL
+  );
 
   if (!currentBoard) {
     notFound();

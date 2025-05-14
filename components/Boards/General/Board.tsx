@@ -1,5 +1,5 @@
 import { VideoCardInfo } from "@/lib/definition";
-import VideoCard from "./VideoCard";
+import VideoCard from "../Shared/VideoCard";
 import Link from "next/link";
 
 interface BoardProps {

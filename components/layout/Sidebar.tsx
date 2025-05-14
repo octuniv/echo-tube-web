@@ -5,6 +5,7 @@ import {
   HomeIcon,
   DocumentTextIcon,
   CogIcon,
+  DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
 import { BoardListItemDto } from "@/lib/definition";
@@ -18,6 +19,11 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, isLogined, boards, onClose }: SidebarProps) => {
   const pathname = usePathname();
+
+  const generalBoards = boards.filter((board) => board.boardType === "general");
+  const aiDigestBoards = boards.filter(
+    (board) => board.boardType === "ai_digest"
+  );
 
   return (
     <div
@@ -65,24 +71,74 @@ const Sidebar = ({ isOpen, isLogined, boards, onClose }: SidebarProps) => {
           )}
         </div>
 
-        {/* Board Links */}
-        <div className="space-y-2">
-          {boards.map((board) => (
-            <Link
-              key={board.id}
-              href={`/boards/${board.slug}`}
-              className={`flex items-center px-4 py-2 rounded-lg ${
-                pathname === `/boards/${board.slug}`
-                  ? "bg-blue-100 text-blue-600"
-                  : "text-gray-700"
-              } hover:bg-blue-50`}
-              aria-label={`Boards section - ${board.name} category`}
+        {generalBoards.length > 0 && (
+          <div className="space-y-2">
+            <h3
+              className="px-4 py-2 font-semibold text-sm text-gray-500 uppercase tracking-wider"
+              id="general-heading"
             >
-              <DocumentTextIcon className="w-6 h-6 mr-3" />
-              {board.name}
-            </Link>
-          ))}
-        </div>
+              <span className="inline-flex items-center gap-1">
+                <DocumentTextIcon className="w-4 h-4 text-gray-400" />
+                일반 게시판
+              </span>
+            </h3>
+            {generalBoards.map((board) => {
+              const href = `/boards/${board.slug}`;
+              const isActive = pathname === href;
+
+              return (
+                <Link
+                  key={board.id}
+                  href={href}
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    isActive ? "bg-blue-100 text-blue-600" : "text-gray-700"
+                  } hover:bg-blue-50`}
+                  aria-label={`일반 게시판 - ${board.name} category`}
+                >
+                  <span className="w-6 h-6 mr-3" aria-hidden="true"></span>
+                  {board.name}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {aiDigestBoards.length > 0 && (
+          <div className="space-y-2">
+            <h3
+              className="px-4 py-2 font-semibold text-sm text-gray-500 uppercase tracking-wider"
+              id="ai-digest-heading"
+            >
+              <span className="inline-flex items-center gap-1">
+                <DocumentDuplicateIcon className="w-4 h-4 text-blue-400" />
+                AI 추천 게시판
+              </span>
+            </h3>
+            {aiDigestBoards.map((board) => {
+              const href = `/boards/ai-digest/${board.slug}`;
+              const isActive = pathname === href;
+
+              return (
+                <Link
+                  key={board.id}
+                  href={href}
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    isActive ? "bg-blue-100 text-blue-600" : "text-gray-700"
+                  } hover:bg-blue-50`}
+                  aria-label={`AI 큐레이션 게시판 - ${board.name} category`}
+                >
+                  <span className="w-6 h-6 mr-3" aria-hidden="true"></span>
+                  <span>{board.name}</span>
+                  {isActive && (
+                    <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      AI
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </nav>
     </div>
   );

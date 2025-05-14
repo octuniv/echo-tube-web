@@ -1,20 +1,19 @@
-"use client";
-
 import { PostDto } from "@/lib/definition";
 import DeleteButton from "./DeleteButton";
 import EditButton from "./EditButton";
 
-interface PostPageProps {
-  post: PostDto; // URL에서 전달되는 게시물 ID
-  isEditable: boolean;
-  boardSlug: string;
-}
-
-export default function PostPage({
+// components/Boards/Shared/PostLayout.tsx
+export default function PostLayout({
   post,
-  isEditable,
   boardSlug,
-}: PostPageProps) {
+  children,
+  isEditable = false,
+}: {
+  post: PostDto;
+  boardSlug: string;
+  children: React.ReactNode;
+  isEditable?: boolean;
+}) {
   return (
     <div className="container mx-auto p-6">
       {/* 제목 */}
@@ -61,6 +60,8 @@ export default function PostPage({
           </div>
         )
       ) : null}
+
+      {children}
 
       {/* 수정일 표시 */}
       <div className="text-xs text-gray-400" aria-label="게시물 마지막 수정일">

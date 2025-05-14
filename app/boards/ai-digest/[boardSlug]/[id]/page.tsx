@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
 import { FetchPost } from "@/lib/actions";
-import { userStatus } from "@/lib/authState";
-import { canModifyPost } from "@/lib/util";
-import GeneralPostPage from "@/components/Boards/General/GeneralPostPage";
+import AIDigestPostPage from "@/components/Boards/AiDigest/AiDigestPostPage";
 
 interface PostPageProps {
   params: Promise<{
@@ -20,11 +18,10 @@ export default async function Page({ params }: PostPageProps) {
   }
 
   const post = await FetchPost(postId);
-  const userStatusInfo = await userStatus();
-  const isEditable = canModifyPost({ user: userStatusInfo, post });
+  const isEditable = false;
 
   return (
-    <GeneralPostPage
+    <AIDigestPostPage
       post={post}
       isEditable={isEditable}
       boardSlug={boardSlug}

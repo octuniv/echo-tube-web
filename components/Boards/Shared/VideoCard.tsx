@@ -4,22 +4,33 @@ import { VideoCardInfo } from "@/lib/definition";
 interface CardProps {
   boardSlug: string;
   video: VideoCardInfo;
+  isAiDigest?: boolean;
 }
 
-export default function VideoCard({ boardSlug, video }: Readonly<CardProps>) {
+export default function VideoCard({
+  boardSlug,
+  video,
+  isAiDigest = false,
+}: Readonly<CardProps>) {
   const {
     id,
     title,
     nickname: author,
     createdAt: date,
     videoUrl: link,
+    channelTitle,
+    duration,
+    source,
   } = video;
+  const pageLink = `/boards/${
+    isAiDigest ? "ai-digest/" : ""
+  }${boardSlug}/${id}`;
 
   return (
     <div className="border p-4 rounded-lg shadow-md hover:bg-gray-50 transition">
       {/* Link 컴포넌트를 사용하여 전체 카드 클릭 가능 */}
       <Link
-        href={`/boards/${boardSlug}/${id}`}
+        href={pageLink}
         aria-label={`Go to post ${id}: ${title}`}
         className="block"
       >
@@ -43,7 +54,6 @@ export default function VideoCard({ boardSlug, video }: Readonly<CardProps>) {
         </p>
       </Link>
 
-      {/* 외부 링크는 별도로 처리 */}
       {link && (
         <a
           href={link}
@@ -54,6 +64,14 @@ export default function VideoCard({ boardSlug, video }: Readonly<CardProps>) {
         >
           {link}
         </a>
+      )}
+
+      {isAiDigest && (
+        <div className="mt-3 text-sm text-gray-700 space-y-1">
+          {channelTitle && <p>채널: {channelTitle}</p>}
+          {duration && <p>길이: {duration}</p>}
+          {source && <p>출처: {source}</p>}
+        </div>
       )}
     </div>
   );

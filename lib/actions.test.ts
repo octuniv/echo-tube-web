@@ -25,6 +25,7 @@ import { revalidatePath } from "next/cache";
 import { createError } from "./errors";
 import {
   BoardListItemDto,
+  BoardPurpose,
   CreatePostRequestBody,
   UserAuthInfo,
   UserRole,
@@ -335,8 +336,9 @@ describe("Actions Module", () => {
           id: 1,
           slug: "free",
           name: "General",
-          requiredRole: UserRole.USER, // UserRole enum 사용
-        },
+          requiredRole: UserRole.USER,
+          boardType: BoardPurpose.GENERAL,
+        } satisfies BoardListItemDto,
         hotScore: 100,
       };
 
@@ -1094,8 +1096,20 @@ describe("CheckNicknameExist", () => {
 
     it("should fetch all boards successfully", async () => {
       const mockBoards: BoardListItemDto[] = [
-        { id: 1, slug: "free", name: "General", requiredRole: UserRole.USER },
-        { id: 2, slug: "qna", name: "Q&A", requiredRole: UserRole.USER },
+        {
+          id: 1,
+          slug: "free",
+          name: "General",
+          requiredRole: UserRole.USER,
+          boardType: BoardPurpose.GENERAL,
+        },
+        {
+          id: 2,
+          slug: "qna",
+          name: "Q&A",
+          requiredRole: UserRole.USER,
+          boardType: BoardPurpose.GENERAL,
+        },
       ];
 
       server.use(

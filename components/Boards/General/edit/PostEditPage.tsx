@@ -3,15 +3,15 @@
 import { EditPost } from "@/lib/actions";
 import { useActionState } from "react";
 import { PostState as ErrorState, PostDto } from "@/lib/definition";
-import EditPostForm from "../PostForm";
+import PostEditForm from "../../Shared/PostEditor";
 
-interface EditPostFageProps {
+interface PostEditPageProps {
   postId: number;
   boardSlug: string;
   post: PostDto;
 }
 
-const EditPostPage: React.FC<EditPostFageProps> = ({
+const PostEditPage: React.FC<PostEditPageProps> = ({
   postId,
   boardSlug,
   post,
@@ -20,7 +20,7 @@ const EditPostPage: React.FC<EditPostFageProps> = ({
   const EditPostWithId = EditPost.bind(null, postId, boardSlug);
   const [state, formAction] = useActionState(EditPostWithId, initialState);
   return (
-    <EditPostForm
+    <PostEditForm
       state={state}
       formAction={formAction}
       post={post}
@@ -29,4 +29,4 @@ const EditPostPage: React.FC<EditPostFageProps> = ({
   );
 };
 
-export default EditPostPage;
+export default PostEditPage;

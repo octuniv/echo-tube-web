@@ -1,4 +1,4 @@
-import CreatePostPage from "@/components/Boards/create/CreatePostPage";
+import PostCreatePage from "@/components/Boards/General/create/PostCreatePage";
 import { loginStatus } from "@/lib/authState";
 import { redirect } from "next/navigation";
 
@@ -14,7 +14,7 @@ const page: React.FC<{
     redirect("/login");
   }
 
-  return <CreatePostPage boardSlug={boardSlug} />;
+  return <PostCreatePage boardSlug={boardSlug} />;
 };
 
 export default page;
