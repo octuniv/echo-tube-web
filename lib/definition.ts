@@ -6,6 +6,11 @@ export enum UserRole {
   BOT = "bot",
 }
 
+export enum BoardPurpose {
+  GENERAL = "general",
+  AI_DEGEST = "ai_digest",
+}
+
 export interface User {
   name: string;
   nickname: string;
@@ -95,6 +100,7 @@ export interface BoardListItemDto {
   name: string;
   description?: string | null;
   requiredRole: UserRole;
+  boardType: BoardPurpose;
 }
 
 export const BoardListItemDtoSchema = z.object({
@@ -102,7 +108,8 @@ export const BoardListItemDtoSchema = z.object({
   slug: z.string(),
   name: z.string(),
   description: z.string().nullable().optional(),
-  requiredRole: z.nativeEnum(UserRole), // enum 검증
+  requiredRole: z.nativeEnum(UserRole),
+  boardType: z.nativeEnum(BoardPurpose),
 });
 
 export interface PostDto {
@@ -117,6 +124,9 @@ export interface PostDto {
   updatedAt: string;
   board: BoardListItemDto;
   hotScore: number;
+  channelTitle?: string | null;
+  duration?: string | null;
+  source?: string | null;
 }
 
 export const PostDtoSchema = z.object({
@@ -131,13 +141,20 @@ export const PostDtoSchema = z.object({
   updatedAt: z.string(),
   board: BoardListItemDtoSchema,
   hotScore: z.number(),
+  channelTitle: z.string().nullable().optional(),
+  duration: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
 });
 
 // export type VideoCardInfo = Omit<PostDto, "content" | "updatedAt">;
 export type VideoCardInfo = Pick<
   PostDto,
   "id" | "title" | "nickname" | "createdAt" | "videoUrl"
->;
+> & {
+  channelTitle?: string | null;
+  duration?: string | null;
+  source?: string | null;
+};
 
 export const postSchema = z.object({
   title: z.string().min(1, { message: "Please enter your title." }),

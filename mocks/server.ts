@@ -3,7 +3,12 @@
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "../lib/util";
-import { LoginResponse, PostDto, UserRole } from "../lib/definition";
+import {
+  BoardPurpose,
+  LoginResponse,
+  PostDto,
+  UserRole,
+} from "../lib/definition";
 
 export const mockPosts: PostDto[] = [
   {
@@ -19,6 +24,7 @@ export const mockPosts: PostDto[] = [
       slug: "free",
       name: "자유 게시판",
       requiredRole: UserRole.USER,
+      boardType: BoardPurpose.GENERAL,
     },
     hotScore: 150.5,
     views: 1,
@@ -37,6 +43,7 @@ export const mockPosts: PostDto[] = [
       slug: "free",
       name: "자유 게시판",
       requiredRole: UserRole.USER,
+      boardType: BoardPurpose.GENERAL,
     },
     hotScore: 150.5,
     views: 1,

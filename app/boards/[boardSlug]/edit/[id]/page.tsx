@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { FetchPost } from "@/lib/actions";
 import { userStatus } from "@/lib/authState";
-import EditPostPage from "@/components/Boards/edit/EditPostPage";
+import PostEditPage from "@/components/Boards/General/edit/PostEditPage";
 import { canModifyPost } from "@/lib/util";
 
 interface PostPageProps {
@@ -27,5 +27,5 @@ export default async function Page({ params }: PostPageProps) {
     redirect(`/boards/${boardSlug}`);
   }
 
-  return <EditPostPage postId={postId} boardSlug={boardSlug} post={post} />;
+  return <PostEditPage postId={postId} boardSlug={boardSlug} post={post} />;
 }

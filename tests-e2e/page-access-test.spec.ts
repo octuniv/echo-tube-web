@@ -42,10 +42,10 @@ test.describe("Page-to-page movement test", () => {
   test("Board Page Access Test", async ({ page }) => {
     await page.getByRole("button", { name: "Sidebar Activation" }).click();
     await expect(
-      page.getByRole("link", { name: `Boards section - 자유 게시판 category` })
+      page.getByRole("link", { name: `일반 게시판 - 자유 게시판 category` })
     ).toBeVisible();
     await page
-      .getByRole("link", { name: `Boards section - 자유 게시판 category` })
+      .getByRole("link", { name: `일반 게시판 - 자유 게시판 category` })
       .click();
     await expect(page).toHaveURL("/boards/free");
 

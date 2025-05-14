@@ -3,9 +3,9 @@
 import { CreatePost } from "@/lib/actions";
 import { useActionState } from "react";
 import { PostState as ErrorState } from "@/lib/definition";
-import CreatePostForm from "../PostForm";
+import PostCreateForm from "../../Shared/PostEditor";
 
-const CreatePostPage: React.FC<{ boardSlug: string }> = ({
+const PostCreatePage: React.FC<{ boardSlug: string }> = ({
   boardSlug,
 }: {
   boardSlug: string;
@@ -14,7 +14,7 @@ const CreatePostPage: React.FC<{ boardSlug: string }> = ({
   const CreatePostWithSlug = CreatePost.bind(null, boardSlug);
   const [state, formAction] = useActionState(CreatePostWithSlug, initialState);
   return (
-    <CreatePostForm
+    <PostCreateForm
       state={state}
       formAction={formAction}
       boardSlug={boardSlug}
@@ -22,4 +22,4 @@ const CreatePostPage: React.FC<{ boardSlug: string }> = ({
   );
 };
 
-export default CreatePostPage;
+export default PostCreatePage;
