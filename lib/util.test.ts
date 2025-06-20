@@ -1,4 +1,4 @@
-import { PostDto, UserAuthInfo, UserRole } from "./definition";
+import { PostResponse, UserAuthInfo, UserRole } from "./definition";
 import { canModifyPost } from "./util";
 
 describe("canModifyPost", () => {
@@ -12,7 +12,7 @@ describe("canModifyPost", () => {
     const post = {
       nickname: "other",
       board: { requiredRole: UserRole.USER },
-    } as PostDto;
+    } as PostResponse;
 
     expect(canModifyPost({ user, post })).toBe(false);
   });
@@ -27,7 +27,7 @@ describe("canModifyPost", () => {
     const post = {
       nickname: "user",
       board: { requiredRole: UserRole.USER },
-    } as PostDto;
+    } as PostResponse;
 
     expect(canModifyPost({ user, post })).toBe(true);
   });

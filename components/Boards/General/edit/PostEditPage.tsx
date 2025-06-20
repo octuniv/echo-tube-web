@@ -2,13 +2,16 @@
 
 import { EditPost } from "@/lib/actions";
 import { useActionState } from "react";
-import { PostState as ErrorState, PostDto } from "@/lib/definition";
+import {
+  CreatePostInputState as ErrorState,
+  PostResponse,
+} from "@/lib/definition";
 import PostEditForm from "../../Shared/PostEditor";
 
 interface PostEditPageProps {
   postId: number;
   boardSlug: string;
-  post: PostDto;
+  post: PostResponse;
 }
 
 const PostEditPage: React.FC<PostEditPageProps> = ({

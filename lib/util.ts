@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 import {
   BoardListItemDto,
-  PostDto,
+  PostResponse,
   UserAuthInfo,
   UserRole,
 } from "./definition";
@@ -49,7 +49,7 @@ export const canModifyPost = ({
   post,
 }: {
   user: UserAuthInfo;
-  post: PostDto;
+  post: PostResponse;
 }): boolean => {
   if (!isValidUser(user)) return false;
 

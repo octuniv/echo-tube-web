@@ -9,23 +9,28 @@ import {
   LoginInfoState,
   nicknameUpdateSchema,
   NicknameUpdateState,
+  PaginationDto,
   PasswordUpdateSchema,
   PasswordUpdateState,
-  PostDto,
-  PostDtoSchema,
-  postSchema,
-  PostState,
+  PostResponse,
+  PostResponseSchema,
+  createPostInputSchema,
+  CreatePostInputState,
   userSchema,
   UserState,
+  AdminUserListPaginatedSchema,
+  AdminUserListPaginatedResponse,
+  adminUserCreateSchema,
+  AdminUserCreateState,
 } from "./definition";
 import { baseCookieOptions, serverAddress } from "./util";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { clearAuth } from "./authState";
-import { authenticatedFetch } from "./authService";
+import { authenticatedFetch } from "./auth/authenticatedFetch";
 import { revalidatePath } from "next/cache";
-import { isCustomError } from "./errors";
 import { z } from "zod";
+import { AuthenticatedFetchErrorType } from "./auth/types";
 
 export async function signUpAction(prevState: UserState, formData: FormData) {
   const validatedFields = userSchema.safeParse({
@@ -155,7 +160,9 @@ export async function LogoutAction() {
   redirect("/login");
 }
 
-export async function FetchPostsByBoardId(boardId: number): Promise<PostDto[]> {
+export async function FetchPostsByBoardId(
+  boardId: number
+): Promise<PostResponse[]> {
   const reqAddress = `${serverAddress}/posts/board/${boardId}`;
   const response = await fetch(reqAddress, {
     method: "GET",
@@ -170,7 +177,7 @@ export async function FetchPostsByBoardId(boardId: number): Promise<PostDto[]> {
   const rawData = await response.json();
 
   // 배열 전체 검증
-  const result = z.array(PostDtoSchema).safeParse(rawData);
+  const result = z.array(PostResponseSchema).safeParse(rawData);
   if (!result.success) {
     console.error("Validation failed:", result.error);
     return [];
@@ -179,7 +186,7 @@ export async function FetchPostsByBoardId(boardId: number): Promise<PostDto[]> {
   return result.data;
 }
 
-export async function FetchPost(id: number): Promise<PostDto> {
+export async function FetchPost(id: number): Promise<PostResponse> {
   const reqAddress = serverAddress + `/posts/${id}`;
   const response = await fetch(reqAddress, {
     method: "GET",
@@ -195,7 +202,7 @@ export async function FetchPost(id: number): Promise<PostDto> {
 
   const rawData = await response.json();
 
-  const result = PostDtoSchema.safeParse(rawData);
+  const result = PostResponseSchema.safeParse(rawData);
 
   if (!result.success) {
     throw new Error("Invalid post data format");
@@ -206,12 +213,10 @@ export async function FetchPost(id: number): Promise<PostDto> {
 
 export async function CreatePost(
   boardSlug: string,
-  prevState: PostState,
+  prevState: CreatePostInputState,
   formData: FormData
 ) {
-  let authenticatedFailure: boolean = false;
-
-  const validatedFields = postSchema.safeParse({
+  const validatedFields = createPostInputSchema.safeParse({
     title: formData.get("title"),
     content: formData.get("content"),
     videoUrl: formData.get("videoUrl"),
@@ -234,51 +239,57 @@ export async function CreatePost(
   }
 
   const reqAddress = serverAddress + "/posts";
-  try {
-    await authenticatedFetch(reqAddress, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(params),
-    });
-  } catch (error) {
-    if (isCustomError(error) && error.type === "InvalidJwtToken") {
-      authenticatedFailure = true;
-    } else {
-      return {
-        message: "Create post failed.",
-      };
+
+  const { error } = await authenticatedFetch({
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+    url: reqAddress,
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      default:
+        return {
+          message: "Create post failed.",
+        };
     }
-  }
-  if (authenticatedFailure) {
-    await clearAuth();
-    redirect("/login");
   } else {
     redirect(`/boards/${boardSlug}`);
   }
 }
 
 export async function DeletePost(id: number, boardSlug: string) {
-  let authenticatedFailure: boolean = false;
-  const reqAddress = serverAddress + `/posts/${id}`;
+  const reqAddress = new URL(`/posts/${id}`, serverAddress).toString();
 
-  try {
-    await authenticatedFetch(reqAddress, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    authenticatedFailure = true;
-  }
+  const { error } = await authenticatedFetch({
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: reqAddress,
+  });
 
-  if (authenticatedFailure) {
-    await clearAuth();
-    redirect("/login");
+  if (error) {
+    console.error("게시물 삭제 실패:", error.message);
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ServerError:
+        throw new Error("서버 오류가 발생했습니다.");
+      case AuthenticatedFetchErrorType.Unknown:
+        throw new Error("요청한 리소스를 찾을 수 없습니다.");
+      default:
+        throw new Error("게시물을 삭제할 수 없습니다.");
+    }
   } else {
+    revalidatePath(`/boards/${boardSlug}`);
     redirect(`/boards/${boardSlug}`);
   }
 }
@@ -286,12 +297,10 @@ export async function DeletePost(id: number, boardSlug: string) {
 export async function EditPost(
   id: number,
   boardSlug: string,
-  prevState: PostState,
+  prevState: CreatePostInputState,
   formData: FormData
 ) {
-  let authenticatedFailure: boolean = false;
-
-  const validatedFields = postSchema.safeParse({
+  const validatedFields = createPostInputSchema.safeParse({
     title: formData.get("title"),
     content: formData.get("content"),
     videoUrl: formData.get("videoUrl"),
@@ -312,54 +321,54 @@ export async function EditPost(
 
   const reqAddress = serverAddress + `/posts/${id}`;
 
-  try {
-    await authenticatedFetch(reqAddress, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(params),
-    });
-  } catch (error) {
-    if (isCustomError(error) && error.type === "InvalidJwtToken") {
-      authenticatedFailure = true;
-    } else {
-      return {
-        message: "Edit post failed.",
-      };
-    }
-  }
+  const { error } = await authenticatedFetch({
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+    url: reqAddress,
+  });
 
-  if (authenticatedFailure) {
-    await clearAuth();
-    redirect("/login");
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      default:
+        return {
+          message: "Edit post failed.",
+        };
+    }
   } else {
     redirect(`/boards/${boardSlug}`);
   }
 }
 
 export async function DeleteUser(): Promise<void> {
-  let authenticatedFailure: boolean = false;
-  const reqAddress = `${serverAddress}/users`;
-  try {
-    await authenticatedFetch(reqAddress, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  } catch (error) {
-    if (isCustomError(error) && error.type === "InvalidJwtToken") {
-      authenticatedFailure = true;
-    } else {
-      throw error;
-    }
-  }
+  const reqAddress = new URL("/users", serverAddress).toString();
 
-  await clearAuth();
-  if (authenticatedFailure) {
-    redirect("/login");
+  const { error } = await authenticatedFetch({
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: reqAddress,
+  });
+
+  if (error) {
+    console.error("계정 삭제 실패:", error.message);
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ServerError:
+        throw new Error("서버 오류로 계정을 삭제할 수 없습니다.");
+      default:
+        throw new Error("계정 삭제에 실패했습니다.");
+    }
   } else {
+    await clearAuth();
     revalidatePath("/");
     redirect("/");
   }
@@ -369,7 +378,6 @@ export async function UpdateNicknameAction(
   prevState: NicknameUpdateState,
   formData: FormData
 ) {
-  let authenticatedFailure: boolean = false;
   const validatedFields = nicknameUpdateSchema.safeParse({
     nickname: formData.get("nickname"),
   });
@@ -383,44 +391,32 @@ export async function UpdateNicknameAction(
 
   const params = validatedFields.data;
   const reqAddress = `${serverAddress}/users/nickname`;
-  try {
-    await authenticatedFetch(reqAddress, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(params),
-    });
-  } catch (error) {
-    if (!isCustomError(error)) {
-      return {
-        message: "Nickname update failed. Please try again a little later",
-      };
-    } else {
-      switch (error.type) {
-        case "InvalidJwtToken":
-          authenticatedFailure = true;
-          break;
+  const { error } = await authenticatedFetch({
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+    url: reqAddress,
+  });
 
-        case "ConflictError":
-          return {
-            message: error.message || "Duplicate value detected",
-            errors: {
-              nickname: ["The nickname is already in use"],
-            },
-          };
-
-        default:
-          return {
-            message: "Fault found on that page",
-          };
-      }
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ConflictError:
+        return {
+          message: error.message || "Duplicate value detected",
+          errors: {
+            nickname: ["The nickname is already in use"],
+          },
+        };
+      default:
+        return {
+          message: "Nickname update failed. Please try again a little later",
+        };
     }
-  }
-
-  if (authenticatedFailure) {
-    await clearAuth();
-    redirect("/login");
   } else {
     const cookieStore = await cookies();
     const userCookie = cookieStore.get("user");
@@ -439,7 +435,6 @@ export async function UpdatePasswordAction(
   prevState: PasswordUpdateState,
   formData: FormData
 ) {
-  let authenticatedFailure: boolean = false;
   const validatedFields = PasswordUpdateSchema.safeParse({
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
@@ -454,36 +449,26 @@ export async function UpdatePasswordAction(
 
   const params = validatedFields.data;
   const reqAddress = `${serverAddress}/users/password`;
-  try {
-    await authenticatedFetch(reqAddress, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ password: params.password }),
-    });
-  } catch (error) {
-    if (!isCustomError(error)) {
-      return {
-        message: "Password update failed. Please try again a little later",
-      };
-    } else {
-      switch (error.type) {
-        case "InvalidJwtToken":
-          authenticatedFailure = true;
-          break;
 
-        default:
-          return {
-            message: "Fault found on that page",
-          };
-      }
+  const { error } = await authenticatedFetch({
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password: params.password }),
+    url: reqAddress,
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      default:
+        return {
+          message: "Password update failed. Please try again a little later",
+        };
     }
-  }
-
-  if (authenticatedFailure) {
-    await clearAuth();
-    redirect("/login");
   } else {
     revalidatePath("/dashboard");
     redirect("/dashboard");
@@ -576,4 +561,112 @@ export async function FetchDashboardSummary(): Promise<DashboardSummaryDto> {
   }
 
   return result.data;
+}
+
+export async function FetchUserPaginatedList(
+  query: PaginationDto
+): Promise<AdminUserListPaginatedResponse> {
+  const { page, limit } = query;
+  const params = new URLSearchParams({
+    page: page?.toString() ?? "1",
+    limit: limit?.toString() ?? "10",
+  });
+
+  const reqAddress = `${serverAddress}/admin/users`;
+  const { data, error } = await authenticatedFetch({
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: `${reqAddress}?${params.toString()}`,
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      default:
+        console.error(
+          "사용자 목록을 불러오던 중 예기치 못한 오류 발생:",
+          error
+        );
+        throw new Error(
+          "사용자 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+        );
+    }
+  } else {
+    const result = AdminUserListPaginatedSchema.safeParse(data);
+    if (!result.success) {
+      console.error("Validation failed:", result.error);
+      throw new Error("Invalid data format for UserList");
+    }
+    return result.data;
+  }
+}
+
+export async function AdminSignUpAction(
+  prevState: AdminUserCreateState,
+  formData: FormData
+): Promise<AdminUserCreateState> {
+  const validatedFields = adminUserCreateSchema.safeParse({
+    name: formData.get("name"),
+    nickname: formData.get("nickname"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    role: formData.get("role"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing or invalid fields. Failed to create admin user.",
+    };
+  }
+
+  const userData = validatedFields.data;
+
+  const reqAddress = `${serverAddress}/admin/users`;
+
+  const { error } = await authenticatedFetch({
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+    url: reqAddress,
+  });
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        revalidatePath("/");
+        redirect("/");
+      case AuthenticatedFetchErrorType.ConflictError:
+        const message = error.message;
+        if (message.startsWith("This email")) {
+          return {
+            message: "Invalid field value.",
+            errors: { email: ["This email already exists."] },
+          };
+        }
+        if (message.startsWith("This nickname")) {
+          return {
+            message: "Invalid field value.",
+            errors: { nickname: ["This nickname already exists."] },
+          };
+        }
+        return {
+          message: "Conflict occurred. Please check your input values.",
+        };
+      default:
+        console.error("Unexpected error during admin signup:", error);
+        return {
+          message: "An unexpected error occurred. Please try again.",
+        };
+    }
+  } else {
+    revalidatePath("/admin/users");
+    redirect("/admin/users");
+  }
 }

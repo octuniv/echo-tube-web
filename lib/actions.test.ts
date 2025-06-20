@@ -14,6 +14,7 @@ import {
   UpdatePasswordAction,
   FetchAllBoards,
   FetchDashboardSummary,
+  FetchUserPaginatedList,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -22,7 +23,6 @@ import { mockDashboardSummary, mockPosts, server } from "../mocks/server";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "./util";
 import { revalidatePath } from "next/cache";
-import { createError } from "./errors";
 import {
   BoardListItemDto,
   BoardPurpose,
@@ -42,7 +42,15 @@ jest.mock("next/headers", () => ({
 }));
 
 jest.mock("next/navigation", () => ({
-  redirect: jest.fn(),
+  redirect: jest.fn().mockImplementation((url) => {
+    const error = new Error(`Redirect to ${url}`);
+    Object.defineProperty(error, "digest", {
+      value: `NEXT_REDIRECT: ${url}`,
+      configurable: false,
+      writable: false,
+    });
+    throw error;
+  }),
   notFound: jest.fn().mockImplementation(() => {
     throw new Error("NOT_FOUND");
   }),
@@ -59,6 +67,7 @@ jest.mock("next/cache", () => ({
 describe("Actions Module", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    server.resetHandlers();
   });
 
   describe("signUpAction", () => {
@@ -75,9 +84,7 @@ describe("Actions Module", () => {
         })
       );
 
-      const result = await signUpAction({}, formData);
-
-      expect(result).not.toBeDefined();
+      await expect(signUpAction({}, formData)).rejects.toThrow();
       expect(redirect).toHaveBeenCalledWith("/login");
     });
 
@@ -193,7 +200,7 @@ describe("Actions Module", () => {
         role: UserRole.USER,
       });
 
-      await LoginAction({}, formData);
+      await expect(LoginAction({}, formData)).rejects.toThrow();
 
       const cookieStore = await cookies();
       expect(cookieStore.set).toHaveBeenCalledWith(
@@ -238,7 +245,7 @@ describe("Actions Module", () => {
 
   describe("LogoutAction", () => {
     it("should handle logout", async () => {
-      await LogoutAction();
+      await expect(LogoutAction()).rejects.toThrow();
 
       expect(clearAuth).toHaveBeenCalled();
       expect(revalidatePath).toHaveBeenCalledWith("/");
@@ -429,7 +436,7 @@ describe("Actions Module", () => {
         }),
       });
 
-      await CreatePost(boardSlug, {}, formData);
+      await expect(CreatePost(boardSlug, {}, formData)).rejects.toThrow();
 
       expect(capturedBody.boardSlug).toBe(boardSlug);
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
@@ -463,10 +470,10 @@ describe("Actions Module", () => {
         })
       );
 
-      await CreatePost(boardSlug, {}, formData);
+      await expect(CreatePost(boardSlug, {}, formData)).rejects.toThrow();
 
       expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login");
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("should handle unexpected errors", async () => {
@@ -510,7 +517,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeletePost(postId, boardSlug);
+      await expect(DeletePost(postId, boardSlug)).rejects.toThrow();
 
       // Verify revalidation and redirection
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
@@ -529,11 +536,9 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeletePost(postId, boardSlug);
-
-      // Verify logout and redirection to login page
+      await expect(DeletePost(postId, boardSlug)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login");
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("should handle unexpected errors during post deletion", async () => {
@@ -548,12 +553,9 @@ describe("Actions Module", () => {
           );
         })
       );
-
-      await DeletePost(postId, boardSlug);
-
-      // Verify logout and redirection to login page
-      expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login");
+      await expect(DeletePost(postId, boardSlug)).rejects.toThrow(
+        "서버 오류가 발생했습니다."
+      );
     });
 
     it("should handle invalid post ID gracefully", async () => {
@@ -569,11 +571,9 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeletePost(postId, boardSlug);
-
-      // Verify logout and redirection to login page
-      expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login");
+      await expect(DeletePost(postId, boardSlug)).rejects.toThrow(
+        "요청한 리소스를 찾을 수 없습니다."
+      );
     });
   });
 
@@ -612,7 +612,7 @@ describe("Actions Module", () => {
         }),
       });
 
-      await EditPost(1, boardSlug, {}, formData);
+      await expect(EditPost(1, boardSlug, {}, formData)).rejects.toThrow();
 
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
     });
@@ -653,7 +653,7 @@ describe("Actions Module", () => {
         }),
       });
 
-      await EditPost(1, boardSlug, {}, formData);
+      await expect(EditPost(1, boardSlug, {}, formData)).rejects.toThrow();
 
       expect(capturedBody).toEqual({
         title: "Updated Title",
@@ -690,10 +690,10 @@ describe("Actions Module", () => {
         })
       );
 
-      await EditPost(1, boardSlug, {}, formData);
+      await expect(EditPost(1, boardSlug, {}, formData)).rejects.toThrow();
 
       expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login");
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("should handle server error", async () => {
@@ -733,7 +733,7 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeleteUser();
+      await expect(DeleteUser()).rejects.toThrow();
 
       // Validation of functions that run when successfully progressed
       expect(clearAuth).toHaveBeenCalled();
@@ -752,10 +752,10 @@ describe("Actions Module", () => {
         })
       );
 
-      await DeleteUser();
+      await expect(DeleteUser()).rejects.toThrow();
 
       expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login");
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("should handle unexpected errors during user deletion", async () => {
@@ -769,7 +769,19 @@ describe("Actions Module", () => {
         })
       );
 
-      expect(DeleteUser()).rejects.toThrow();
+      await expect(DeleteUser()).rejects.toThrow(
+        "서버 오류로 계정을 삭제할 수 없습니다."
+      );
+    });
+
+    it("should throw generic error for 404 Not Found", async () => {
+      server.use(
+        http.delete(`${serverAddress}/users`, () => {
+          return HttpResponse.json({ error: "Not Found" }, { status: 404 });
+        })
+      );
+
+      await expect(DeleteUser()).rejects.toThrow("계정 삭제에 실패했습니다.");
     });
   });
 
@@ -812,10 +824,9 @@ describe("Actions Module", () => {
         role: UserRole.USER,
       } satisfies UserAuthInfo;
 
-      const res = await UpdateNicknameAction({}, formData);
+      await expect(UpdateNicknameAction({}, formData)).rejects.toThrow();
       const cookieStore = await cookies();
 
-      expect(res).toBeUndefined();
       expect(cookieStore.set).toHaveBeenCalledWith(
         "user",
         JSON.stringify(updatedUser),
@@ -838,21 +849,15 @@ describe("Actions Module", () => {
         })
       );
 
-      const res = await UpdateNicknameAction({}, formData);
-      expect(res).toBeUndefined();
+      await expect(UpdateNicknameAction({}, formData)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login");
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("should handle conflict error when nickname already exists", async () => {
       const duplicatedNick = "duplicated";
       const formData = new FormData();
       formData.append("nickname", duplicatedNick);
-
-      const expectedError = createError(
-        "ConflictError",
-        `This nickname ${duplicatedNick} is already existed!`
-      );
 
       server.use(
         http.patch(`${serverAddress}/users/nickname`, () => {
@@ -865,7 +870,7 @@ describe("Actions Module", () => {
 
       const res = await UpdateNicknameAction({}, formData);
       expect(res).toMatchObject({
-        message: expectedError.message,
+        message: `This nickname ${duplicatedNick} is already existed!`,
         errors: {
           nickname: ["The nickname is already in use"],
         },
@@ -915,9 +920,7 @@ describe("Actions Module", () => {
         })
       );
 
-      const res = await UpdatePasswordAction({}, formData);
-
-      expect(res).toBeUndefined();
+      await expect(UpdatePasswordAction({}, formData)).rejects.toThrow();
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
       expect(redirect).toHaveBeenCalledWith("/dashboard");
     });
@@ -974,7 +977,7 @@ describe("Actions Module", () => {
         http.patch(`${serverAddress}/users/password`, () => {
           return HttpResponse.json(
             { message: "Passcode change successful." },
-            { status: 200 }
+            { status: 500 }
           );
         })
       );
@@ -1003,10 +1006,9 @@ describe("Actions Module", () => {
         })
       );
 
-      const res = await UpdatePasswordAction({}, formData);
-      expect(res).toBeUndefined();
+      await expect(UpdatePasswordAction({}, formData)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login");
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("should handle network errors", async () => {
@@ -1028,182 +1030,302 @@ describe("Actions Module", () => {
       });
     });
   });
-});
 
-describe("CheckEmailExist", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should check userExist by email successfully", async () => {
-    server.use(
-      http.post(`${serverAddress}/users/check-email`, () => {
-        return HttpResponse.json({ exists: true }, { status: 200 });
-      })
-    );
-
-    const res = await checkEmailExists("exists@email.com");
-    expect(res).toEqual({ exists: true });
-  });
-
-  it("should check non-exists user by email successfully", async () => {
-    server.use(
-      http.post(`${serverAddress}/users/check-email`, () => {
-        return HttpResponse.json({ exists: false }, { status: 200 });
-      })
-    );
-
-    const res = await checkEmailExists("non-exists@email.com");
-    expect(res).toEqual({ exists: false });
-  });
-});
-
-describe("CheckNicknameExist", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should check userExist by nickname successfully", async () => {
-    server.use(
-      http.post(`${serverAddress}/users/check-nickname`, () => {
-        return HttpResponse.json({ exists: true }, { status: 200 });
-      })
-    );
-
-    const res = await checkNicknameExists("exists");
-    expect(res).toEqual({ exists: true });
-  });
-
-  it("should check non-exists user by nickname successfully", async () => {
-    server.use(
-      http.post(`${serverAddress}/users/check-nickname`, () => {
-        return HttpResponse.json({ exists: false }, { status: 200 });
-      })
-    );
-
-    const res = await checkNicknameExists("non-exists");
-    expect(res).toEqual({ exists: false });
-  });
-
-  describe("FetchAllBoards", () => {
-    const consoleErrorMock = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
-    afterEach(() => {
-      consoleErrorMock.mockClear();
+  describe("CheckEmailExist", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
     });
 
-    it("should fetch all boards successfully", async () => {
-      const mockBoards: BoardListItemDto[] = [
-        {
-          id: 1,
-          slug: "free",
-          name: "General",
-          requiredRole: UserRole.USER,
-          boardType: BoardPurpose.GENERAL,
-        },
-        {
-          id: 2,
-          slug: "qna",
-          name: "Q&A",
-          requiredRole: UserRole.USER,
-          boardType: BoardPurpose.GENERAL,
-        },
-      ];
-
+    it("should check userExist by email successfully", async () => {
       server.use(
-        http.get(`${serverAddress}/boards`, () =>
-          HttpResponse.json(mockBoards, { status: 200 })
-        )
+        http.post(`${serverAddress}/users/check-email`, () => {
+          return HttpResponse.json({ exists: true }, { status: 200 });
+        })
       );
 
-      const boards = await FetchAllBoards();
-      expect(boards).toEqual(mockBoards);
-      expect(boards[0]).toHaveProperty("id");
-      expect(boards[0]).toHaveProperty("slug");
-      expect(boards[0]).toHaveProperty("name");
+      const res = await checkEmailExists("exists@email.com");
+      expect(res).toEqual({ exists: true });
     });
 
-    it("should throw error on failure", async () => {
+    it("should check non-exists user by email successfully", async () => {
       server.use(
-        http.get(`${serverAddress}/boards`, () =>
-          HttpResponse.json({ error: "Internal Server Error" }, { status: 500 })
-        )
+        http.post(`${serverAddress}/users/check-email`, () => {
+          return HttpResponse.json({ exists: false }, { status: 200 });
+        })
       );
 
-      await expect(FetchAllBoards()).rejects.toThrow("Failed to fetch boards");
-    });
-
-    it("should return empty array when board data is invalid", async () => {
-      const invalidBoards = [
-        {
-          id: 1,
-          slug: "free",
-          name: "General",
-          // requiredRole이 유효하지 않은 값
-          requiredRole: "invalid-role",
-        },
-      ];
-      server.use(
-        http.get(`${serverAddress}/boards`, () =>
-          HttpResponse.json(invalidBoards, { status: 200 })
-        )
-      );
-      const boards = await FetchAllBoards();
-      expect(boards).toEqual([]); // Zod 검증 실패 시 빈 배열 반환
-      expect(console.error).toHaveBeenCalled(); // 에러 로깅 확인
+      const res = await checkEmailExists("non-exists@email.com");
+      expect(res).toEqual({ exists: false });
     });
   });
 
-  describe("FetchDashboardSummary", () => {
-    const consoleErrorMock = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
-    afterEach(() => {
-      consoleErrorMock.mockClear();
+  describe("CheckNicknameExist", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
     });
 
-    it("should fetch dashboard summary successfully", async () => {
-      const result = await FetchDashboardSummary();
-      expect(result).toEqual(mockDashboardSummary);
-      expect(result.recentPosts).toBeInstanceOf(Array);
-      expect(result.popularPosts).toBeInstanceOf(Array);
-      expect(result.noticesPosts).toBeInstanceOf(Array);
-    });
-
-    it("should throw error when response is invalid", async () => {
-      // invalid data (배열 대신 단일 객체 반환)
-      const invalidData = {
-        visitors: 150,
-        recentPosts: mockPosts[0], // 배열이 아닌 단일 객체
-        popularPosts: mockPosts[1],
-        noticesPosts: mockPosts[0],
-      };
-
+    it("should check userExist by nickname successfully", async () => {
       server.use(
-        http.get(`${serverAddress}/dashboard/summary`, () =>
-          HttpResponse.json(invalidData, { status: 200 })
-        )
+        http.post(`${serverAddress}/users/check-nickname`, () => {
+          return HttpResponse.json({ exists: true }, { status: 200 });
+        })
       );
 
-      await expect(FetchDashboardSummary()).rejects.toThrow(
-        "Invalid data format for DashboardSummary"
-      );
-      expect(console.error).toHaveBeenCalled();
+      const res = await checkNicknameExists("exists");
+      expect(res).toEqual({ exists: true });
     });
 
-    it("should throw error when server returns 500", async () => {
+    it("should check non-exists user by nickname successfully", async () => {
       server.use(
-        http.get(`${serverAddress}/dashboard/summary`, () =>
-          HttpResponse.json({ error: "Internal Server Error" }, { status: 500 })
-        )
+        http.post(`${serverAddress}/users/check-nickname`, () => {
+          return HttpResponse.json({ exists: false }, { status: 200 });
+        })
       );
 
-      await expect(FetchDashboardSummary()).rejects.toThrow(
-        "Failed to fetch DashboardSummary"
-      );
+      const res = await checkNicknameExists("non-exists");
+      expect(res).toEqual({ exists: false });
+    });
+
+    describe("FetchAllBoards", () => {
+      const consoleErrorMock = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      afterEach(() => {
+        consoleErrorMock.mockClear();
+      });
+
+      it("should fetch all boards successfully", async () => {
+        const mockBoards: BoardListItemDto[] = [
+          {
+            id: 1,
+            slug: "free",
+            name: "General",
+            requiredRole: UserRole.USER,
+            boardType: BoardPurpose.GENERAL,
+          },
+          {
+            id: 2,
+            slug: "qna",
+            name: "Q&A",
+            requiredRole: UserRole.USER,
+            boardType: BoardPurpose.GENERAL,
+          },
+        ];
+
+        server.use(
+          http.get(`${serverAddress}/boards`, () =>
+            HttpResponse.json(mockBoards, { status: 200 })
+          )
+        );
+
+        const boards = await FetchAllBoards();
+        expect(boards).toEqual(mockBoards);
+        expect(boards[0]).toHaveProperty("id");
+        expect(boards[0]).toHaveProperty("slug");
+        expect(boards[0]).toHaveProperty("name");
+      });
+
+      it("should throw error on failure", async () => {
+        server.use(
+          http.get(`${serverAddress}/boards`, () =>
+            HttpResponse.json(
+              { error: "Internal Server Error" },
+              { status: 500 }
+            )
+          )
+        );
+
+        await expect(FetchAllBoards()).rejects.toThrow(
+          "Failed to fetch boards"
+        );
+      });
+
+      it("should return empty array when board data is invalid", async () => {
+        const invalidBoards = [
+          {
+            id: 1,
+            slug: "free",
+            name: "General",
+            // requiredRole이 유효하지 않은 값
+            requiredRole: "invalid-role",
+          },
+        ];
+        server.use(
+          http.get(`${serverAddress}/boards`, () =>
+            HttpResponse.json(invalidBoards, { status: 200 })
+          )
+        );
+        const boards = await FetchAllBoards();
+        expect(boards).toEqual([]); // Zod 검증 실패 시 빈 배열 반환
+        expect(console.error).toHaveBeenCalled(); // 에러 로깅 확인
+      });
+    });
+
+    describe("FetchDashboardSummary", () => {
+      const consoleErrorMock = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      afterEach(() => {
+        consoleErrorMock.mockClear();
+      });
+
+      it("should fetch dashboard summary successfully", async () => {
+        const result = await FetchDashboardSummary();
+        expect(result).toEqual(mockDashboardSummary);
+        expect(result.recentPosts).toBeInstanceOf(Array);
+        expect(result.popularPosts).toBeInstanceOf(Array);
+        expect(result.noticesPosts).toBeInstanceOf(Array);
+      });
+
+      it("should throw error when response is invalid", async () => {
+        // invalid data (배열 대신 단일 객체 반환)
+        const invalidData = {
+          visitors: 150,
+          recentPosts: mockPosts[0], // 배열이 아닌 단일 객체
+          popularPosts: mockPosts[1],
+          noticesPosts: mockPosts[0],
+        };
+
+        server.use(
+          http.get(`${serverAddress}/dashboard/summary`, () =>
+            HttpResponse.json(invalidData, { status: 200 })
+          )
+        );
+
+        await expect(FetchDashboardSummary()).rejects.toThrow(
+          "Invalid data format for DashboardSummary"
+        );
+        expect(console.error).toHaveBeenCalled();
+      });
+
+      it("should throw error when server returns 500", async () => {
+        server.use(
+          http.get(`${serverAddress}/dashboard/summary`, () =>
+            HttpResponse.json(
+              { error: "Internal Server Error" },
+              { status: 500 }
+            )
+          )
+        );
+
+        await expect(FetchDashboardSummary()).rejects.toThrow(
+          "Failed to fetch DashboardSummary"
+        );
+      });
+    });
+  });
+
+  describe("Admin Function", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    describe("Admin-User Function", () => {
+      describe("FetchUserPaginatedList", () => {
+        const consoleErrorMock = jest
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+
+        beforeEach(() => jest.clearAllMocks());
+        afterEach(() => consoleErrorMock.mockClear());
+
+        it("should fetch user list successfully", async () => {
+          const mockResponse = {
+            data: [
+              {
+                id: 1,
+                name: "John Doe",
+                nickname: "johndoe123",
+                email: "john@example.com",
+                role: UserRole.USER,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            currentPage: 1,
+            totalItems: 100,
+            totalPages: 10,
+          };
+
+          server.use(
+            http.get(`${serverAddress}/admin/users`, () =>
+              HttpResponse.json(mockResponse)
+            )
+          );
+
+          const result = await FetchUserPaginatedList({ page: 1, limit: 10 });
+          expect(result).toEqual(mockResponse);
+        });
+
+        it("should throw error when response data is invalid", async () => {
+          const invalidData = {
+            data: "invalid",
+            currentPage: "not-a-number",
+          };
+
+          server.use(
+            http.get(`${serverAddress}/admin/users`, () =>
+              HttpResponse.json(invalidData, { status: 200 })
+            )
+          );
+
+          await expect(
+            FetchUserPaginatedList({ page: 1, limit: 10 })
+          ).rejects.toThrow("Invalid data format for UserList");
+
+          expect(console.error).toHaveBeenCalledWith(
+            "Validation failed:",
+            expect.anything()
+          );
+        });
+
+        it("should handle unauthorized access", async () => {
+          server.use(
+            http.get(
+              `${serverAddress}/admin/users`,
+              () => new HttpResponse(null, { status: 401 })
+            )
+          );
+
+          await expect(
+            FetchUserPaginatedList({ page: 1, limit: 10 })
+          ).rejects.toThrow();
+
+          expect(clearAuth).toHaveBeenCalled();
+          expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+        });
+
+        it("should apply custom pagination values", async () => {
+          const mockResponse = {
+            data: [
+              {
+                id: 1,
+                name: "John Doe",
+                nickname: "johndoe123",
+                email: "john@example.com",
+                role: UserRole.USER,
+                createdAt: new Date().toISOString(),
+                deletedAt: null,
+              },
+            ],
+            currentPage: 2,
+            totalItems: 1,
+            totalPages: 1,
+          };
+
+          server.use(
+            http.get(`${serverAddress}/admin/users`, ({ request }) => {
+              const url = new URL(request.url);
+              expect(url.searchParams.get("page")).toBe("2");
+              expect(url.searchParams.get("limit")).toBe("5");
+              return HttpResponse.json(mockResponse);
+            })
+          );
+
+          await FetchUserPaginatedList({ page: 2, limit: 5 });
+        });
+      });
     });
   });
 });

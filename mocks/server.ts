@@ -4,13 +4,14 @@ import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "../lib/util";
 import {
+  AdminUserListPaginatedResponse,
   BoardPurpose,
   LoginResponse,
-  PostDto,
+  PostResponse,
   UserRole,
 } from "../lib/definition";
 
-export const mockPosts: PostDto[] = [
+export const mockPosts: PostResponse[] = [
   {
     id: 1,
     title: "Post 1",
@@ -110,7 +111,7 @@ export const server = setupServer(
     const postId = Number(params.id);
 
     if (postId === 1) {
-      return HttpResponse.json(mockPosts[0] satisfies PostDto, {
+      return HttpResponse.json(mockPosts[0] satisfies PostResponse, {
         status: 200,
       });
     }
@@ -224,5 +225,64 @@ export const server = setupServer(
 
   http.get(`${serverAddress}/dashboard/summary`, () => {
     return HttpResponse.json(mockDashboardSummary, { status: 200 });
-  })
+  }),
+
+  http.get(`${serverAddress}/admin/users`, () => {
+    return HttpResponse.json(
+      {
+        data: [
+          {
+            id: 1,
+            name: "John Doe",
+            nickname: "johndoe123",
+            email: "john.doe@example.com",
+            role: UserRole.USER,
+            createdAt: "2024-01-01T00:00:00Z",
+            deletedAt: null,
+          },
+        ],
+        currentPage: 1,
+        totalItems: 100,
+        totalPages: 10,
+      } satisfies AdminUserListPaginatedResponse,
+      { status: 200 }
+    );
+  }),
+
+  http.patch(
+    `${serverAddress}/admin/users/:id`,
+    async ({ request, params }) => {
+      const url = new URL(request.url);
+      const userId = Number(params.id);
+
+      if (userId === 777) {
+        // 삭제된 사용자 ID
+        return HttpResponse.json(
+          { message: "User not found. Please check the user ID." },
+          { status: 404 }
+        );
+      }
+
+      if (userId === 999) {
+        return HttpResponse.json(
+          { message: "This nickname already exists" },
+          { status: 409 }
+        );
+      }
+
+      if (userId === 888) {
+        return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
+      }
+
+      const body = await request.json();
+      return HttpResponse.json(
+        {
+          message: "User updated successfully",
+          success: true,
+          updatedFields: body,
+        },
+        { status: 200 }
+      );
+    }
+  )
 );

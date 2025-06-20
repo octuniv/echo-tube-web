@@ -1,8 +1,8 @@
-import { PostDto } from "@/lib/definition";
+import { PostResponse } from "@/lib/definition";
 import PostLayout from "../Shared/PostLayout";
 
 interface AIDigestPostPageProps {
-  post: PostDto; // URL에서 전달되는 게시물 ID
+  post: PostResponse; // URL에서 전달되는 게시물 ID
   isEditable: boolean;
   boardSlug: string;
 }
