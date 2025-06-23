@@ -4,6 +4,7 @@ import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "../lib/util";
 import {
+  AdminUserDetailResponse,
   AdminUserListPaginatedResponse,
   BoardPurpose,
   LoginResponse,
@@ -284,5 +285,77 @@ export const server = setupServer(
         { status: 200 }
       );
     }
-  )
+  ),
+
+  http.get(`${serverAddress}/admin/users/:id`, ({ params }) => {
+    const userId = Number(params.id);
+
+    // 예시 데이터
+    const mockUserDetail = {
+      id: userId,
+      name: "John Doe",
+      nickname: "johndoe123",
+      email: "john.doe@example.com",
+      role: UserRole.USER,
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-02T00:00:00Z",
+      deletedAt: null,
+    } satisfies AdminUserDetailResponse;
+
+    // 테스트용 특수 ID 처리
+    if (userId === 777) {
+      return HttpResponse.json(
+        { message: "User not found. Please check the user ID." },
+        { status: 404 }
+      );
+    }
+
+    if (userId === 888) {
+      return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    // 기본 성공 응답
+    return HttpResponse.json(mockUserDetail, { status: 200 });
+  }),
+
+  http.delete(`${serverAddress}/admin/users/:id`, ({ params }) => {
+    const userId = Number(params.id);
+
+    // 테스트용 특수 ID 처리
+    if (userId === 777) {
+      // 삭제된 사용자 ID
+      return HttpResponse.json(
+        {
+          message: "User not found. Please check the user ID.",
+          success: false,
+        },
+        { status: 404 }
+      );
+    }
+
+    if (userId === 888) {
+      // 권한 없음
+      return HttpResponse.json(
+        { message: "Unauthorized", success: false },
+        { status: 401 }
+      );
+    }
+
+    if (userId === 999) {
+      // 서버 오류
+      return HttpResponse.json(
+        { message: "Internal Server Error", success: false },
+        { status: 500 }
+      );
+    }
+
+    // 기본 성공 응답
+    return HttpResponse.json(
+      {
+        message: "Successfully deleted user",
+        success: true,
+      },
+      { status: 200 }
+    );
+  })
 );

@@ -206,3 +206,18 @@ export const adminUserUpdateSchema = z
 export type AdminUserUpdate = z.infer<typeof adminUserUpdateSchema>;
 
 export type AdminUserUpdateState = FormState<AdminUserUpdate>;
+
+export const AdminUserDetailResponseSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  nickname: z.string(),
+  email: z.string(),
+  role: z.nativeEnum(UserRole),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  deletedAt: z.nullable(z.string().datetime()).optional(),
+});
+
+export type AdminUserDetailResponse = z.infer<
+  typeof AdminUserDetailResponseSchema
+>;

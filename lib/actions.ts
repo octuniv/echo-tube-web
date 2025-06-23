@@ -22,6 +22,12 @@ import {
   AdminUserListPaginatedResponse,
   adminUserCreateSchema,
   AdminUserCreateState,
+  AdminUserCreate,
+  adminUserUpdateSchema,
+  AdminUserUpdateState,
+  UserRole,
+  AdminUserDetailResponseSchema,
+  AdminUserDetailResponse,
 } from "./definition";
 import { baseCookieOptions, serverAddress } from "./util";
 import { notFound, redirect } from "next/navigation";
@@ -283,7 +289,7 @@ export async function DeletePost(id: number, boardSlug: string) {
         redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ServerError:
         throw new Error("서버 오류가 발생했습니다.");
-      case AuthenticatedFetchErrorType.Unknown:
+      case AuthenticatedFetchErrorType.NotFound:
         throw new Error("요청한 리소스를 찾을 수 없습니다.");
       default:
         throw new Error("게시물을 삭제할 수 없습니다.");
@@ -640,20 +646,22 @@ export async function AdminSignUpAction(
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
-        revalidatePath("/");
-        redirect("/");
+        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ConflictError:
         const message = error.message;
-        if (message.startsWith("This email")) {
-          return {
-            message: "Invalid field value.",
-            errors: { email: ["This email already exists."] },
-          };
+        const fieldErrors: Partial<Record<keyof AdminUserCreate, string[]>> =
+          {};
+        if (message.includes("email")) {
+          fieldErrors.email = ["This email already exists."];
         }
-        if (message.startsWith("This nickname")) {
+        if (message.includes("nickname")) {
+          fieldErrors.nickname = ["This nickname already exists."];
+        }
+
+        if (Object.keys(fieldErrors).length > 0) {
           return {
             message: "Invalid field value.",
-            errors: { nickname: ["This nickname already exists."] },
+            errors: fieldErrors,
           };
         }
         return {
@@ -664,6 +672,135 @@ export async function AdminSignUpAction(
         return {
           message: "An unexpected error occurred. Please try again.",
         };
+    }
+  } else {
+    revalidatePath("/admin/users");
+    redirect("/admin/users");
+  }
+}
+
+export async function AdminUserUpdateAction(
+  userId: number,
+  prevState: AdminUserUpdateState,
+  formData: FormData
+): Promise<AdminUserUpdateState> {
+  const updateData = {
+    name: formData.get("name")?.toString().trim() || undefined,
+    nickname: formData.get("nickname")?.toString().trim() || undefined,
+    role: formData.get("role")?.toString().trim() as UserRole | undefined,
+  };
+
+  const validatedFields = adminUserUpdateSchema.safeParse(updateData);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Invalid fields. Please check your input values.",
+    };
+  }
+
+  const reqAddress = `${serverAddress}/admin/users/${userId}`;
+
+  const { error } = await authenticatedFetch({
+    url: reqAddress,
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(validatedFields.data),
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ConflictError:
+        const message = error.message;
+        const fieldErrors: Partial<Record<keyof AdminUserCreate, string[]>> =
+          {};
+        if (message.includes("email")) {
+          fieldErrors.email = ["This email already exists."];
+        }
+        if (message.includes("nickname")) {
+          fieldErrors.nickname = ["This nickname already exists."];
+        }
+
+        if (Object.keys(fieldErrors).length > 0) {
+          return {
+            message: "Invalid field value.",
+            errors: fieldErrors,
+          };
+        }
+        return {
+          message: "Conflict occurred. Please check your input values.",
+        };
+      default:
+        return {
+          message: "An unexpected error occurred. Please try again.",
+        };
+    }
+  } else {
+    revalidatePath("/admin/users");
+    redirect("/admin/users");
+  }
+}
+
+export async function fetchUserDetails(
+  id: number
+): Promise<AdminUserDetailResponse> {
+  const reqAddress = `${serverAddress}/admin/users/${id}`;
+
+  const { data, error } = await authenticatedFetch({
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: reqAddress,
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.NotFound:
+        throw new Error("사용자를 찾을 수 없습니다");
+      default:
+        throw new Error("사용자 정보를 불러오지 못했습니다");
+    }
+  }
+
+  // 응답 데이터 검증
+  const result = AdminUserDetailResponseSchema.safeParse(data);
+  if (!result.success) {
+    console.error("Validation failed:", result.error);
+    throw new Error("Invalid user data format");
+  }
+
+  return result.data;
+}
+
+export async function deleteUser(userId: number) {
+  const reqAddress = `${serverAddress}/admin/users/${userId}`;
+
+  const { error } = await authenticatedFetch({
+    method: "DELETE",
+    url: reqAddress,
+  });
+
+  if (error) {
+    console.error("User deletion failed:", error.message);
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ServerError:
+        throw new Error("서버 오류가 발생했습니다.");
+      case AuthenticatedFetchErrorType.NotFound:
+        throw new Error("요청한 리소스를 찾을 수 없습니다.");
+      default:
+        throw new Error("사용자를 삭제할 수 없습니다.");
     }
   } else {
     revalidatePath("/admin/users");

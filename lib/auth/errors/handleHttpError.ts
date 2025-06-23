@@ -1,9 +1,9 @@
 // errors/handleHttpError.ts
-import { AuthenticatedFetchErrorType } from "../types";
+import { AuthenticatedFetchError, AuthenticatedFetchErrorType } from "../types";
 
 export async function handleHttpError(
   response: Response
-): Promise<{ type: AuthenticatedFetchErrorType; message: string }> {
+): Promise<AuthenticatedFetchError> {
   const status = response.status;
 
   let body;
@@ -17,13 +17,15 @@ export async function handleHttpError(
     case 401:
       return {
         type: AuthenticatedFetchErrorType.Unauthorized,
-        message: "인증이 필요합니다.",
+        message: ERROR_MESSAGES.UNAUTHORIZED,
+        status,
       };
 
     case 404:
       return {
-        type: AuthenticatedFetchErrorType.Unknown,
-        message: "요청한 리소스를 찾을 수 없습니다.",
+        type: AuthenticatedFetchErrorType.NotFound,
+        message: ERROR_MESSAGES.NOT_FOUND,
+        status,
       };
 
     case 409:
@@ -32,19 +34,29 @@ export async function handleHttpError(
         message:
           typeof body === "string"
             ? body
-            : body.message || "요청한 값이 중복되었습니다.",
+            : body.message || ERROR_MESSAGES.CONFLICT,
+        status,
       };
 
     case 500:
       return {
         type: AuthenticatedFetchErrorType.ServerError,
-        message: "서버 오류가 발생했습니다.",
+        message: ERROR_MESSAGES.SERVER_ERROR,
+        status,
       };
 
     default:
       return {
         type: AuthenticatedFetchErrorType.Unknown,
         message: `알 수 없는 오류 (${status})`,
+        status,
       };
   }
 }
+
+export const ERROR_MESSAGES = {
+  NOT_FOUND: "요청한 리소스를 찾을 수 없습니다.",
+  UNAUTHORIZED: "인증이 필요합니다.",
+  CONFLICT: "요청한 값이 중복되었습니다.",
+  SERVER_ERROR: "서버 오류가 발생했습니다.",
+};

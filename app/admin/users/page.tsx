@@ -1,4 +1,4 @@
-import { FetchUserPaginatedList } from "@/lib/actions";
+import { deleteUser, FetchUserPaginatedList } from "@/lib/actions";
 import {
   AdminUserListPaginatedResponse,
   PaginationDtoSchema,
@@ -16,6 +16,33 @@ export default async function UserList({
     page: Number(page) || 1,
     limit: Number(limit) || 10,
   });
+
+  const handleDeleteUser = async ({
+    userId,
+    userNickname,
+  }: {
+    userId: number;
+    userNickname: string;
+  }) => {
+    if (confirm(`정말 ${userNickname}님을 삭제하시겠습니까?`)) {
+      try {
+        await deleteUser(userId);
+      } catch (error) {
+        let errorMessage = "알 수 없는 오류가 발생했습니다.";
+
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (error && typeof error === "object" && "message" in error) {
+          errorMessage =
+            (error as { message?: string }).message ?? errorMessage;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        }
+
+        alert(errorMessage);
+      }
+    }
+  };
 
   const currentPage = parsed.success ? parsed.data.page : 1;
   const currentLimit = parsed.success ? parsed.data.limit : 10;
@@ -82,6 +109,25 @@ export default async function UserList({
               <td className="p-2">{user.nickname}</td>
               <td className="p-2">{user.email}</td>
               <td className="p-2">{user.role}</td>
+              <td className="p-2 space-x-2">
+                <Link
+                  href={`/admin/users/${user.id}`}
+                  className="text-blue-500 hover:underline"
+                >
+                  수정
+                </Link>
+                <button
+                  onClick={() =>
+                    handleDeleteUser({
+                      userId: user.id,
+                      userNickname: user.nickname,
+                    })
+                  }
+                  className="text-red-500 hover:underline"
+                >
+                  삭제
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

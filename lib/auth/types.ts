@@ -8,6 +8,7 @@ export enum AuthenticatedFetchErrorType {
   ServerError = "ServerError",
   ConflictError = "ConflictError",
   Unauthorized = "Unauthorized",
+  NotFound = "NotFound",
   Unknown = "Unknown",
 }
 
@@ -15,6 +16,7 @@ export type AuthenticatedFetchError = {
   type: AuthenticatedFetchErrorType;
   message: string;
   fieldErrors?: Record<string, string[]>;
+  status?: number;
 };
 
 export type AuthenticatedFetchResult<T> = {

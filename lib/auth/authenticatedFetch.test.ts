@@ -221,7 +221,7 @@ describe("AuthenticatedFetch", () => {
       url: `${mockServerAddress}/test-endpoint`,
     });
 
-    expect(response.error?.type).toBe(AuthenticatedFetchErrorType.Unknown);
+    expect(response.error?.type).toBe(AuthenticatedFetchErrorType.NotFound);
     expect(response.error?.message).toBe("요청한 리소스를 찾을 수 없습니다.");
   });
 
