@@ -1,8 +1,9 @@
 "use client";
 import { useRef, useState } from "react";
-import { AdminUserCreateState } from "@/lib/definition";
+import { AdminUserCreateState, UserRole } from "@/lib/definition";
 import { LabelInput, ErrorText } from "@/components/common";
 import { checkEmailExists, checkNicknameExists } from "@/lib/actions";
+import RoleSelect from "../RoleSelect";
 
 type ValidationType = "nickname" | "email";
 
@@ -58,7 +59,6 @@ export default function AdminSignUpForm({
     email: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [role, setRole] = useState("user");
 
   const handleCheck = async (type: ValidationType) => {
     setIsLoading(true);
@@ -81,10 +81,6 @@ export default function AdminSignUpForm({
         setIsLoading(false);
       }
     }
-  };
-
-  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRole(e.target.value);
   };
 
   return (
@@ -117,30 +113,7 @@ export default function AdminSignUpForm({
       <LabelInput name="password" type="password" className="mb-4" />
       <ErrorText elemName="password" errors={state?.errors?.password} />
 
-      <div className="mb-4">
-        <label
-          htmlFor="role"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          역할 선택
-        </label>
-        <select
-          name="role"
-          id="role"
-          value={role}
-          onChange={handleRoleChange}
-          className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="admin">관리자</option>
-          <option value="user">일반 사용자</option>
-          <option value="bot">봇</option>
-        </select>
-        {state?.errors?.role && (
-          <div className="mt-1">
-            <ErrorText elemName="role" errors={state.errors.role} />
-          </div>
-        )}
-      </div>
+      <RoleSelect value={UserRole.USER} errors={state?.errors?.role} />
 
       <button
         type="submit"

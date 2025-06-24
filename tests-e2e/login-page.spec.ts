@@ -1,3 +1,4 @@
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 import { test, expect } from "@playwright/test";
 
 test.use({
@@ -42,6 +43,8 @@ test.describe("Login Page", () => {
     // Click the login button
     await page.click('button[type="submit"]');
 
-    await expect(page.getByText("Invalid credentials")).toBeVisible();
+    await expect(
+      page.getByText(ERROR_MESSAGES.INVALID_CREDENTIALS)
+    ).toBeVisible();
   });
 });

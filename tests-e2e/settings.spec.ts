@@ -9,6 +9,7 @@ import {
   expectValidUserCookie,
   uniqueNickname,
 } from "./util/test-utils";
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 
 dotenv.config({ path: ".env.e2e.test" });
 
@@ -111,7 +112,7 @@ test.describe("Settings Test", () => {
       await page.click('button[type="submit"]');
 
       await expect(page.locator("#nickname-error")).toHaveText(
-        "The nickname is already in use"
+        ERROR_MESSAGES.NICKNAME_EXISTS
       );
 
       await expect(

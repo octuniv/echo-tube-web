@@ -92,7 +92,7 @@ export default async function UserList({
               {!user.deletedAt && (
                 <td className="p-2 space-x-2">
                   <Link
-                    href={`/admin/users/${user.id}`}
+                    href={`/admin/users/edit/${user.id}`}
                     className="text-blue-500 hover:underline"
                   >
                     수정

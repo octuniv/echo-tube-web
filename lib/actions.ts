@@ -37,6 +37,7 @@ import { authenticatedFetch } from "./auth/authenticatedFetch";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { AuthenticatedFetchErrorType } from "./auth/types";
+import { ERROR_MESSAGES } from "./constants/errorMessage";
 
 export async function signUpAction(prevState: UserState, formData: FormData) {
   const validatedFields = userSchema.safeParse({
@@ -70,16 +71,16 @@ export async function signUpAction(prevState: UserState, formData: FormData) {
       if (result.error === "Conflict" || result?.statusCode === 409) {
         if (String(result.message).startsWith("This nickname")) {
           return {
-            message: "Invalid field value.",
+            message: ERROR_MESSAGES.INVALID_FIELD,
             errors: {
-              nickname: ["This nickname currently exists."],
+              nickname: [ERROR_MESSAGES.NICKNAME_EXISTS],
             },
           };
         } else if (String(result.message).startsWith("This email")) {
           return {
-            message: "Invalid field value.",
+            message: ERROR_MESSAGES.INVALID_FIELD,
             errors: {
-              email: ["This email currently exists."],
+              email: [ERROR_MESSAGES.EMAIL_EXISTS],
             },
           };
         } else {
@@ -128,7 +129,7 @@ export async function LoginAction(
 
     if (!response.ok) {
       return {
-        message: "Invalid credentials",
+        message: ERROR_MESSAGES.INVALID_CREDENTIALS,
       };
     }
 
@@ -415,7 +416,7 @@ export async function UpdateNicknameAction(
         return {
           message: error.message || "Duplicate value detected",
           errors: {
-            nickname: ["The nickname is already in use"],
+            nickname: [ERROR_MESSAGES.NICKNAME_EXISTS],
           },
         };
       default:
@@ -652,15 +653,15 @@ export async function AdminSignUpAction(
         const fieldErrors: Partial<Record<keyof AdminUserCreate, string[]>> =
           {};
         if (message.includes("email")) {
-          fieldErrors.email = ["This email already exists."];
+          fieldErrors.email = [ERROR_MESSAGES.EMAIL_EXISTS];
         }
         if (message.includes("nickname")) {
-          fieldErrors.nickname = ["This nickname already exists."];
+          fieldErrors.nickname = [ERROR_MESSAGES.NICKNAME_EXISTS];
         }
 
         if (Object.keys(fieldErrors).length > 0) {
           return {
-            message: "Invalid field value.",
+            message: ERROR_MESSAGES.INVALID_FIELD,
             errors: fieldErrors,
           };
         }
@@ -719,16 +720,13 @@ export async function AdminUserUpdateAction(
         const message = error.message;
         const fieldErrors: Partial<Record<keyof AdminUserCreate, string[]>> =
           {};
-        if (message.includes("email")) {
-          fieldErrors.email = ["This email already exists."];
-        }
         if (message.includes("nickname")) {
-          fieldErrors.nickname = ["This nickname already exists."];
+          fieldErrors.nickname = [ERROR_MESSAGES.NICKNAME_EXISTS];
         }
 
         if (Object.keys(fieldErrors).length > 0) {
           return {
-            message: "Invalid field value.",
+            message: ERROR_MESSAGES.INVALID_FIELD,
             errors: fieldErrors,
           };
         }
@@ -736,6 +734,7 @@ export async function AdminUserUpdateAction(
           message: "Conflict occurred. Please check your input values.",
         };
       default:
+        console.error("Unexpected error during user manager editing:", error);
         return {
           message: "An unexpected error occurred. Please try again.",
         };

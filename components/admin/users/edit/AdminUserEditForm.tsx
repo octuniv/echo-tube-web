@@ -2,8 +2,8 @@ import { LabelInput, ErrorText } from "@/components/common";
 import {
   AdminUserDetailResponse,
   AdminUserUpdateState,
-  UserRole,
 } from "@/lib/definition";
+import RoleSelect from "../RoleSelect";
 
 interface PageProps {
   state: AdminUserUpdateState;
@@ -44,28 +44,7 @@ export default function AdminUserEditForm({
             <ErrorText elemName="nickname" errors={state.errors?.nickname} />
           </div>
 
-          {/* Role Field */}
-          <div>
-            <label
-              htmlFor="role"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Role
-            </label>
-            <select
-              name="role"
-              id="role"
-              defaultValue={userData.role}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {Object.values(UserRole).map((role) => (
-                <option key={role} value={role}>
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </option>
-              ))}
-            </select>
-            <ErrorText elemName="role" errors={state.errors?.role} />
-          </div>
+          <RoleSelect value={userData.role} errors={state?.errors?.role} />
 
           {/* Email Field (Read-only) */}
           <LabelInput

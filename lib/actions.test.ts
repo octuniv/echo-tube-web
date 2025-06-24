@@ -18,6 +18,7 @@ import {
   AdminSignUpAction,
   fetchUserDetails,
   deleteUser,
+  AdminUserUpdateAction,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -29,12 +30,14 @@ import { revalidatePath } from "next/cache";
 import {
   AdminUserCreateState,
   AdminUserDetailResponse,
+  AdminUserUpdateState,
   BoardListItemDto,
   BoardPurpose,
   CreatePostRequestBody,
   UserAuthInfo,
   UserRole,
 } from "./definition";
+import { ERROR_MESSAGES } from "./constants/errorMessage";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -132,9 +135,9 @@ describe("Actions Module", () => {
       const result = await signUpAction({}, formData);
 
       expect(result).toEqual({
-        message: "Invalid field value.",
+        message: ERROR_MESSAGES.INVALID_FIELD,
         errors: {
-          nickname: ["This nickname currently exists."],
+          nickname: [ERROR_MESSAGES.NICKNAME_EXISTS],
         },
       });
     });
@@ -162,9 +165,9 @@ describe("Actions Module", () => {
       const result = await signUpAction({}, formData);
 
       expect(result).toEqual({
-        message: "Invalid field value.",
+        message: ERROR_MESSAGES.INVALID_FIELD,
         errors: {
-          email: ["This email currently exists."],
+          email: [ERROR_MESSAGES.EMAIL_EXISTS],
         },
       });
     });
@@ -235,7 +238,7 @@ describe("Actions Module", () => {
       server.use(
         http.post(`${serverAddress}/auth/login`, () => {
           return HttpResponse.json(
-            { error: "Invalid credentials" },
+            { error: ERROR_MESSAGES.INVALID_CREDENTIALS },
             { status: 401 }
           );
         })
@@ -243,7 +246,7 @@ describe("Actions Module", () => {
 
       const result = await LoginAction({}, formData);
 
-      expect(result.message).toBe("Invalid credentials");
+      expect(result.message).toBe(ERROR_MESSAGES.INVALID_CREDENTIALS);
       expect(redirect).not.toHaveBeenCalled();
     });
   });
@@ -848,7 +851,7 @@ describe("Actions Module", () => {
       server.use(
         http.patch(`${serverAddress}/users/nickname`, () => {
           return HttpResponse.json(
-            { error: "Invalid credentials" },
+            { error: ERROR_MESSAGES.INVALID_CREDENTIALS },
             { status: 401 }
           );
         })
@@ -877,7 +880,7 @@ describe("Actions Module", () => {
       expect(res).toMatchObject({
         message: `This nickname ${duplicatedNick} is already existed!`,
         errors: {
-          nickname: ["The nickname is already in use"],
+          nickname: [ERROR_MESSAGES.NICKNAME_EXISTS],
         },
       });
     });
@@ -1005,7 +1008,7 @@ describe("Actions Module", () => {
       server.use(
         http.patch(`${serverAddress}/users/password`, () => {
           return HttpResponse.json(
-            { error: "Invalid credentials" },
+            { error: ERROR_MESSAGES.INVALID_CREDENTIALS },
             { status: 401 }
           );
         })
@@ -1331,400 +1334,564 @@ describe("Actions Module", () => {
           await FetchUserPaginatedList({ page: 2, limit: 5 });
         });
       });
-    });
-  });
 
-  describe("AdminSignUpAction", () => {
-    const formDataMock = (data: Record<string, string>) => {
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-      return formData;
-    };
-
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-
-    it("should return validation errors when required fields are missing", async () => {
-      const emptyFormData = new FormData();
-      const result = await AdminSignUpAction(
-        {} as AdminUserCreateState,
-        emptyFormData
-      );
-
-      expect(result).toEqual({
-        errors: {
-          name: ["Expected string, received null"],
-          nickname: ["Expected string, received null"],
-          email: ["Expected string, received null"],
-          password: ["Expected string, received null"],
-          role: ["Expected 'admin' | 'user' | 'bot', received null"],
-        },
-        message: "Missing or invalid fields. Failed to create admin user.",
-      });
-    });
-
-    it("should handle email conflict error", async () => {
-      const userData = {
-        name: "Test User",
-        nickname: "testnick",
-        email: "test@example.com",
-        password: "password123",
-        role: UserRole.ADMIN,
-      };
-
-      server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
-          return new HttpResponse(
-            JSON.stringify({
-              type: "Conflict",
-              message: "This email test@example.com is already existed!",
-            }),
-            { status: 409 }
-          );
-        })
-      );
-
-      const result = await AdminSignUpAction(
-        {} as AdminUserCreateState,
-        formDataMock(userData)
-      );
-
-      expect(result).toEqual({
-        message: "Invalid field value.",
-        errors: { email: ["This email already exists."] },
-      });
-    });
-
-    it("should handle nickname conflict error", async () => {
-      const userData = {
-        name: "Test User",
-        nickname: "takennick",
-        email: "test@example.com",
-        password: "password123",
-        role: UserRole.ADMIN,
-      };
-
-      server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
-          return new HttpResponse(
-            JSON.stringify({
-              type: "Conflict",
-              message: "This nickname takennick is already existed!",
-            }),
-            { status: 409 }
-          );
-        })
-      );
-
-      const result = await AdminSignUpAction(
-        {} as AdminUserCreateState,
-        formDataMock(userData)
-      );
-
-      expect(result).toEqual({
-        message: "Invalid field value.",
-        errors: { nickname: ["This nickname already exists."] },
-      });
-    });
-
-    it("should handle unauthorized error", async () => {
-      const userData = {
-        name: "Test User",
-        nickname: "testnick",
-        email: "test@example.com",
-        password: "password123",
-        role: UserRole.ADMIN,
-      };
-
-      server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
-          return new HttpResponse(null, { status: 401 });
-        })
-      );
-
-      await expect(
-        AdminSignUpAction({} as AdminUserCreateState, formDataMock(userData))
-      ).rejects.toThrow();
-
-      // Assuming clearAuth and redirect are mocked in global setup
-      expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
-    });
-
-    it("should successfully create admin user", async () => {
-      const userData = {
-        name: "New Admin",
-        nickname: "newadmin",
-        email: "newadmin@example.com",
-        password: "securePass123",
-        role: UserRole.ADMIN,
-      };
-
-      server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
-          return HttpResponse.json({
-            email: "newadmin@example.com",
-            message: "Successfully created account",
+      describe("AdminSignUpAction", () => {
+        const formDataMock = (data: Record<string, string>) => {
+          const formData = new FormData();
+          Object.entries(data).forEach(([key, value]) => {
+            formData.append(key, value);
           });
-        })
-      );
-
-      await expect(
-        AdminSignUpAction({} as AdminUserCreateState, formDataMock(userData))
-      ).rejects.toThrow();
-
-      expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
-      expect(redirect).toHaveBeenCalledWith("/admin/users");
-    });
-
-    it("should handle unexpected errors", async () => {
-      const userData = {
-        name: "Test User",
-        nickname: "testnick",
-        email: "test@example.com",
-        password: "password123",
-        role: UserRole.ADMIN,
-      };
-
-      server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
-          return new HttpResponse(null, { status: 500 });
-        })
-      );
-
-      const result = await AdminSignUpAction(
-        {} as AdminUserCreateState,
-        formDataMock(userData)
-      );
-
-      expect(console.error).toHaveBeenCalledWith(
-        "Unexpected error during admin signup:",
-        expect.anything()
-      );
-      expect(result).toEqual({
-        message: "An unexpected error occurred. Please try again.",
-      });
-    });
-
-    describe("fetchUserDetails", () => {
-      const mockUser: AdminUserDetailResponse = {
-        id: 1,
-        name: "John Doe",
-        nickname: "johndoe",
-        email: "john@example.com",
-        role: UserRole.USER,
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-02T00:00:00Z",
-        deletedAt: null,
-      };
-
-      beforeEach(() => {
-        jest.clearAllMocks();
-      });
-
-      it("should fetch user details successfully for valid ID", async () => {
-        const userId = 1;
-        server.use(
-          http.get(`${serverAddress}/admin/users/${userId}`, () => {
-            return HttpResponse.json(mockUser, { status: 200 });
-          })
-        );
-
-        const result = await fetchUserDetails(userId);
-        expect(result).toEqual(mockUser);
-        expect(result.id).toBe(userId);
-        expect(result.email).toBe(mockUser.email);
-      });
-
-      it("should handle 404 error when user does not exist", async () => {
-        const userId = 999;
-        server.use(
-          http.get(`${serverAddress}/admin/users/${userId}`, () => {
-            return HttpResponse.json(
-              { error: "User not found" },
-              { status: 404 }
-            );
-          })
-        );
-
-        await expect(fetchUserDetails(userId)).rejects.toThrow(
-          "사용자를 찾을 수 없습니다"
-        );
-      });
-
-      it("should handle unauthorized access (401 error)", async () => {
-        const userId = 1;
-        server.use(
-          http.get(`${serverAddress}/admin/users/${userId}`, () => {
-            return HttpResponse.json(
-              { error: "Unauthorized" },
-              { status: 401 }
-            );
-          })
-        );
-
-        await expect(fetchUserDetails(userId)).rejects.toThrow();
-        expect(clearAuth).toHaveBeenCalled();
-        expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
-      });
-
-      it("should handle network errors", async () => {
-        const userId = 1;
-        server.use(
-          http.get(`${serverAddress}/admin/users/${userId}`, () => {
-            return new HttpResponse(null, { status: 500 });
-          })
-        );
-
-        await expect(fetchUserDetails(userId)).rejects.toThrow(
-          "사용자 정보를 불러오지 못했습니다"
-        );
-      });
-
-      it("should handle invalid data format", async () => {
-        const userId = 1;
-        const invalidData = {
-          id: "invalid", // ID가 숫자가 아님
-          name: 123, // 이름이 문자열이 아님
-          email: "invalid-email",
+          return formData;
         };
-        server.use(
-          http.get(`${serverAddress}/admin/users/${userId}`, () => {
-            return HttpResponse.json(invalidData, { status: 200 });
-          })
-        );
 
-        await expect(fetchUserDetails(userId)).rejects.toThrow(
-          "Invalid user data format"
-        );
+        beforeEach(() => {
+          jest.clearAllMocks();
+        });
+
+        it("should return validation errors when required fields are missing", async () => {
+          const emptyFormData = new FormData();
+          const result = await AdminSignUpAction(
+            {} as AdminUserCreateState,
+            emptyFormData
+          );
+
+          expect(result).toEqual({
+            errors: {
+              name: ["Expected string, received null"],
+              nickname: ["Expected string, received null"],
+              email: ["Expected string, received null"],
+              password: ["Expected string, received null"],
+              role: ["Expected 'admin' | 'user' | 'bot', received null"],
+            },
+            message: "Missing or invalid fields. Failed to create admin user.",
+          });
+        });
+
+        it("should handle email conflict error", async () => {
+          const userData = {
+            name: "Test User",
+            nickname: "testnick",
+            email: "test@example.com",
+            password: "password123",
+            role: UserRole.ADMIN,
+          };
+
+          server.use(
+            http.post(`${serverAddress}/admin/users`, () => {
+              return new HttpResponse(
+                JSON.stringify({
+                  type: "Conflict",
+                  message: "This email test@example.com is already existed!",
+                }),
+                { status: 409 }
+              );
+            })
+          );
+
+          const result = await AdminSignUpAction(
+            {} as AdminUserCreateState,
+            formDataMock(userData)
+          );
+
+          expect(result).toEqual({
+            message: ERROR_MESSAGES.INVALID_FIELD,
+            errors: { email: [ERROR_MESSAGES.EMAIL_EXISTS] },
+          });
+        });
+
+        it("should handle nickname conflict error", async () => {
+          const userData = {
+            name: "Test User",
+            nickname: "takennick",
+            email: "test@example.com",
+            password: "password123",
+            role: UserRole.ADMIN,
+          };
+
+          server.use(
+            http.post(`${serverAddress}/admin/users`, () => {
+              return new HttpResponse(
+                JSON.stringify({
+                  type: "Conflict",
+                  message: "This nickname takennick is already existed!",
+                }),
+                { status: 409 }
+              );
+            })
+          );
+
+          const result = await AdminSignUpAction(
+            {} as AdminUserCreateState,
+            formDataMock(userData)
+          );
+
+          expect(result).toEqual({
+            message: ERROR_MESSAGES.INVALID_FIELD,
+            errors: { nickname: [ERROR_MESSAGES.NICKNAME_EXISTS] },
+          });
+        });
+
+        it("should handle unauthorized error", async () => {
+          const userData = {
+            name: "Test User",
+            nickname: "testnick",
+            email: "test@example.com",
+            password: "password123",
+            role: UserRole.ADMIN,
+          };
+
+          server.use(
+            http.post(`${serverAddress}/admin/users`, () => {
+              return new HttpResponse(null, { status: 401 });
+            })
+          );
+
+          await expect(
+            AdminSignUpAction(
+              {} as AdminUserCreateState,
+              formDataMock(userData)
+            )
+          ).rejects.toThrow();
+
+          // Assuming clearAuth and redirect are mocked in global setup
+          expect(clearAuth).toHaveBeenCalled();
+          expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+        });
+
+        it("should successfully create admin user", async () => {
+          const userData = {
+            name: "New Admin",
+            nickname: "newadmin",
+            email: "newadmin@example.com",
+            password: "securePass123",
+            role: UserRole.ADMIN,
+          };
+
+          server.use(
+            http.post(`${serverAddress}/admin/users`, () => {
+              return HttpResponse.json({
+                email: "newadmin@example.com",
+                message: "Successfully created account",
+              });
+            })
+          );
+
+          await expect(
+            AdminSignUpAction(
+              {} as AdminUserCreateState,
+              formDataMock(userData)
+            )
+          ).rejects.toThrow();
+
+          expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
+          expect(redirect).toHaveBeenCalledWith("/admin/users");
+        });
+
+        it("should handle unexpected errors", async () => {
+          const userData = {
+            name: "Test User",
+            nickname: "testnick",
+            email: "test@example.com",
+            password: "password123",
+            role: UserRole.ADMIN,
+          };
+
+          server.use(
+            http.post(`${serverAddress}/admin/users`, () => {
+              return new HttpResponse(null, { status: 500 });
+            })
+          );
+
+          const result = await AdminSignUpAction(
+            {} as AdminUserCreateState,
+            formDataMock(userData)
+          );
+
+          expect(console.error).toHaveBeenCalledWith(
+            "Unexpected error during admin signup:",
+            expect.anything()
+          );
+          expect(result).toEqual({
+            message: "An unexpected error occurred. Please try again.",
+          });
+        });
       });
 
-      it("should handle deleted user with deletedAt field", async () => {
-        const userId = 2;
-        const mockDeletedUser = {
-          ...mockUser,
-          id: userId,
-          deletedAt: "2024-01-03T00:00:00Z",
+      describe("fetchUserDetails", () => {
+        const mockUser: AdminUserDetailResponse = {
+          id: 1,
+          name: "John Doe",
+          nickname: "johndoe",
+          email: "john@example.com",
+          role: UserRole.USER,
+          createdAt: "2024-01-01T00:00:00Z",
+          updatedAt: "2024-01-02T00:00:00Z",
+          deletedAt: null,
         };
-        server.use(
-          http.get(`${serverAddress}/admin/users/${userId}`, () => {
-            return HttpResponse.json(mockDeletedUser, { status: 200 });
-          })
-        );
 
-        const result = await fetchUserDetails(userId);
-        expect(result).toEqual(mockDeletedUser);
-        expect(result.deletedAt).toBe(mockDeletedUser.deletedAt);
+        beforeEach(() => {
+          jest.clearAllMocks();
+        });
+
+        it("should fetch user details successfully for valid ID", async () => {
+          const userId = 1;
+          server.use(
+            http.get(`${serverAddress}/admin/users/${userId}`, () => {
+              return HttpResponse.json(mockUser, { status: 200 });
+            })
+          );
+
+          const result = await fetchUserDetails(userId);
+          expect(result).toEqual(mockUser);
+          expect(result.id).toBe(userId);
+          expect(result.email).toBe(mockUser.email);
+        });
+
+        it("should handle 404 error when user does not exist", async () => {
+          const userId = 999;
+          server.use(
+            http.get(`${serverAddress}/admin/users/${userId}`, () => {
+              return HttpResponse.json(
+                { error: "User not found" },
+                { status: 404 }
+              );
+            })
+          );
+
+          await expect(fetchUserDetails(userId)).rejects.toThrow(
+            "사용자를 찾을 수 없습니다"
+          );
+        });
+
+        it("should handle unauthorized access (401 error)", async () => {
+          const userId = 1;
+          server.use(
+            http.get(`${serverAddress}/admin/users/${userId}`, () => {
+              return HttpResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+              );
+            })
+          );
+
+          await expect(fetchUserDetails(userId)).rejects.toThrow();
+          expect(clearAuth).toHaveBeenCalled();
+          expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+        });
+
+        it("should handle network errors", async () => {
+          const userId = 1;
+          server.use(
+            http.get(`${serverAddress}/admin/users/${userId}`, () => {
+              return new HttpResponse(null, { status: 500 });
+            })
+          );
+
+          await expect(fetchUserDetails(userId)).rejects.toThrow(
+            "사용자 정보를 불러오지 못했습니다"
+          );
+        });
+
+        it("should handle invalid data format", async () => {
+          const userId = 1;
+          const invalidData = {
+            id: "invalid", // ID가 숫자가 아님
+            name: 123, // 이름이 문자열이 아님
+            email: "invalid-email",
+          };
+          server.use(
+            http.get(`${serverAddress}/admin/users/${userId}`, () => {
+              return HttpResponse.json(invalidData, { status: 200 });
+            })
+          );
+
+          await expect(fetchUserDetails(userId)).rejects.toThrow(
+            "Invalid user data format"
+          );
+        });
+
+        it("should handle deleted user with deletedAt field", async () => {
+          const userId = 2;
+          const mockDeletedUser = {
+            ...mockUser,
+            id: userId,
+            deletedAt: "2024-01-03T00:00:00Z",
+          };
+          server.use(
+            http.get(`${serverAddress}/admin/users/${userId}`, () => {
+              return HttpResponse.json(mockDeletedUser, { status: 200 });
+            })
+          );
+
+          const result = await fetchUserDetails(userId);
+          expect(result).toEqual(mockDeletedUser);
+          expect(result.deletedAt).toBe(mockDeletedUser.deletedAt);
+        });
+
+        it("should handle optional fields correctly", async () => {
+          const userId = 3;
+          const userWithOptionalFields = {
+            ...mockUser,
+            id: userId,
+            deletedAt: undefined, // 선택적 필드
+          };
+          server.use(
+            http.get(`${serverAddress}/admin/users/${userId}`, () => {
+              return HttpResponse.json(userWithOptionalFields, { status: 200 });
+            })
+          );
+
+          const result = await fetchUserDetails(userId);
+          expect(result).toEqual(userWithOptionalFields);
+          expect(result.deletedAt).toBeUndefined();
+        });
       });
 
-      it("should handle optional fields correctly", async () => {
-        const userId = 3;
-        const userWithOptionalFields = {
-          ...mockUser,
-          id: userId,
-          deletedAt: undefined, // 선택적 필드
-        };
-        server.use(
-          http.get(`${serverAddress}/admin/users/${userId}`, () => {
-            return HttpResponse.json(userWithOptionalFields, { status: 200 });
-          })
-        );
+      describe("deleteUser", () => {
+        const userId = 1;
+        const apiUrl = `${serverAddress}/admin/users/${userId}`;
 
-        const result = await fetchUserDetails(userId);
-        expect(result).toEqual(userWithOptionalFields);
-        expect(result.deletedAt).toBeUndefined();
-      });
-    });
+        beforeEach(() => {
+          jest.clearAllMocks();
+        });
 
-    describe("deleteUser", () => {
-      const userId = 1;
-      const apiUrl = `${serverAddress}/admin/users/${userId}`;
+        it("should delete user successfully and redirect to /admin/users", async () => {
+          // Mock successful DELETE response
+          server.use(
+            http.delete(apiUrl, () => {
+              return HttpResponse.json(
+                { message: "Successfully deleted user", success: true },
+                { status: 200 }
+              );
+            })
+          );
 
-      beforeEach(() => {
-        jest.clearAllMocks();
-      });
+          await deleteUser(userId);
 
-      it("should delete user successfully and redirect to /admin/users", async () => {
-        // Mock successful DELETE response
-        server.use(
-          http.delete(apiUrl, () => {
-            return HttpResponse.json(
-              { message: "Successfully deleted user", success: true },
-              { status: 200 }
-            );
-          })
-        );
+          expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
+        });
 
-        await deleteUser(userId);
+        it("should handle unauthorized error and redirect to login", async () => {
+          // Mock 401 Unauthorized response
+          server.use(
+            http.delete(apiUrl, () => {
+              return HttpResponse.json(
+                { message: "Unauthorized", statusCode: 401 },
+                { status: 401 }
+              );
+            })
+          );
 
-        expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
-      });
+          await expect(deleteUser(userId)).rejects.toThrow(
+            "Redirect to /login?error=session_expired"
+          );
 
-      it("should handle unauthorized error and redirect to login", async () => {
-        // Mock 401 Unauthorized response
-        server.use(
-          http.delete(apiUrl, () => {
-            return HttpResponse.json(
-              { message: "Unauthorized", statusCode: 401 },
-              { status: 401 }
-            );
-          })
-        );
+          expect(clearAuth).toHaveBeenCalled();
+          expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+        });
 
-        await expect(deleteUser(userId)).rejects.toThrow(
-          "Redirect to /login?error=session_expired"
-        );
+        it("should handle server error (500)", async () => {
+          // Mock 500 Internal Server Error
+          server.use(
+            http.delete(apiUrl, () => {
+              return HttpResponse.json(
+                { message: "Internal Server Error" },
+                { status: 500 }
+              );
+            })
+          );
 
-        expect(clearAuth).toHaveBeenCalled();
-        expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
-      });
+          await expect(deleteUser(userId)).rejects.toThrow(
+            "서버 오류가 발생했습니다."
+          );
+        });
 
-      it("should handle server error (500)", async () => {
-        // Mock 500 Internal Server Error
-        server.use(
-          http.delete(apiUrl, () => {
-            return HttpResponse.json(
-              { message: "Internal Server Error" },
-              { status: 500 }
-            );
-          })
-        );
+        it("should handle not found error (404)", async () => {
+          // Mock 404 Not Found response
+          server.use(
+            http.delete(apiUrl, () => {
+              return HttpResponse.json(
+                { message: "User not found" },
+                { status: 404 }
+              );
+            })
+          );
 
-        await expect(deleteUser(userId)).rejects.toThrow(
-          "서버 오류가 발생했습니다."
-        );
-      });
+          await expect(deleteUser(userId)).rejects.toThrow(
+            "요청한 리소스를 찾을 수 없습니다."
+          );
+        });
 
-      it("should handle not found error (404)", async () => {
-        // Mock 404 Not Found response
-        server.use(
-          http.delete(apiUrl, () => {
-            return HttpResponse.json(
-              { message: "User not found" },
-              { status: 404 }
-            );
-          })
-        );
+        it("should handle network error", async () => {
+          // Mock network error
+          server.use(
+            http.delete(apiUrl, () => {
+              return new HttpResponse(null, { status: 503 });
+            })
+          );
 
-        await expect(deleteUser(userId)).rejects.toThrow(
-          "요청한 리소스를 찾을 수 없습니다."
-        );
+          await expect(deleteUser(userId)).rejects.toThrow(
+            "사용자를 삭제할 수 없습니다."
+          );
+        });
       });
 
-      it("should handle network error", async () => {
-        // Mock network error
-        server.use(
-          http.delete(apiUrl, () => {
-            return new HttpResponse(null, { status: 503 });
-          })
-        );
+      describe("AdminUserUpdateAction", () => {
+        beforeEach(() => {
+          jest.clearAllMocks();
+        });
 
-        await expect(deleteUser(userId)).rejects.toThrow(
-          "사용자를 삭제할 수 없습니다."
-        );
+        it("should return validation errors when no fields are provided", async () => {
+          const formData = new FormData();
+          const result = await AdminUserUpdateAction(
+            1,
+            {} as AdminUserUpdateState,
+            formData
+          );
+
+          expect(result).toEqual({
+            errors: {},
+            message: "Invalid fields. Please check your input values.",
+          });
+        });
+
+        it("should handle invalid role enum value", async () => {
+          const formData = new FormData();
+          formData.append("role", "invalid_role");
+
+          const result = await AdminUserUpdateAction(
+            1,
+            {} as AdminUserUpdateState,
+            formData
+          );
+
+          expect(result.errors?.role).toBeDefined();
+          expect(result.message).toBe(
+            "Invalid fields. Please check your input values."
+          );
+        });
+
+        it("should successfully update user and redirect", async () => {
+          const formData = new FormData();
+          formData.append("nickname", "newnick");
+
+          server.use(
+            http.patch(`${serverAddress}/admin/users/1`, () => {
+              return HttpResponse.json({ success: true }, { status: 200 });
+            })
+          );
+
+          await expect(
+            AdminUserUpdateAction(1, {} as AdminUserUpdateState, formData)
+          ).rejects.toThrow();
+
+          expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
+          expect(redirect).toHaveBeenCalledWith("/admin/users");
+        });
+
+        it("should handle unauthorized error during update", async () => {
+          const formData = new FormData();
+          formData.append("nickname", "newnick");
+
+          server.use(
+            http.patch(`${serverAddress}/admin/users/1`, () => {
+              return HttpResponse.json(
+                { message: "Unauthorized" },
+                { status: 401 }
+              );
+            })
+          );
+
+          await expect(
+            AdminUserUpdateAction(1, {} as AdminUserUpdateState, formData)
+          ).rejects.toThrow();
+
+          expect(clearAuth).toHaveBeenCalled();
+          expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+        });
+
+        it("should handle nickname conflict error", async () => {
+          const formData = new FormData();
+          formData.append("nickname", "takennick");
+
+          server.use(
+            http.patch(`${serverAddress}/admin/users/1`, () => {
+              return HttpResponse.json(
+                {
+                  type: "Conflict",
+                  message: "This nickname takennick is already existed!",
+                },
+                { status: 409 }
+              );
+            })
+          );
+
+          const result = await AdminUserUpdateAction(
+            1,
+            {} as AdminUserUpdateState,
+            formData
+          );
+
+          expect(result).toEqual({
+            message: ERROR_MESSAGES.INVALID_FIELD,
+            errors: { nickname: [ERROR_MESSAGES.NICKNAME_EXISTS] },
+          });
+        });
+
+        it("should handle general conflict error", async () => {
+          const formData = new FormData();
+          formData.append("nickname", "test");
+
+          server.use(
+            http.patch(`${serverAddress}/admin/users/1`, () => {
+              return HttpResponse.json(
+                {
+                  type: "Conflict",
+                  message: "General conflict occurred",
+                },
+                { status: 409 }
+              );
+            })
+          );
+
+          const result = await AdminUserUpdateAction(
+            1,
+            {} as AdminUserUpdateState,
+            formData
+          );
+
+          expect(result).toEqual({
+            message: "Conflict occurred. Please check your input values.",
+          });
+        });
+
+        it("should handle unexpected error during update", async () => {
+          const formData = new FormData();
+          formData.append("nickname", "test");
+
+          server.use(
+            http.patch(`${serverAddress}/admin/users/1`, () => {
+              return HttpResponse.json(
+                { message: "Internal Server Error" },
+                { status: 500 }
+              );
+            })
+          );
+
+          const result = await AdminUserUpdateAction(
+            1,
+            {} as AdminUserUpdateState,
+            formData
+          );
+
+          expect(console.error).toHaveBeenCalledWith(
+            "Unexpected error during user manager editing:",
+            expect.anything()
+          );
+          expect(result).toEqual({
+            message: "An unexpected error occurred. Please try again.",
+          });
+        });
       });
     });
   });

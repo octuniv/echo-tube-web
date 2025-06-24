@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createTestUser } from "./util/test-utils";
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 
 test.use({
   storageState: undefined,
@@ -80,10 +81,10 @@ test.describe("SignUp Form E2E Tests", () => {
     await page.click('button[type="submit"]');
 
     await expect(page.locator("#email-error")).toHaveText(
-      "This email currently exists."
+      ERROR_MESSAGES.EMAIL_EXISTS
     );
 
-    await expect(page.getByText("Invalid field value.")).toBeVisible();
+    await expect(page.getByText(ERROR_MESSAGES.INVALID_FIELD)).toBeVisible();
   });
 
   test("should display server error message on failure if you put an nickname that already exists on the server ", async ({
@@ -106,10 +107,10 @@ test.describe("SignUp Form E2E Tests", () => {
     await page.click('button[type="submit"]');
 
     await expect(page.locator("#nickname-error")).toHaveText(
-      "This nickname currently exists."
+      ERROR_MESSAGES.NICKNAME_EXISTS
     );
 
-    await expect(page.getByText("Invalid field value.")).toBeVisible();
+    await expect(page.getByText(ERROR_MESSAGES.INVALID_FIELD)).toBeVisible();
   });
 
   test("should display 'Enter a value' text if the duplicate confirmation button is pressed while the input space for duplicate confirmation is empty.", async ({
