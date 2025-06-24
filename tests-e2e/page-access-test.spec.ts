@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
 
+test.use({
+  storageState: undefined,
+});
+
 test.describe("Page-to-page movement test", () => {
   test.beforeEach(async ({ page }) => {
     await page.context().clearCookies();

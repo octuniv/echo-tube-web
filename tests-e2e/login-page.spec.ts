@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
 
+test.use({
+  storageState: undefined,
+});
+
 test.describe("Login Page", () => {
   test.beforeEach(async ({ page }) => {
     await page.context().clearCookies();

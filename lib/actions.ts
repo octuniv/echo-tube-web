@@ -804,6 +804,5 @@ export async function deleteUser(userId: number) {
     }
   } else {
     revalidatePath("/admin/users");
-    redirect("/admin/users");
   }
 }

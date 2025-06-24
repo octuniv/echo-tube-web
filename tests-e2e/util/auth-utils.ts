@@ -1,4 +1,4 @@
-import { expect, Page, BrowserContext } from "@playwright/test";
+import { Page, BrowserContext, expect } from "@playwright/test";
 import { User } from "@/lib/definition";
 import { expectCookiesToBeDefined, expectValidUserCookie } from "./test-utils";
 
@@ -7,6 +7,11 @@ interface authenticationProps {
   page: Page;
   context: BrowserContext;
 }
+
+const adminAccount = {
+  email: process.env.SYSTEM_USER_EMAIL || "system@example.com",
+  password: process.env.SYSTEM_USER_PASSWORD || "system1234",
+};
 
 export const signUpAndLogin = async ({
   account,
@@ -40,4 +45,22 @@ export const signUpAndLogin = async ({
   expectCookiesToBeDefined(cookies, ["access_token", "refresh_token", "user"]);
 
   expectValidUserCookie(cookies);
+};
+
+export const loginAsAdmin = async ({
+  page,
+  context,
+}: {
+  page: Page;
+  context: BrowserContext;
+}) => {
+  await context.clearCookies();
+
+  await page.goto("/login");
+  await page.fill('input[name="email"]', adminAccount.email);
+  await page.fill('input[name="password"]', adminAccount.password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL("/dashboard", { timeout: 5000 });
+
+  await expect(page).toHaveURL("/dashboard");
 };

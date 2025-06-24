@@ -1658,12 +1658,9 @@ describe("Actions Module", () => {
           })
         );
 
-        await expect(deleteUser(userId)).rejects.toThrow(
-          "Redirect to /admin/users"
-        );
+        await deleteUser(userId);
 
         expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
-        expect(redirect).toHaveBeenCalledWith("/admin/users");
       });
 
       it("should handle unauthorized error and redirect to login", async () => {

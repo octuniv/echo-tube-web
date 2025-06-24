@@ -1,4 +1,5 @@
 // tests-e2e/util/test-utils.ts
+import { User } from "@/lib/definition";
 import { expect, Cookie } from "@playwright/test";
 
 export const expectCookiesToBeDefined = (
@@ -36,3 +37,16 @@ export const expectCookiesToNotExist = (
     expect(cookie, `Cookie '${name}' should not exist`).toBeFalsy();
   });
 };
+
+export const uniqueEmail = (prefix = "user", domain = "example.com") =>
+  `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}@${domain}`;
+
+export const uniqueNickname = (prefix = "user") =>
+  `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+export const createTestUser = (overrides: Partial<User> = {}): User => ({
+  name: overrides.name || "Test User",
+  nickname: overrides.nickname || uniqueNickname(),
+  email: overrides.email || uniqueEmail(),
+  password: overrides.password || "password123",
+});

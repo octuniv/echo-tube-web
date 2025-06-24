@@ -2,16 +2,16 @@ import { test, expect, Cookie, chromium } from "@playwright/test";
 import { signUpAndLogin } from "./util/auth-utils";
 import { User } from "@/lib/definition";
 import {
+  createTestUser,
   expectCookiesToBeDefined,
   expectValidUserCookie,
 } from "./util/test-utils";
 
-const authTestAccount = {
-  name: "authTest",
-  nickname: "authTest",
-  email: "authTest@test.com",
-  password: "authTest",
-} satisfies User;
+const authTestAccount = createTestUser();
+
+test.use({
+  storageState: undefined,
+});
 
 test.describe("Auth Test", () => {
   let currentCookies: Cookie[];
