@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, Page, Locator } from "@playwright/test";
 import { loginAsAdmin } from "../util/auth-utils";
 import { createTestUser, uniqueNickname } from "../util/test-utils";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
@@ -326,5 +326,142 @@ test.describe("Admin User Management E2E Tests", () => {
       await expect(testerRow.locator('button:text("삭제")')).toBeHidden();
       await expect(testerRow.locator('a:text("수정")')).toBeHidden();
     });
+  });
+});
+
+test.describe("User Detail Page E2E Tests", () => {
+  let detailTestUserId: number;
+
+  const detailTestAccount = {
+    ...createTestUser(),
+    role: UserRole.BOT,
+  };
+  test.beforeAll(async ({ page, context }) => {
+    await loginAsAdmin({ page, context });
+    await page.goto("/admin/users");
+    await page.waitForURL("/admin/users");
+
+    const existingUser = page.locator(
+      `table tbody tr:has(td:text("${detailTestAccount.email}"))`
+    );
+    if ((await existingUser.count()) === 0) {
+      await page.getByRole("link", { name: "+ 새로운 사용자 생성" }).click();
+      await page.fill('input[name="name"]', detailTestAccount.name);
+      await page.fill('input[name="nickname"]', detailTestAccount.nickname);
+      await page.fill('input[name="email"]', detailTestAccount.email);
+      await page.fill('input[name="password"]', detailTestAccount.password);
+      await selectUserRole(page, detailTestAccount.role);
+      await page.click('button[type="submit"]');
+      await page.waitForURL("/admin/users");
+    }
+
+    const editLink = page.locator(
+      `table tbody tr:has(td:text("${detailTestAccount.email}")) a:text("수정")`
+    );
+    const href = await editLink.getAttribute("href");
+    if (href) {
+      const match = href.match(/\/admin\/users\/edit\/(\d+)/);
+      if (match && match[1]) {
+        detailTestUserId = parseInt(match[1], 10);
+      }
+    }
+
+    if (!detailTestUserId) {
+      throw new Error("User ID 추출 실패");
+    }
+  });
+
+  test.beforeEach(async ({ page, context }) => {
+    await loginAsAdmin({ page, context });
+    await page.goto("/admin/users");
+    await page.waitForURL("/admin/users");
+  });
+
+  test("should navigate to user detail page and display correct user data", async ({
+    page,
+  }) => {
+    const testerRow = page.locator(
+      `table tbody tr:has(td:text("${detailTestAccount.email}"))`
+    );
+    await expect(testerRow).toBeVisible();
+    await testerRow.locator('a:text("상세보기")').click();
+    await expect(page).toHaveURL(/\/admin\/users\/\d+/);
+
+    await expect(page.locator("h1")).toContainText("사용자 상세 정보");
+
+    const selectLabel = (name: string) =>
+      page.locator(`label:text(\"${name}\")`);
+    const checkSiblingElem = (label: Locator, text: string) =>
+      expect(label.locator("xpath=following-sibling::p[1]")).toHaveText(text);
+
+    const idLabel = selectLabel("ID");
+    await checkSiblingElem(idLabel, detailTestUserId.toString());
+
+    const nameLabel = selectLabel("이름");
+    await checkSiblingElem(nameLabel, detailTestAccount.name);
+
+    const nicknameLabel = selectLabel("닉네임");
+    await checkSiblingElem(nicknameLabel, detailTestAccount.nickname);
+
+    const emailLabel = selectLabel("이메일");
+    await checkSiblingElem(emailLabel, detailTestAccount.email);
+
+    const roleLabel = selectLabel("역할");
+    await checkSiblingElem(roleLabel, detailTestAccount.role);
+
+    const statusLabelElem = selectLabel("상태").locator(
+      "xpath=following-sibling::div[1]//span"
+    );
+    await expect(statusLabelElem).toHaveText("활성");
+
+    const createdAtElem = page.locator('label:text("생성일") + p');
+    await expect(createdAtElem).toBeVisible();
+    const createdAtText = await createdAtElem.textContent();
+    expect(new Date(createdAtText || "")).toBeInstanceOf(Date);
+  });
+
+  test("should show edit and delete buttons for active users", async ({
+    page,
+  }) => {
+    await page.goto(`/admin/users/${detailTestUserId}`);
+
+    await expect(page.getByRole("link", { name: "수정" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "삭제" })).toBeVisible();
+  });
+
+  test("should hide edit and delete buttons for deleted users", async ({
+    page,
+  }) => {
+    await page.goto("/admin/users");
+
+    const testerRow = page.locator(
+      `table tbody tr:has(td:text("${detailTestAccount.email}"))`
+    );
+    await expect(testerRow).toBeVisible();
+
+    page.on("dialog", async (dialog) => {
+      await dialog.accept();
+    });
+
+    await testerRow.locator('button:text("삭제")').click();
+    await page.waitForTimeout(1000);
+
+    await page.goto(`/admin/users/${detailTestUserId}`);
+
+    await expect(page.getByRole("button", { name: "수정" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "삭제" })).toBeHidden();
+  });
+
+  test("should show error message for invalid user ID", async ({ page }) => {
+    await page.goto(`/admin/users/99999999`);
+    await expect(page.locator("text=사용자를 찾을 수 없습니다")).toBeVisible();
+  });
+
+  test("should navigate back to user list when '목록으로' is clicked", async ({
+    page,
+  }) => {
+    await page.goto(`/admin/users/${detailTestUserId}`);
+    await page.getByRole("link", { name: "목록으로" }).click();
+    await page.waitForURL("/admin/users");
   });
 });

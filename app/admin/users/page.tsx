@@ -1,4 +1,6 @@
-import DeleteUserButton from "@/components/admin/users/Button";
+import DeleteButton from "@/components/admin/users/buttons/DeleteButton";
+import DetailButton from "@/components/admin/users/buttons/DetailButton";
+import EditButton from "@/components/admin/users/buttons/EditButton";
 import LimitSelector from "@/components/admin/users/LimitSelector";
 import { FetchUserPaginatedList } from "@/lib/actions";
 import {
@@ -89,20 +91,19 @@ export default async function UserList({
                   </span>
                 )}
               </td>
-              {!user.deletedAt && (
-                <td className="p-2 space-x-2">
-                  <Link
-                    href={`/admin/users/edit/${user.id}`}
-                    className="text-blue-500 hover:underline"
-                  >
-                    수정
-                  </Link>
-                  <DeleteUserButton
-                    userId={user.id}
-                    userNickname={user.nickname}
-                  />
-                </td>
-              )}
+
+              <td className="p-2 flex space-x-2">
+                <DetailButton href={`/admin/users/${user.id}`} />
+                {!user.deletedAt && (
+                  <>
+                    <EditButton href={`/admin/users/edit/${user.id}`} />
+                    <DeleteButton
+                      userId={user.id}
+                      userNickname={user.nickname}
+                    />
+                  </>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
