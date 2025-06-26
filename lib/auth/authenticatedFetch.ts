@@ -5,7 +5,7 @@ import {
   AuthenticatedFetchErrorType,
   AuthenticatedFetchOptions,
 } from "./types";
-import { getTokens } from "./tokenUtils";
+import { getTokens } from "../tokenUtils";
 import { refreshAccessToken } from "./refreshToken";
 import { handleHttpError } from "./errors/handleHttpError";
 

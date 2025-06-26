@@ -1,5 +1,5 @@
 // auth/refreshToken.ts
-import { getTokens, setAccessToken, setRefreshToken } from "./tokenUtils";
+import { getTokens, setAccessToken, setRefreshToken } from "../tokenUtils";
 
 const API_BASE_URL = process.env.SERVER_ADDRESS;
 

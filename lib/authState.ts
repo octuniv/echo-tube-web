@@ -1,4 +1,6 @@
 // lib/authState.js
+"use server";
+
 import { cookies } from "next/headers";
 import { UserAuthInfo, UserRole } from "./definition";
 
@@ -8,8 +10,9 @@ const isValidUserRole = (value: string | undefined): value is UserRole => {
 
 export const loginStatus = async (): Promise<boolean> => {
   const cookieStore = await cookies();
-  const access_token = cookieStore.get("access_token")?.value;
-  return !!access_token;
+  const refreshToken = cookieStore.get("refresh_token")?.value;
+
+  return !!refreshToken;
 };
 
 export const hasAdminRole = async (): Promise<boolean> => {

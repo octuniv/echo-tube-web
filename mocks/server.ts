@@ -357,5 +357,30 @@ export const server = setupServer(
       },
       { status: 200 }
     );
+  }),
+
+  http.post(`${serverAddress}/auth/logout`, () => {
+    return HttpResponse.json(
+      { message: "Logged out successfully" },
+      { status: 200 }
+    );
+  }),
+
+  http.post(`${serverAddress}/auth/logout`, () => {
+    return HttpResponse.json(
+      { statusCode: 401, message: "Invalid refresh token" },
+      { status: 401 }
+    );
+  }),
+
+  http.post(`${serverAddress}/auth/logout`, () => {
+    return HttpResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }),
+
+  http.post(`${serverAddress}/auth/logout`, () => {
+    return new HttpResponse(null, { status: 503 });
   })
 );

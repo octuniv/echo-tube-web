@@ -1,6 +1,5 @@
-// auth/tokenUtils.ts
 import { cookies } from "next/headers";
-import { baseCookieOptions } from "../util";
+import { baseCookieOptions } from "./util";
 
 export async function getTokens() {
   const cookieStore = await cookies();

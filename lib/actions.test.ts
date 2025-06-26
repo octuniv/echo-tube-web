@@ -38,6 +38,7 @@ import {
   UserRole,
 } from "./definition";
 import { ERROR_MESSAGES } from "./constants/errorMessage";
+import { getTokens } from "./tokenUtils";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -66,6 +67,10 @@ jest.mock("next/navigation", () => ({
 
 jest.mock("./authState", () => ({
   clearAuth: jest.fn(),
+}));
+
+jest.mock("./tokenUtils", () => ({
+  getTokens: jest.fn(),
 }));
 
 jest.mock("next/cache", () => ({
@@ -252,7 +257,99 @@ describe("Actions Module", () => {
   });
 
   describe("LogoutAction", () => {
-    it("should handle logout", async () => {
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      server.resetHandlers();
+      (getTokens as jest.Mock).mockResolvedValue({
+        accessToken: "dummy-access-token",
+        refreshToken: "dummy-refresh-token",
+      });
+      consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleWarnSpy.mockRestore();
+    });
+
+    it("should successfully logout and clear auth data", async () => {
+      // Mock successful server response
+      server.use(
+        http.post(`${serverAddress}/auth/logout`, () => {
+          return HttpResponse.json(
+            { message: "Logged out successfully" },
+            { status: 200 }
+          );
+        })
+      );
+
+      await expect(LogoutAction()).rejects.toThrow();
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+
+    it("should clear auth even if refresh token is missing", async () => {
+      // Mock missing refresh token case
+      (getTokens as jest.Mock).mockResolvedValue({
+        accessToken: "dummy-access-token",
+        refreshToken: undefined,
+      });
+
+      await expect(LogoutAction()).rejects.toThrow();
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+
+    it("should handle 401 unauthorized response from server", async () => {
+      // Mock 401 response
+
+      server.use(
+        http.post(`${serverAddress}/auth/logout`, () => {
+          return HttpResponse.json(
+            { statusCode: 401, message: "Invalid refresh token" },
+            { status: 401 }
+          );
+        })
+      );
+
+      await expect(LogoutAction()).rejects.toThrow();
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+
+    it("should handle 500 internal server error", async () => {
+      // Mock 500 error
+      server.use(
+        http.post(`${serverAddress}/auth/logout`, () => {
+          return HttpResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+          );
+        })
+      );
+
+      await expect(LogoutAction()).rejects.toThrow();
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/");
+      expect(redirect).toHaveBeenCalledWith("/login");
+    });
+
+    it("should handle network errors gracefully", async () => {
+      // Mock network error
+      server.use(
+        http.post(`${serverAddress}/auth/logout`, () => {
+          return new HttpResponse(null, { status: 503 });
+        })
+      );
+
       await expect(LogoutAction()).rejects.toThrow();
 
       expect(clearAuth).toHaveBeenCalled();

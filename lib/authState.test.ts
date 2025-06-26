@@ -32,11 +32,11 @@ describe("loginStatus", () => {
     jest.clearAllMocks();
   });
 
-  it("should return true when access_token cookie exists", async () => {
-    // Arrange: Mock cookies to return an access_token
+  it("should return true when refresh_token cookie exists", async () => {
+    // Arrange: Mock cookies to return an refresh_token
     (cookies as jest.Mock).mockReturnValue({
       get: jest.fn((name) => {
-        if (name === "access_token") {
+        if (name === "refresh_token") {
           return { value: "valid-token" };
         }
         return null;
@@ -50,10 +50,10 @@ describe("loginStatus", () => {
     expect(result).toBe(true);
   });
 
-  it("should return false when access_token cookie does not exist", async () => {
-    // Arrange: Mock cookies to return no access_token
+  it("should return false when refresh_token cookie does not exist", async () => {
+    // Arrange: Mock cookies to return no refresh_token
     (cookies as jest.Mock).mockReturnValue({
-      get: jest.fn(() => null), // No access_token cookie
+      get: jest.fn(() => null), // No refresh_token cookie
     });
 
     // Act: Call the loginStatus function

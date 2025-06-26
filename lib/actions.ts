@@ -38,6 +38,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { AuthenticatedFetchErrorType } from "./auth/types";
 import { ERROR_MESSAGES } from "./constants/errorMessage";
+import { getTokens } from "./tokenUtils";
 
 export async function signUpAction(prevState: UserState, formData: FormData) {
   const validatedFields = userSchema.safeParse({
@@ -162,9 +163,26 @@ export async function LoginAction(
 }
 
 export async function LogoutAction() {
-  await clearAuth();
-  revalidatePath("/");
-  redirect("/login");
+  const { refreshToken: refresh_token } = await getTokens();
+  try {
+    if (refresh_token) {
+      const response = await fetch(`${serverAddress}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token }),
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) {
+        console.warn("Token revocation failed");
+      }
+    }
+  } catch (error) {
+    console.error("Logout error:", error);
+  } finally {
+    await clearAuth();
+    revalidatePath("/");
+    redirect("/login");
+  }
 }
 
 export async function FetchPostsByBoardId(
