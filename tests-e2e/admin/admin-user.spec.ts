@@ -34,6 +34,7 @@ test.describe("Admin User Management E2E Tests", () => {
       await page.goto("/admin/users");
       await page.waitForURL("/admin/users");
       await page.getByRole("link", { name: "+ 새로운 사용자 생성" }).click();
+      await page.waitForURL("/admin/users/create");
     });
 
     test("should display validation errors on empty form submission", async ({
@@ -344,7 +345,9 @@ test.describe("User Detail Page E2E Tests", () => {
     const existingUser = page.locator(
       `table tbody tr:has(td:text("${detailTestAccount.email}"))`
     );
-    if ((await existingUser.count()) === 0) {
+    if ((await existingUser.count()) !== 0) {
+      throw new Error("Something bad happend.");
+    } else {
       await page.getByRole("link", { name: "+ 새로운 사용자 생성" }).click();
       await page.fill('input[name="name"]', detailTestAccount.name);
       await page.fill('input[name="nickname"]', detailTestAccount.nickname);
@@ -463,5 +466,249 @@ test.describe("User Detail Page E2E Tests", () => {
     await page.goto(`/admin/users/${detailTestUserId}`);
     await page.getByRole("link", { name: "목록으로" }).click();
     await page.waitForURL("/admin/users");
+  });
+});
+
+test.describe("Admin User List Search & Sort Functionality", () => {
+  const searchTestAccount = {
+    ...createTestUser(),
+    role: UserRole.BOT,
+  };
+  test.beforeAll(async ({ page, context }) => {
+    await loginAsAdmin({ page, context });
+    await page.goto("/admin/users");
+    await page.waitForURL("/admin/users");
+
+    const existingUser = page.locator(
+      `table tbody tr:has(td:text-is("${searchTestAccount.email}"))`
+    );
+    const count = await existingUser.count();
+    if (count > 0) {
+      throw new Error("기존 테스트 계정이 이미 존재합니다.");
+    }
+
+    await page.getByRole("link", { name: "+ 새로운 사용자 생성" }).click();
+    await page.fill('input[name="name"]', searchTestAccount.name);
+    await page.fill('input[name="nickname"]', searchTestAccount.nickname);
+    await page.fill('input[name="email"]', searchTestAccount.email);
+    await page.fill('input[name="password"]', searchTestAccount.password);
+    await selectUserRole(page, searchTestAccount.role);
+    await page.click('button[type="submit"]');
+
+    await page.waitForURL("/admin/users");
+
+    const userRow = page.locator(
+      `table tbody tr:has(td:nth-child(4):text-is("${searchTestAccount.email}"))`
+    );
+    await expect(userRow).toHaveCount(1);
+  });
+
+  test.beforeEach(async ({ page, context }) => {
+    await loginAsAdmin({ page, context });
+    await page.goto("/admin/users");
+    await page.waitForURL("/admin/users");
+  });
+
+  // Helper functions
+  const fillSearchForm = async ({
+    page,
+    fields,
+  }: {
+    page: Page;
+    fields: {
+      email?: string;
+      nickname?: string;
+      role?: UserRole;
+    };
+  }) => {
+    if (fields.email !== undefined) {
+      await page.fill('input[name="email"]', fields.email);
+    }
+    if (fields.nickname !== undefined) {
+      await page.fill('input[name="nickname"]', fields.nickname);
+    }
+    if (fields.role) {
+      await page.selectOption('select[name="role"]', fields.role);
+    }
+  };
+
+  const getDisplayedUsers = async ({ page }: { page: Page }) => {
+    const rows = await page.locator("table tbody tr").all();
+    return Promise.all(
+      rows.map(async (row) => ({
+        email: await row.locator("td").nth(3).textContent(),
+        nickname: await row.locator("td").nth(2).textContent(),
+        role: await row.locator("td").nth(4).textContent(),
+        id: await row.locator("td").nth(0).textContent(),
+      }))
+    );
+  };
+
+  // Test Case 1: Individual Field Search
+  test("should filter users by email search", async ({ page }) => {
+    const testEmail = searchTestAccount.email;
+
+    await fillSearchForm({ page, fields: { email: testEmail } });
+    await page.click('button[type="submit"]');
+    await page.waitForURL(
+      new RegExp(`[?&]searchEmail=${encodeURIComponent(testEmail)}`)
+    );
+
+    const users = await getDisplayedUsers({ page });
+    expect(users.every((u) => u.email?.includes(testEmail))).toBe(true);
+  });
+
+  // Test Case 2: Combined Search
+  test("should filter users by combined email and role search", async ({
+    page,
+  }) => {
+    const testEmail = searchTestAccount.email;
+    const testRole = searchTestAccount.role;
+
+    await fillSearchForm({
+      page,
+      fields: { email: testEmail, role: testRole },
+    });
+    await page.click('button[type="submit"]');
+    await page.waitForURL(new RegExp(`searchRole=${testRole}`));
+    await expect(page).toHaveURL(
+      new RegExp(`[?&]searchEmail=${encodeURIComponent(testEmail)}`)
+    );
+
+    const users = await getDisplayedUsers({ page });
+    expect(users.length).toBeGreaterThan(0);
+    expect(
+      users.every((u) => u.email?.includes(testEmail) && u.role === testRole)
+    ).toBe(true);
+  });
+
+  // Test Case 3: Empty Search
+  test("should show all users when search fields are empty", async ({
+    page,
+  }) => {
+    await fillSearchForm({
+      page,
+      fields: { email: "", nickname: "", role: undefined },
+    });
+    await page.click('button[type="submit"]');
+
+    // Wait for data to load
+    await page.waitForTimeout(500);
+
+    const users = await getDisplayedUsers({ page });
+    expect(users.length).not.toBe(0);
+  });
+
+  // Test Case 4: No Results
+  test("should show empty state when search returns no results", async ({
+    page,
+  }) => {
+    await fillSearchForm({
+      page,
+      fields: {
+        email: "nonexistent@example.com",
+        nickname: "zzzzz",
+        role: UserRole.ADMIN,
+      },
+    });
+    await page.click('button[type="submit"]');
+
+    await page.waitForTimeout(500);
+
+    const users = await getDisplayedUsers({ page });
+    expect(users.length).toBe(0);
+  });
+
+  // Test Case 5: Sorting by Created At
+  test("should sort users by created date ascending", async ({ page }) => {
+    // First set default sort
+    await page
+      .locator('div:has(> label:text-is("정렬 기준"))')
+      .locator("select")
+      .selectOption("createdAt");
+    await page.waitForURL(new RegExp("sort=createdAt"));
+    await expect(page).toHaveURL(new RegExp("sort=createdAt"));
+
+    await page
+      .locator('div:has(> label:text-is("정렬 방향"))')
+      .locator("select")
+      .selectOption("ASC");
+    await page.waitForURL(new RegExp("order=ASC"));
+    await expect(page).toHaveURL(new RegExp("order=ASC"));
+
+    const users = await getDisplayedUsers({ page });
+    const idSequence = users.map((u) => Number(u.id));
+
+    for (let i = 0; i < idSequence.length - 1; i++) {
+      expect(idSequence[i]).toBeLessThanOrEqual(idSequence[i + 1]);
+    }
+  });
+
+  // Test Case 6: URL Parameters
+  test("should update URL parameters when applying search and sort", async ({
+    page,
+  }) => {
+    // Test search URL params
+    const testEmail = searchTestAccount.email;
+    const testRole = searchTestAccount.role;
+
+    await fillSearchForm({
+      page,
+      fields: { email: testEmail, role: testRole },
+    });
+    await page.click('button[type="submit"]');
+
+    await expect(page).toHaveURL(/searchEmail=.*/);
+    await expect(page).toHaveURL(/searchRole=bot/);
+
+    // Test sort URL params
+    await page
+      .locator('div:has(> label:text-is("정렬 기준"))')
+      .locator("select")
+      .selectOption("updatedAt");
+    await page.waitForURL(new RegExp("sort=updatedAt"));
+    await expect(page).toHaveURL(new RegExp("sort=updatedAt"));
+
+    await page
+      .locator('div:has(> label:text-is("정렬 방향"))')
+      .locator("select")
+      .selectOption("DESC");
+    await page.waitForURL(new RegExp("order=DESC"));
+    await expect(page).toHaveURL(new RegExp("order=DESC"));
+  });
+
+  // Test Case 7: Default Sort Behavior
+  test("should use default sort when no parameters provided", async ({
+    page,
+  }) => {
+    // Clear all URL parameters
+    await page.goto("/admin/users");
+
+    const users = await getDisplayedUsers({ page });
+    const idSequence = users.map((u) => Number(u.id));
+
+    // Default should be createdAt DESC
+    for (let i = 0; i < idSequence.length - 1; i++) {
+      expect(idSequence[i]).toBeGreaterThanOrEqual(idSequence[i + 1]);
+    }
+  });
+
+  // Test Case 8: Search Form Reset
+  test("should reset search form when clearing all fields", async ({
+    page,
+  }) => {
+    // Apply a search
+    await fillSearchForm({ page, fields: { email: searchTestAccount.email } });
+    await page.click('button[type="submit"]');
+
+    // Clear search
+    await fillSearchForm({
+      page,
+      fields: { email: "", nickname: "", role: undefined },
+    });
+    await page.click('button[type="submit"]');
+
+    const users = await getDisplayedUsers({ page });
+    expect(users.length).not.toBe(0);
   });
 });

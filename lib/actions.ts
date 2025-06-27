@@ -7,27 +7,28 @@ import {
   DashboardSummaryDtoSchema,
   LoginInfoSchema,
   LoginInfoState,
-  nicknameUpdateSchema,
+  NicknameUpdateSchema,
   NicknameUpdateState,
   PaginationDto,
   PasswordUpdateSchema,
   PasswordUpdateState,
   PostResponse,
   PostResponseSchema,
-  createPostInputSchema,
+  CreatePostInputSchema,
   CreatePostInputState,
-  userSchema,
+  UserSchema,
   UserState,
   AdminUserListPaginatedSchema,
   AdminUserListPaginatedResponse,
-  adminUserCreateSchema,
+  AdminUserCreateSchema,
   AdminUserCreateState,
   AdminUserCreate,
-  adminUserUpdateSchema,
+  AdminUserUpdateSchema,
   AdminUserUpdateState,
   UserRole,
   AdminUserDetailResponseSchema,
   AdminUserDetailResponse,
+  SearchUserDtoSchema,
 } from "./definition";
 import { baseCookieOptions, serverAddress } from "./util";
 import { notFound, redirect } from "next/navigation";
@@ -41,7 +42,7 @@ import { ERROR_MESSAGES } from "./constants/errorMessage";
 import { getTokens } from "./tokenUtils";
 
 export async function signUpAction(prevState: UserState, formData: FormData) {
-  const validatedFields = userSchema.safeParse({
+  const validatedFields = UserSchema.safeParse({
     name: formData.get("name"),
     nickname: formData.get("nickname"),
     email: formData.get("email"),
@@ -241,7 +242,7 @@ export async function CreatePost(
   prevState: CreatePostInputState,
   formData: FormData
 ) {
-  const validatedFields = createPostInputSchema.safeParse({
+  const validatedFields = CreatePostInputSchema.safeParse({
     title: formData.get("title"),
     content: formData.get("content"),
     videoUrl: formData.get("videoUrl"),
@@ -325,7 +326,7 @@ export async function EditPost(
   prevState: CreatePostInputState,
   formData: FormData
 ) {
-  const validatedFields = createPostInputSchema.safeParse({
+  const validatedFields = CreatePostInputSchema.safeParse({
     title: formData.get("title"),
     content: formData.get("content"),
     videoUrl: formData.get("videoUrl"),
@@ -403,7 +404,7 @@ export async function UpdateNicknameAction(
   prevState: NicknameUpdateState,
   formData: FormData
 ) {
-  const validatedFields = nicknameUpdateSchema.safeParse({
+  const validatedFields = NicknameUpdateSchema.safeParse({
     nickname: formData.get("nickname"),
   });
 
@@ -591,10 +592,12 @@ export async function FetchDashboardSummary(): Promise<DashboardSummaryDto> {
 export async function FetchUserPaginatedList(
   query: PaginationDto
 ): Promise<AdminUserListPaginatedResponse> {
-  const { page, limit } = query;
+  const { page = 1, limit = 10, sort = "createdAt", order = "DESC" } = query;
   const params = new URLSearchParams({
-    page: page?.toString() ?? "1",
-    limit: limit?.toString() ?? "10",
+    page: page.toString(),
+    limit: limit.toString(),
+    sort,
+    order,
   });
 
   const reqAddress = `${serverAddress}/admin/users`;
@@ -630,11 +633,75 @@ export async function FetchUserPaginatedList(
   }
 }
 
+export async function FetchUserSearchResults(query: {
+  searchEmail?: string;
+  searchNickname?: string;
+  searchRole?: UserRole;
+  page?: number;
+  limit?: number;
+  sort?: "createdAt" | "updatedAt";
+  order?: "ASC" | "DESC";
+}): Promise<AdminUserListPaginatedResponse> {
+  // Validate input using the schema
+  const validatedQuery = SearchUserDtoSchema.safeParse(query);
+
+  if (!validatedQuery.success) {
+    console.error("Invalid search parameters:", validatedQuery.error);
+    throw new Error("Invalid search parameters");
+  }
+
+  const {
+    page = 1,
+    limit = 10,
+    sort = "createdAt",
+    order = "DESC",
+    searchEmail,
+    searchNickname,
+    searchRole,
+  } = validatedQuery.data;
+
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    sort,
+    order,
+  });
+
+  if (searchEmail) params.set("searchEmail", searchEmail);
+  if (searchNickname) params.set("searchNickname", searchNickname);
+  if (searchRole) params.set("searchRole", searchRole);
+
+  const reqAddress = `${serverAddress}/admin/users/search`;
+  const { data, error } = await authenticatedFetch({
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    url: `${reqAddress}?${params.toString()}`,
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      default:
+        console.error("Failed to fetch search results:", error);
+        throw new Error("Failed to fetch search results");
+    }
+  } else {
+    const result = AdminUserListPaginatedSchema.safeParse(data);
+    if (!result.success) {
+      console.error("Validation failed:", result.error);
+      throw new Error("Invalid data format for search results");
+    }
+    return result.data;
+  }
+}
+
 export async function AdminSignUpAction(
   prevState: AdminUserCreateState,
   formData: FormData
 ): Promise<AdminUserCreateState> {
-  const validatedFields = adminUserCreateSchema.safeParse({
+  const validatedFields = AdminUserCreateSchema.safeParse({
     name: formData.get("name"),
     nickname: formData.get("nickname"),
     email: formData.get("email"),
@@ -709,7 +776,7 @@ export async function AdminUserUpdateAction(
     role: formData.get("role")?.toString().trim() as UserRole | undefined,
   };
 
-  const validatedFields = adminUserUpdateSchema.safeParse(updateData);
+  const validatedFields = AdminUserUpdateSchema.safeParse(updateData);
 
   if (!validatedFields.success) {
     return {

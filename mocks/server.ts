@@ -66,6 +66,36 @@ export const mockDashboardSummary = {
   noticesPosts: [mockPosts[0]],
 };
 
+export const mockUserList: AdminUserDetailResponse[] = [
+  {
+    id: 1,
+    name: "John Doe",
+    nickname: "johndoe123",
+    email: "john@example.com",
+    role: UserRole.USER,
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    deletedAt: null,
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    nickname: "janesmith",
+    email: "jane@example.com",
+    role: UserRole.ADMIN,
+    createdAt: "2024-01-02T00:00:00Z",
+    updatedAt: "2024-01-02T00:00:00Z",
+    deletedAt: "2024-01-03T00:00:00Z",
+  },
+];
+
+export const mockSearchResults: AdminUserListPaginatedResponse = {
+  data: mockUserList,
+  currentPage: 1,
+  totalItems: 2,
+  totalPages: 1,
+};
+
 export const server = setupServer(
   // Mock API for user sign-up
   http.post(`${serverAddress}/users`, () => {
@@ -228,24 +258,68 @@ export const server = setupServer(
     return HttpResponse.json(mockDashboardSummary, { status: 200 });
   }),
 
-  http.get(`${serverAddress}/admin/users`, () => {
+  http.get(`${serverAddress}/admin/users`, ({ request }) => {
+    const url = new URL(request.url);
+    const sort = url.searchParams.get("sort") || "createdAt";
+    const order = url.searchParams.get("order") || "DESC";
+
+    // Sort mock data based on parameters
+    const sortedData = [...mockUserList].sort((a, b) => {
+      const dateA = new Date(a[sort as keyof typeof a] as string).getTime();
+      const dateB = new Date(b[sort as keyof typeof b] as string).getTime();
+      return order === "ASC" ? dateA - dateB : dateB - dateA;
+    });
+
     return HttpResponse.json(
       {
-        data: [
-          {
-            id: 1,
-            name: "John Doe",
-            nickname: "johndoe123",
-            email: "john.doe@example.com",
-            role: UserRole.USER,
-            createdAt: "2024-01-01T00:00:00Z",
-            deletedAt: null,
-          },
-        ],
-        currentPage: 1,
-        totalItems: 100,
-        totalPages: 10,
-      } satisfies AdminUserListPaginatedResponse,
+        ...mockSearchResults,
+        data: sortedData,
+      },
+      { status: 200 }
+    );
+  }),
+
+  // Add new mock for search endpoint
+  http.get(`${serverAddress}/admin/users/search`, ({ request }) => {
+    const url = new URL(request.url);
+    const searchEmail = url.searchParams.get("searchEmail");
+    const searchNickname = url.searchParams.get("searchNickname");
+    const searchRole = url.searchParams.get("searchRole");
+    const sort = url.searchParams.get("sort") || "createdAt";
+    const order = url.searchParams.get("order") || "DESC";
+
+    // Filter mock data based on search criteria
+    let filteredData = [...mockUserList];
+
+    if (searchEmail) {
+      filteredData = filteredData.filter((user) =>
+        user.email.includes(searchEmail)
+      );
+    }
+
+    if (searchNickname) {
+      filteredData = filteredData.filter((user) =>
+        user.nickname.includes(searchNickname)
+      );
+    }
+
+    if (searchRole) {
+      filteredData = filteredData.filter((user) => user.role === searchRole);
+    }
+
+    // Sort results
+    const sortedData = filteredData.sort((a, b) => {
+      const dateA = new Date(a[sort as keyof typeof a] as string).getTime();
+      const dateB = new Date(b[sort as keyof typeof b] as string).getTime();
+      return order === "ASC" ? dateA - dateB : dateB - dateA;
+    });
+
+    return HttpResponse.json(
+      {
+        ...mockSearchResults,
+        data: sortedData,
+        totalItems: sortedData.length,
+      },
       { status: 200 }
     );
   }),
@@ -364,23 +438,5 @@ export const server = setupServer(
       { message: "Logged out successfully" },
       { status: 200 }
     );
-  }),
-
-  http.post(`${serverAddress}/auth/logout`, () => {
-    return HttpResponse.json(
-      { statusCode: 401, message: "Invalid refresh token" },
-      { status: 401 }
-    );
-  }),
-
-  http.post(`${serverAddress}/auth/logout`, () => {
-    return HttpResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }),
-
-  http.post(`${serverAddress}/auth/logout`, () => {
-    return new HttpResponse(null, { status: 503 });
   })
 );

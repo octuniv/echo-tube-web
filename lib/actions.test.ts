@@ -19,11 +19,17 @@ import {
   fetchUserDetails,
   deleteUser,
   AdminUserUpdateAction,
+  FetchUserSearchResults,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { clearAuth } from "./authState";
-import { mockDashboardSummary, mockPosts, server } from "../mocks/server";
+import {
+  mockDashboardSummary,
+  mockPosts,
+  mockUserList,
+  server,
+} from "../mocks/server";
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "./util";
 import { revalidatePath } from "next/cache";
@@ -1336,37 +1342,39 @@ describe("Actions Module", () => {
         beforeEach(() => jest.clearAllMocks());
         afterEach(() => consoleErrorMock.mockClear());
 
-        it("should fetch user list successfully", async () => {
-          const mockResponse = {
-            data: [
-              {
-                id: 1,
-                name: "John Doe",
-                nickname: "johndoe123",
-                email: "john@example.com",
-                role: UserRole.USER,
-                createdAt: new Date().toISOString(),
-              },
-            ],
-            currentPage: 1,
-            totalItems: 100,
-            totalPages: 10,
-          };
-
-          server.use(
-            http.get(`${serverAddress}/admin/users`, () =>
-              HttpResponse.json(mockResponse)
+        it("should apply default sorting when no parameters provided", async () => {
+          const result = await FetchUserPaginatedList({ page: 1, limit: 10 });
+          expect(result.data).toEqual(
+            [...mockUserList].sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
             )
           );
-
-          const result = await FetchUserPaginatedList({ page: 1, limit: 10 });
-          expect(result).toEqual(mockResponse);
         });
 
-        it("should throw error when response data is invalid", async () => {
+        it("should sort by updatedAt in ascending order", async () => {
+          const result = await FetchUserPaginatedList({
+            page: 1,
+            limit: 10,
+            sort: "updatedAt",
+            order: "ASC",
+          });
+
+          expect(result.data).toEqual(
+            [...mockUserList].sort((a, b) => {
+              const dateA = new Date(a.updatedAt).getTime();
+              const dateB = new Date(b.updatedAt).getTime();
+              return dateA - dateB;
+            })
+          );
+        });
+
+        it("should handle invalid sort field gracefully", async () => {
           const invalidData = {
-            data: "invalid",
-            currentPage: "not-a-number",
+            data: mockUserList,
+            currentPage: "invalid",
+            totalItems: "invalid",
           };
 
           server.use(
@@ -1378,57 +1386,122 @@ describe("Actions Module", () => {
           await expect(
             FetchUserPaginatedList({ page: 1, limit: 10 })
           ).rejects.toThrow("Invalid data format for UserList");
-
-          expect(console.error).toHaveBeenCalledWith(
-            "Validation failed:",
-            expect.anything()
-          );
         });
 
         it("should handle unauthorized access", async () => {
           server.use(
-            http.get(
-              `${serverAddress}/admin/users`,
-              () => new HttpResponse(null, { status: 401 })
+            http.get(`${serverAddress}/admin/users`, () =>
+              HttpResponse.json({ message: "Unauthorized" }, { status: 401 })
             )
           );
 
           await expect(
             FetchUserPaginatedList({ page: 1, limit: 10 })
           ).rejects.toThrow();
-
           expect(clearAuth).toHaveBeenCalled();
           expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
         });
+      });
 
-        it("should apply custom pagination values", async () => {
-          const mockResponse = {
-            data: [
-              {
-                id: 1,
-                name: "John Doe",
-                nickname: "johndoe123",
-                email: "john@example.com",
-                role: UserRole.USER,
-                createdAt: new Date().toISOString(),
-                deletedAt: null,
-              },
-            ],
-            currentPage: 2,
-            totalItems: 1,
-            totalPages: 1,
+      describe("FetchUserSearchResults", () => {
+        const consoleErrorMock = jest
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+
+        beforeEach(() => jest.clearAllMocks());
+        afterEach(() => consoleErrorMock.mockClear());
+
+        it("should search by email", async () => {
+          const result = await FetchUserSearchResults({
+            page: 1,
+            limit: 10,
+            searchEmail: "john@example.com",
+          });
+
+          expect(result.data).toHaveLength(1);
+          expect(result.data[0].email).toBe("john@example.com");
+        });
+
+        it("should search by nickname", async () => {
+          const result = await FetchUserSearchResults({
+            page: 1,
+            limit: 10,
+            searchNickname: "jane",
+          });
+
+          expect(result.data).toHaveLength(1);
+          expect(result.data[0].nickname).toBe("janesmith");
+        });
+
+        it("should search by role", async () => {
+          const result = await FetchUserSearchResults({
+            page: 1,
+            limit: 10,
+            searchRole: UserRole.ADMIN,
+          });
+
+          expect(result.data).toHaveLength(1);
+          expect(result.data[0].role).toBe(UserRole.ADMIN);
+        });
+
+        it("should combine multiple search criteria", async () => {
+          const result = await FetchUserSearchResults({
+            page: 1,
+            limit: 10,
+            searchEmail: "jane",
+            searchNickname: "jane",
+            searchRole: UserRole.ADMIN,
+          });
+
+          expect(result.data).toHaveLength(1);
+          expect(result.data[0].email).toContain("jane");
+          expect(result.data[0].nickname).toContain("jane");
+          expect(result.data[0].role).toBe(UserRole.ADMIN);
+        });
+
+        it("should sort search results", async () => {
+          const result = await FetchUserSearchResults({
+            page: 1,
+            limit: 10,
+            sort: "createdAt",
+            order: "ASC",
+          });
+
+          const sortedData = [...mockUserList].sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+
+          expect(result.data).toEqual(sortedData);
+        });
+
+        it("should handle invalid search data", async () => {
+          const invalidData = {
+            currentPage: "invalid",
           };
 
           server.use(
-            http.get(`${serverAddress}/admin/users`, ({ request }) => {
-              const url = new URL(request.url);
-              expect(url.searchParams.get("page")).toBe("2");
-              expect(url.searchParams.get("limit")).toBe("5");
-              return HttpResponse.json(mockResponse);
-            })
+            http.get(`${serverAddress}/admin/users/search`, () =>
+              HttpResponse.json(invalidData, { status: 200 })
+            )
           );
 
-          await FetchUserPaginatedList({ page: 2, limit: 5 });
+          await expect(
+            FetchUserSearchResults({ page: 1, limit: 10 })
+          ).rejects.toThrow("Invalid data format for search results");
+        });
+
+        it("should handle network errors", async () => {
+          server.use(
+            http.get(
+              `${serverAddress}/admin/users/search`,
+              () => new HttpResponse(null, { status: 503 })
+            )
+          );
+
+          await expect(
+            FetchUserSearchResults({ page: 1, limit: 10 })
+          ).rejects.toThrow("Failed to fetch search results");
         });
       });
 

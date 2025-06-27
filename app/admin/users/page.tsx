@@ -2,33 +2,70 @@ import DeleteButton from "@/components/admin/users/buttons/DeleteButton";
 import DetailButton from "@/components/admin/users/buttons/DetailButton";
 import EditButton from "@/components/admin/users/buttons/EditButton";
 import LimitSelector from "@/components/admin/users/LimitSelector";
-import { FetchUserPaginatedList } from "@/lib/actions";
+import SortControls from "@/components/admin/users/SortControls";
+import UserSearchForm from "@/components/admin/users/UserSearchForm";
+import { FetchUserPaginatedList, FetchUserSearchResults } from "@/lib/actions";
 import {
   AdminUserListPaginatedResponse,
-  PaginationDtoSchema,
+  SearchUserDtoSchema,
 } from "@/lib/definition";
 import Link from "next/link";
 
 export default async function UserList({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; limit?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    limit?: string;
+    sort?: "createdAt" | "updatedAt";
+    order?: "ASC" | "DESC";
+    searchEmail?: string;
+    searchNickname?: string;
+    searchRole?: string;
+  }>;
 }) {
-  const { page, limit } = await searchParams;
+  const params = await searchParams;
 
-  const parsed = PaginationDtoSchema.safeParse({
-    page: Number(page) || 1,
-    limit: Number(limit) || 10,
+  // Validate and parse search parameters
+  const validatedSearchParams = SearchUserDtoSchema.safeParse({
+    ...params,
+    page: Number(params.page) || 1,
+    limit: Number(params.limit) || 10,
   });
 
-  const currentPage = parsed.success ? parsed.data.page : 1;
-  const currentLimit = parsed.success ? parsed.data.limit : 10;
   let data: AdminUserListPaginatedResponse;
+  let searchMode = false;
+  let currentPage: number;
+  let currentLimit: number;
+
   try {
-    data = await FetchUserPaginatedList({
-      page: currentPage,
-      limit: currentLimit,
-    });
+    if (validatedSearchParams.success) {
+      currentPage = validatedSearchParams.data.page;
+      currentLimit = validatedSearchParams.data.limit;
+      const { searchEmail, searchNickname, searchRole } =
+        validatedSearchParams.data;
+      searchMode = !!(searchEmail || searchNickname || searchRole);
+
+      if (searchMode) {
+        data = await FetchUserSearchResults(validatedSearchParams.data);
+      } else {
+        data = await FetchUserPaginatedList({
+          page: validatedSearchParams.data.page,
+          limit: validatedSearchParams.data.limit,
+          sort: validatedSearchParams.data.sort,
+          order: validatedSearchParams.data.order,
+        });
+      }
+    } else {
+      // Handle invalid search parameters
+      currentPage = 1;
+      currentLimit = 10;
+      data = await FetchUserPaginatedList({
+        page: 1,
+        limit: 10,
+      });
+      searchMode = false;
+    }
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.startsWith("Invalid data format")) {
@@ -61,6 +98,10 @@ export default async function UserList({
   return (
     <div>
       <h1 className="text-2xl mb-4">사용자 목록</h1>
+
+      <UserSearchForm />
+      <SortControls />
+
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b bg-gray-100">

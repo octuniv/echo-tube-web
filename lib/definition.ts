@@ -16,7 +16,7 @@ export enum BoardPurpose {
   AI_DEGEST = "ai_digest",
 }
 
-export const userSchema = z.object({
+export const UserSchema = z.object({
   name: z.string().min(1, { message: "Please enter your valid name." }),
   nickname: z.string().min(1, { message: "Please enter your nickname." }),
   email: z.string().email({ message: "This email is invalid" }),
@@ -25,7 +25,7 @@ export const userSchema = z.object({
     .min(6, { message: "Password must be at least 6 characters" }),
 });
 
-export type User = z.infer<typeof userSchema>;
+export type User = z.infer<typeof UserSchema>;
 
 export type UserState = FormState<User>;
 
@@ -41,15 +41,15 @@ export interface LoginResponse {
   refresh_token: string;
   user: UserAuthInfo;
 }
-export const LoginInfoSchema = userSchema.omit({ name: true, nickname: true });
+export const LoginInfoSchema = UserSchema.omit({ name: true, nickname: true });
 
 export type LoginInfo = z.infer<typeof LoginInfoSchema>;
 
 export type LoginInfoState = FormState<LoginInfo>;
 
-export const nicknameUpdateSchema = userSchema.pick({ nickname: true });
+export const NicknameUpdateSchema = UserSchema.pick({ nickname: true });
 
-export type NicknameUpdateInfo = z.infer<typeof nicknameUpdateSchema>;
+export type NicknameUpdateInfo = z.infer<typeof NicknameUpdateSchema>;
 
 export type NicknameUpdateState = FormState<NicknameUpdateInfo>;
 
@@ -110,13 +110,13 @@ export type VideoCardInfo = Pick<
   source?: string | null;
 };
 
-export const createPostInputSchema = z.object({
+export const CreatePostInputSchema = z.object({
   title: z.string().min(1, { message: "Please enter your title." }),
   content: z.string().min(1, { message: "Please enter your content." }),
   videoUrl: z.string().optional(),
 });
 
-export type CreatePostInput = z.infer<typeof createPostInputSchema>;
+export type CreatePostInput = z.infer<typeof CreatePostInputSchema>;
 
 export type CreatePostInputState = FormState<CreatePostInput>;
 
@@ -141,71 +141,14 @@ export const genericPaginatedResponseDtoSchema = <T extends z.ZodTypeAny>(
 ) =>
   z.object({
     data: z.array(schema),
-    currentPage: z.number().int().positive(),
+    currentPage: z.number().int().nonnegative(),
     totalItems: z.number().int().nonnegative(),
-    totalPages: z.number().int().positive(),
+    totalPages: z.number().int().nonnegative(),
   });
 
 export type PaginatedResponseDto<T extends z.ZodTypeAny> = z.infer<
   ReturnType<typeof genericPaginatedResponseDtoSchema<T>>
 >;
-
-export const AdminUserListResponseDtoSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  nickname: z.string(),
-  email: z.string(),
-  role: z.nativeEnum(UserRole),
-  createdAt: z.string().datetime(),
-  deletedAt: z.nullable(z.string().datetime()).optional(),
-});
-
-export type AdminUserListResponseDto = z.infer<
-  typeof AdminUserListResponseDtoSchema
->;
-
-export const AdminUserListPaginatedSchema = genericPaginatedResponseDtoSchema(
-  AdminUserListResponseDtoSchema
-);
-
-export type AdminUserListPaginatedResponse = z.infer<
-  typeof AdminUserListPaginatedSchema
->;
-
-export const PaginationDtoSchema = z.object({
-  page: z.number().int().positive().optional().default(1),
-  limit: z.number().int().positive().optional().default(10),
-});
-
-export type PaginationDto = z.infer<typeof PaginationDtoSchema>;
-
-export const adminUserCreateSchema = userSchema.extend({
-  role: z.nativeEnum(UserRole),
-});
-
-export type AdminUserCreate = z.infer<typeof adminUserCreateSchema>;
-
-export type AdminUserCreateState = FormState<AdminUserCreate>;
-
-export const adminUserUpdateSchema = z
-  .object({
-    name: z
-      .string()
-      .min(1, { message: "Please enter your valid name." })
-      .optional(),
-    nickname: z
-      .string()
-      .min(1, { message: "Please enter your nickname." })
-      .optional(),
-    role: z.nativeEnum(UserRole).optional(),
-  })
-  .refine((data) => Object.values(data).some((value) => value !== undefined), {
-    message: "At least one field must be updated",
-  });
-
-export type AdminUserUpdate = z.infer<typeof adminUserUpdateSchema>;
-
-export type AdminUserUpdateState = FormState<AdminUserUpdate>;
 
 export const AdminUserDetailResponseSchema = z.object({
   id: z.number(),
@@ -221,3 +164,75 @@ export const AdminUserDetailResponseSchema = z.object({
 export type AdminUserDetailResponse = z.infer<
   typeof AdminUserDetailResponseSchema
 >;
+
+export const AdminUserListPaginatedSchema = genericPaginatedResponseDtoSchema(
+  AdminUserDetailResponseSchema
+);
+
+export type AdminUserListPaginatedResponse = z.infer<
+  typeof AdminUserListPaginatedSchema
+>;
+
+export const PaginationDtoSchema = z.object({
+  page: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(1)
+    .describe("페이지 번호 (기본값: 1, 최소값: 1)"),
+  limit: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(10)
+    .describe("페이지당 항목 수 (기본값: 10, 최소값: 1)"),
+  sort: z
+    .enum(["createdAt", "updatedAt"])
+    .optional()
+    .describe("정렬 기준 필드 (createdAt/updatedAt)"),
+
+  order: z
+    .enum(["ASC", "DESC"])
+    .optional()
+    .describe("정렬 순서 (ASC: 오름차순, DESC: 내림차순)"),
+});
+
+export type PaginationDto = z.infer<typeof PaginationDtoSchema>;
+
+export const SearchUserDtoSchema = PaginationDtoSchema.extend({
+  searchEmail: z.string().optional(),
+  searchNickname: z.string().optional(),
+  searchRole: z.nativeEnum(UserRole).optional(),
+});
+
+export type SearchUserDto = z.infer<typeof SearchUserDtoSchema>;
+
+export const AdminUserCreateSchema = UserSchema.extend({
+  role: z.nativeEnum(UserRole),
+});
+
+export type AdminUserCreate = z.infer<typeof AdminUserCreateSchema>;
+
+export type AdminUserCreateState = FormState<AdminUserCreate>;
+
+export const AdminUserUpdateSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, { message: "Please enter your valid name." })
+      .optional(),
+    nickname: z
+      .string()
+      .min(1, { message: "Please enter your nickname." })
+      .optional(),
+    role: z.nativeEnum(UserRole).optional(),
+  })
+  .refine((data) => Object.values(data).some((value) => value !== undefined), {
+    message: "At least one field must be updated",
+  });
+
+export type AdminUserUpdate = z.infer<typeof AdminUserUpdateSchema>;
+
+export type AdminUserUpdateState = FormState<AdminUserUpdate>;
