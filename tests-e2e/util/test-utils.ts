@@ -1,6 +1,6 @@
 // tests-e2e/util/test-utils.ts
 import { User } from "@/lib/definition";
-import { expect, Cookie } from "@playwright/test";
+import { expect, Cookie, Page } from "@playwright/test";
 
 export const expectCookiesToBeDefined = (
   cookies: Cookie[],
@@ -50,3 +50,35 @@ export const createTestUser = (overrides: Partial<User> = {}): User => ({
   email: overrides.email || uniqueEmail(),
   password: overrides.password || "password123",
 });
+
+export async function clickSideBarElement(
+  page: Page,
+  categoryName: string,
+  boardName: string,
+  boardSlug: string
+) {
+  const sidebarToggleButton = page.getByRole("button", {
+    name: "Sidebar Activation",
+  });
+  await expect(sidebarToggleButton).toBeVisible();
+
+  const sidebarLocator = page.locator("div.fixed.inset-y-0.left-0.w-64");
+
+  const sidebarClass = await sidebarLocator.getAttribute("class");
+
+  if (sidebarClass?.includes("-translate-x-full")) {
+    await sidebarToggleButton.click();
+  }
+
+  const categoryLocator = page.getByLabel(`category-label-${categoryName}`);
+
+  const categorySection = categoryLocator.locator("..");
+
+  const boardLocator = categorySection.getByLabel(
+    `board-link-${boardName}-${boardSlug}`
+  );
+
+  await expect(boardLocator).toBeVisible();
+
+  await boardLocator.click();
+}

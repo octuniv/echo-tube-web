@@ -1,32 +1,6 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("ai-recommended posts e2e test", () => {
-  test.beforeAll(async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Sidebar Activation" }).click();
-
-    const aiDigestBoardHeading = page.locator("#ai-digest-heading");
-    await expect(aiDigestBoardHeading).toBeVisible();
-    await expect(aiDigestBoardHeading).toContainText("AI 추천 게시판");
-
-    const aiDigestLinks = page.locator(
-      "div.space-y-2:has(h3#ai-digest-heading) a"
-    );
-
-    console.log(aiDigestLinks);
-
-    const linkCount = await aiDigestLinks.count();
-    expect(linkCount).toBeGreaterThan(0);
-
-    const aiDigestFirstBoardUrl = await aiDigestLinks
-      .first()
-      .getAttribute("href");
-
-    expect(aiDigestFirstBoardUrl).toMatch(/^\/boards\/ai-digest\//);
-
-    console.log("AI 추천 게시판 첫 번째 링크 주소:", aiDigestFirstBoardUrl);
-  });
-
   test.describe("AI Digest Board Page Load Test", () => {
     test.beforeEach(async ({ page }) => {
       await page.goto("/boards/ai-digest/nestjs"); // boardSlug for Test

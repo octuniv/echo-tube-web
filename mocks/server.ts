@@ -7,6 +7,7 @@ import {
   AdminUserDetailResponse,
   AdminUserListPaginatedResponse,
   BoardPurpose,
+  CategoryWithBoardsResponse,
   LoginResponse,
   PostResponse,
   UserRole,
@@ -95,6 +96,39 @@ export const mockSearchResults: AdminUserListPaginatedResponse = {
   totalItems: 2,
   totalPages: 1,
 };
+
+export const mockCategoriesWithBoards: CategoryWithBoardsResponse = [
+  {
+    name: "Technology",
+    boardGroups: [
+      {
+        purpose: BoardPurpose.GENERAL,
+        boards: [
+          {
+            id: 1,
+            slug: "ai",
+            name: "AI Discussion",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: "General",
+    boardGroups: [
+      {
+        purpose: BoardPurpose.GENERAL,
+        boards: [
+          {
+            id: 2,
+            slug: "free",
+            name: "Free Discussion",
+          },
+        ],
+      },
+    ],
+  },
+];
 
 export const server = setupServer(
   // Mock API for user sign-up
@@ -252,6 +286,10 @@ export const server = setupServer(
     return HttpResponse.json([{ id: 1, slug: "free", name: "자유 게시판" }], {
       status: 200,
     });
+  }),
+
+  http.get(`${serverAddress}/categories/with-boards`, () => {
+    return HttpResponse.json(mockCategoriesWithBoards, { status: 200 });
   }),
 
   http.get(`${serverAddress}/dashboard/summary`, () => {

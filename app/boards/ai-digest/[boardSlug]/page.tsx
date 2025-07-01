@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 export async function generateStaticParams() {
   const boards = await FetchAllBoards();
   return boards
-    .filter((board) => board.boardType === BoardPurpose.AI_DEGEST)
+    .filter((board) => board.boardType === BoardPurpose.AI_DIGEST)
     .map((board) => ({ boardSlug: board.slug }));
 }
 
@@ -18,7 +18,7 @@ const Page = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
   const boards = await FetchAllBoards();
   const currentBoard = boards.find(
     (board) =>
-      board.slug === boardSlug && board.boardType === BoardPurpose.AI_DEGEST
+      board.slug === boardSlug && board.boardType === BoardPurpose.AI_DIGEST
   );
 
   if (!currentBoard) notFound();

@@ -20,11 +20,13 @@ import {
   deleteUser,
   AdminUserUpdateAction,
   FetchUserSearchResults,
+  FetchCategoriesWithBoards,
 } from "./actions";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { clearAuth } from "./authState";
 import {
+  mockCategoriesWithBoards,
   mockDashboardSummary,
   mockPosts,
   mockUserList,
@@ -1273,6 +1275,78 @@ describe("Actions Module", () => {
       });
     });
 
+    describe("FetchCategoriesWithBoards", () => {
+      const consoleErrorMock = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      afterEach(() => {
+        consoleErrorMock.mockClear();
+      });
+
+      it("should fetch categories with boards successfully", async () => {
+        const result = await FetchCategoriesWithBoards();
+        expect(result).toEqual(mockCategoriesWithBoards);
+        expect(result.length).toBe(2);
+        expect(result[0].boardGroups[0].boards[0].slug).toBe("ai");
+      });
+
+      it("should throw error when response is invalid", async () => {
+        // Mock invalid response format
+        server.use(
+          http.get(`${serverAddress}/categories/with-boards`, () => {
+            return HttpResponse.json([{ invalid: "data" }], { status: 200 });
+          })
+        );
+
+        await expect(FetchCategoriesWithBoards()).resolves.toEqual([]);
+        expect(consoleErrorMock).toHaveBeenCalled();
+      });
+
+      it("should handle server error", async () => {
+        server.use(
+          http.get(`${serverAddress}/categories/with-boards`, () => {
+            return HttpResponse.json(
+              { error: "Internal Server Error" },
+              { status: 500 }
+            );
+          })
+        );
+
+        await expect(FetchCategoriesWithBoards()).resolves.toEqual([]);
+        expect(consoleErrorMock).toHaveBeenCalled();
+      });
+
+      it("should handle empty response", async () => {
+        server.use(
+          http.get(`${serverAddress}/categories/with-boards`, () => {
+            return HttpResponse.json([], { status: 200 });
+          })
+        );
+
+        const result = await FetchCategoriesWithBoards();
+        expect(result).toEqual([]);
+        expect(consoleErrorMock).not.toHaveBeenCalled();
+      });
+
+      it("should use cache control", async () => {
+        const fetchSpy = jest.spyOn(global, "fetch");
+
+        server.use(
+          http.get(`${serverAddress}/categories/with-boards`, () => {
+            return HttpResponse.json(mockCategoriesWithBoards, { status: 200 });
+          })
+        );
+
+        await FetchCategoriesWithBoards();
+        expect(fetchSpy).toHaveBeenCalledWith(
+          expect.stringContaining("/categories/with-boards"),
+          expect.objectContaining({
+            cache: "force-cache",
+          })
+        );
+      });
+    });
     describe("FetchDashboardSummary", () => {
       const consoleErrorMock = jest
         .spyOn(console, "error")

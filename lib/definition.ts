@@ -13,7 +13,7 @@ export enum UserRole {
 
 export enum BoardPurpose {
   GENERAL = "general",
-  AI_DEGEST = "ai_digest",
+  AI_DIGEST = "ai_digest",
 }
 
 export const UserSchema = z.object({
@@ -70,6 +70,32 @@ export const PasswordUpdateSchema = z
 export type PasswordUpdateInfo = z.infer<typeof PasswordUpdateSchema>;
 
 export type PasswordUpdateState = FormState<PasswordUpdateInfo>;
+
+export const CategoryBoardSummarySchema = z.object({
+  id: z.number(),
+  slug: z.string(),
+  name: z.string(),
+});
+
+export type CategoryBoardSummary = z.infer<typeof CategoryBoardSummarySchema>;
+
+export const CategoryBoardGroupSchema = z.object({
+  purpose: z.nativeEnum(BoardPurpose),
+  boards: z.array(CategoryBoardSummarySchema),
+});
+
+export type CategoryBoardGroup = z.infer<typeof CategoryBoardGroupSchema>;
+
+export const CategoryWithBoardsResponseSchema = z.array(
+  z.object({
+    name: z.string(),
+    boardGroups: z.array(CategoryBoardGroupSchema),
+  })
+);
+
+export type CategoryWithBoardsResponse = z.infer<
+  typeof CategoryWithBoardsResponseSchema
+>;
 
 export const BoardListItemDtoSchema = z.object({
   id: z.number(),

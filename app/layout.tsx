@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { loginStatus } from "@/lib/authState";
 import AppShell from "@/components/layout/AppShell";
-import { FetchAllBoards } from "@/lib/actions";
+import { FetchCategoriesWithBoards } from "@/lib/actions";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,13 +26,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const isLogined = await loginStatus();
-  const boards = await FetchAllBoards(); // Fetch all boards
+  const categoriesWithBoards = await FetchCategoriesWithBoards();
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AppShell isLogined={isLogined} boards={boards}>
+        <AppShell
+          isLogined={isLogined}
+          categoriesWithBoards={categoriesWithBoards}
+        >
           {children}
         </AppShell>
       </body>
