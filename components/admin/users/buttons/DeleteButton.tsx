@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { deleteUser } from "@/lib/actions";
+import { deleteUser } from "@/lib/action/adminUserManagementApi";
 
 export default function DeleteButton({
   userId,

@@ -2,7 +2,7 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { SearchUserDtoSchema } from "@/lib/definition";
+import { SearchUserDtoSchema } from "@/lib/definition/adminUserManagementSchema";
 
 export default function UserSearchForm() {
   const router = useRouter();

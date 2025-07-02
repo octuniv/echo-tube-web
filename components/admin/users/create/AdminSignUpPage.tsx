@@ -1,8 +1,8 @@
 "use client";
 import AdminSignUpForm from "./AdminSignUpForm";
 import { useActionState } from "react";
-import { AdminUserCreateState } from "@/lib/definition";
-import { AdminSignUpAction } from "@/lib/actions";
+import { AdminUserCreateState } from "@/lib/definition/adminUserManagementSchema";
+import { AdminSignUpAction } from "@/lib/action/adminUserManagementApi";
 
 const AdminSignUpPage: React.FC = () => {
   const initialState: AdminUserCreateState = { message: "", errors: {} };

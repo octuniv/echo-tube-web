@@ -1,6 +1,6 @@
 import AdminUserEditPage from "@/components/admin/users/edit/AdminUserEditPage";
-import { fetchUserDetails } from "@/lib/actions";
-import { AdminUserDetailResponse } from "@/lib/definition";
+import { fetchUserDetails } from "@/lib/action/adminUserManagementApi";
+import { AdminUserDetailResponse } from "@/lib/definition/adminUserManagementSchema";
 import { notFound } from "next/navigation";
 
 interface pageProps {

@@ -1,10 +1,10 @@
 "use client";
 
-import { AdminUserUpdateAction } from "@/lib/actions";
+import { AdminUserUpdateAction } from "@/lib/action/adminUserManagementApi";
 import {
   AdminUserDetailResponse,
   AdminUserUpdateState,
-} from "@/lib/definition";
+} from "@/lib/definition/adminUserManagementSchema";
 import { useActionState } from "react";
 import AdminUserEditForm from "./AdminUserEditForm";
 

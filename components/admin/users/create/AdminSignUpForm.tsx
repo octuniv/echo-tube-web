@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
-import { AdminUserCreateState, UserRole } from "@/lib/definition";
+import { UserRole } from "@/lib/definition";
+import { AdminUserCreateState } from "@/lib/definition/adminUserManagementSchema";
 import { LabelInput, ErrorText } from "@/components/common";
 import { checkEmailExists, checkNicknameExists } from "@/lib/actions";
 import RoleSelect from "../RoleSelect";

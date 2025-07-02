@@ -4,11 +4,14 @@ import EditButton from "@/components/admin/users/buttons/EditButton";
 import LimitSelector from "@/components/admin/users/LimitSelector";
 import SortControls from "@/components/admin/users/SortControls";
 import UserSearchForm from "@/components/admin/users/UserSearchForm";
-import { FetchUserPaginatedList, FetchUserSearchResults } from "@/lib/actions";
+import {
+  FetchUserPaginatedList,
+  FetchUserSearchResults,
+} from "@/lib/action/adminUserManagementApi";
 import {
   AdminUserListPaginatedResponse,
   SearchUserDtoSchema,
-} from "@/lib/definition";
+} from "@/lib/definition/adminUserManagementSchema";
 import Link from "next/link";
 
 export default async function UserList({
