@@ -1,4 +1,5 @@
 // errors/handleHttpError.ts
+import { ERROR_MESSAGES } from "../../constants/errorMessage";
 import { AuthenticatedFetchError, AuthenticatedFetchErrorType } from "../types";
 
 export async function handleHttpError(
@@ -14,6 +15,15 @@ export async function handleHttpError(
   }
 
   switch (status) {
+    case 400:
+      return {
+        type: AuthenticatedFetchErrorType.BadRequest,
+        message:
+          typeof body === "string"
+            ? body
+            : body.message || ERROR_MESSAGES.BAD_REQUEST,
+        status,
+      };
     case 401:
       return {
         type: AuthenticatedFetchErrorType.Unauthorized,
@@ -53,10 +63,3 @@ export async function handleHttpError(
       };
   }
 }
-
-export const ERROR_MESSAGES = {
-  NOT_FOUND: "요청한 리소스를 찾을 수 없습니다.",
-  UNAUTHORIZED: "인증이 필요합니다.",
-  CONFLICT: "요청한 값이 중복되었습니다.",
-  SERVER_ERROR: "서버 오류가 발생했습니다.",
-};

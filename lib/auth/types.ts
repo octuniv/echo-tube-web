@@ -4,6 +4,7 @@ export type AuthenticatedFetchOptions = RequestInit & {
 };
 
 export enum AuthenticatedFetchErrorType {
+  BadRequest = "BadRequest",
   NetworkError = "NetworkError",
   ServerError = "ServerError",
   ConflictError = "ConflictError",

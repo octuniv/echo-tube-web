@@ -8,6 +8,7 @@ import {
 import { getTokens } from "../tokenUtils";
 import { refreshAccessToken } from "./refreshToken";
 import { handleHttpError } from "./errors/handleHttpError";
+import { ERROR_MESSAGES } from "../constants/errorMessage";
 
 export async function authenticatedFetch<T>(
   options: AuthenticatedFetchOptions
@@ -60,7 +61,7 @@ export async function authenticatedFetch<T>(
         data: null,
         error: {
           type: AuthenticatedFetchErrorType.Unauthorized,
-          message: "세션이 만료되었습니다.",
+          message: ERROR_MESSAGES.UNAUTHORIZED,
         },
       };
     }

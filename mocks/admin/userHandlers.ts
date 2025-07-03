@@ -36,7 +36,7 @@ export const mockSearchResults: AdminUserListPaginatedResponse = {
   totalPages: 1,
 };
 
-export const adminHandlers = [
+export const adminUserHandlers = [
   http.get(`${serverAddress}/admin/users`, ({ request }) => {
     const url = new URL(request.url);
     const sort = url.searchParams.get("sort") || "createdAt";

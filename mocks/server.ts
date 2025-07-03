@@ -10,7 +10,8 @@ import {
   PostResponse,
   UserRole,
 } from "../lib/definition";
-import { adminHandlers } from "./admin/handlers";
+import { adminUserHandlers } from "./admin/userHandlers";
+import { adminCategoryHandlers } from "./admin/categoryHandlers";
 
 export const mockPosts: PostResponse[] = [
   {
@@ -272,5 +273,6 @@ export const server = setupServer(
     );
   }),
 
-  ...adminHandlers
+  ...adminUserHandlers,
+  ...adminCategoryHandlers
 );

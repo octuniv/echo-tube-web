@@ -4,6 +4,7 @@ import { server } from "../../mocks/server";
 import { http, HttpResponse } from "msw";
 import { AuthenticatedFetchErrorType } from "./types";
 import { revalidatePath } from "next/cache";
+import { ERROR_MESSAGES } from "../constants/errorMessage";
 
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
@@ -128,7 +129,7 @@ describe("AuthenticatedFetch", () => {
     });
 
     expect(response.error?.type).toBe(AuthenticatedFetchErrorType.Unauthorized);
-    expect(response.error?.message).toBe("세션이 만료되었습니다.");
+    expect(response.error?.message).toBe(ERROR_MESSAGES.UNAUTHORIZED);
   });
 
   it("should throw server error after token refresh if retry fails", async () => {
@@ -163,7 +164,7 @@ describe("AuthenticatedFetch", () => {
     });
 
     expect(response.error?.type).toBe(AuthenticatedFetchErrorType.ServerError);
-    expect(response.error?.message).toBe("서버 오류가 발생했습니다.");
+    expect(response.error?.message).toBe(ERROR_MESSAGES.SERVER_ERROR);
   });
 
   it("should handle 409 Conflict error correctly", async () => {
@@ -222,7 +223,7 @@ describe("AuthenticatedFetch", () => {
     });
 
     expect(response.error?.type).toBe(AuthenticatedFetchErrorType.NotFound);
-    expect(response.error?.message).toBe("요청한 리소스를 찾을 수 없습니다.");
+    expect(response.error?.message).toBe(ERROR_MESSAGES.NOT_FOUND);
   });
 
   it("should handle 500 Internal Server Error", async () => {
@@ -242,7 +243,7 @@ describe("AuthenticatedFetch", () => {
     });
 
     expect(response.error?.type).toBe(AuthenticatedFetchErrorType.ServerError);
-    expect(response.error?.message).toBe("서버 오류가 발생했습니다.");
+    expect(response.error?.message).toBe(ERROR_MESSAGES.SERVER_ERROR);
   });
 
   it("should not revalidate path on failed requests", async () => {

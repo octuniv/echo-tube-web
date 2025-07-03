@@ -1,0 +1,322 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { authenticatedFetch } from "../auth/authenticatedFetch";
+import { AuthenticatedFetchErrorType } from "../auth/types";
+import { clearAuth } from "../authState";
+import {
+  CategoryListResponseSchema,
+  CreateCategory,
+  CreateCategorySchema,
+  CreateCategoryState,
+  UpdateCategory,
+  UpdateCategorySchema,
+  UpdateCategoryState,
+  CategoryDetail,
+  CategoryDetailSchema,
+  ValidateSlugType,
+  ValidateSlugSchema,
+} from "../definition/adminCategoryManagementSchema";
+import { serverAddress } from "../util";
+import { ERROR_MESSAGES } from "../constants/errorMessage";
+
+export async function fetchCategories(): Promise<CategoryDetail[]> {
+  const reqAddress = `${serverAddress}/admin/categories`;
+  const { data, error } = await authenticatedFetch({
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: reqAddress,
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      default:
+        console.error(
+          "카테고리 목록을 불러오던 중 예기치 못한 오류 발생:",
+          error
+        );
+        throw new Error(
+          "카테고리 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+        );
+    }
+  } else {
+    const result = CategoryListResponseSchema.safeParse(data);
+    if (!result.success) {
+      console.error("Validation failed:", result.error);
+      throw new Error("Invalid data format for CategoryList");
+    }
+    return result.data;
+  }
+}
+
+export async function fetchCategoryById(id: number): Promise<CategoryDetail> {
+  const reqAddress = `${serverAddress}/admin/categories/${id}`;
+  const { data, error } = await authenticatedFetch({
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: reqAddress,
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.NotFound:
+        throw new Error(ERROR_MESSAGES.NOT_FOUND);
+      default:
+        throw new Error("카테고리 정보를 불러오지 못했습니다");
+    }
+  }
+
+  const result = CategoryDetailSchema.safeParse(data);
+  if (!result.success) {
+    console.error("Validation failed:", result.error);
+    throw new Error("Invalid data format for CategoryList");
+  }
+  return result.data;
+}
+
+export async function createCategory(
+  prevState: CreateCategoryState,
+  formData: FormData
+): Promise<CreateCategoryState> {
+  const validatedFields = CreateCategorySchema.safeParse({
+    name: formData.get("name"),
+    allowedSlugs: formData.getAll("allowedSlugs"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing or invalid fields. Failed to create category.",
+    };
+  }
+
+  const categoryData: CreateCategory = validatedFields.data;
+
+  const reqAddress = `${serverAddress}/admin/categories`;
+
+  const { error } = await authenticatedFetch({
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(categoryData),
+    url: reqAddress,
+  });
+
+  if (error) {
+    const message = error.message;
+    const fieldErrors: Partial<Record<keyof CreateCategory, string[]>> = {};
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ConflictError:
+        if (message.includes("이미 사용 중인 카테고리 이름입니다")) {
+          fieldErrors.name = [ERROR_MESSAGES.NAME_EXISTS];
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+          return {
+            message,
+            errors: fieldErrors,
+          };
+        } else {
+          return {
+            message,
+          };
+        }
+      case AuthenticatedFetchErrorType.BadRequest:
+        if (message.includes("이미 사용 중인 슬러그가 있습니다")) {
+          const match = message.match(/:\s*(.+)/);
+          if (match && match[1]) {
+            const slugs = match[1].split(",").map((s) => s.trim());
+            fieldErrors.allowedSlugs = [ERROR_MESSAGES.DUPLICATE_VALUES(slugs)];
+          }
+        } else if (message.includes("최소 1개 이상의 슬러그가 필요합니다")) {
+          fieldErrors.allowedSlugs = [ERROR_MESSAGES.MISSING_VALUE];
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+          return {
+            message,
+            errors: fieldErrors,
+          };
+        } else {
+          return {
+            message,
+          };
+        }
+      default:
+        console.error("Unexpected error during category creation:", error);
+        return {
+          message: "An unexpected error occurred. Please try again.",
+        };
+    }
+  } else {
+    revalidatePath("/admin/categories");
+    redirect("/admin/categories");
+  }
+}
+
+export async function updateCategory(
+  id: number,
+  prevState: UpdateCategoryState,
+  formData: FormData
+): Promise<UpdateCategoryState> {
+  const validatedFields = UpdateCategorySchema.safeParse({
+    name: formData.get("name") || undefined,
+    allowedSlugs:
+      formData.getAll("allowedSlugs").length === 0
+        ? undefined
+        : formData.getAll("allowedSlugs"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Invalid fields. Please check your input values.",
+    };
+  }
+
+  const categoryData: UpdateCategory = validatedFields.data;
+
+  const reqAddress = `${serverAddress}/admin/categories/${id}`;
+
+  const { error } = await authenticatedFetch({
+    url: reqAddress,
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(categoryData),
+  });
+
+  if (error) {
+    const message = error.message;
+    const fieldErrors: Partial<Record<keyof CreateCategory, string[]>> = {};
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ConflictError:
+        if (message.includes("이미 사용 중인 카테고리 이름입니다")) {
+          fieldErrors.name = [ERROR_MESSAGES.NAME_EXISTS];
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+          return {
+            message,
+            errors: fieldErrors,
+          };
+        } else {
+          return {
+            message,
+          };
+        }
+      case AuthenticatedFetchErrorType.BadRequest:
+        if (message.includes("이미 사용 중인 슬러그가 있습니다")) {
+          const match = message.match(/:\s*(.+)/);
+          if (match && match[1]) {
+            const slugs = match[1].split(",").map((s) => s.trim());
+            fieldErrors.allowedSlugs = [ERROR_MESSAGES.DUPLICATE_VALUES(slugs)];
+          }
+        } else if (message.includes("최소 1개 이상의 슬러그가 필요합니다")) {
+          fieldErrors.allowedSlugs = [ERROR_MESSAGES.MISSING_VALUE];
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+          return {
+            message,
+            errors: fieldErrors,
+          };
+        } else {
+          return {
+            message,
+          };
+        }
+      default:
+        console.error("Unexpected error during category creation:", error);
+        return {
+          message: "An unexpected error occurred. Please try again.",
+        };
+    }
+  } else {
+    revalidatePath("/admin/categories");
+    redirect("/admin/categories");
+  }
+}
+
+export async function deleteCategory(id: number) {
+  const reqAddress = `${serverAddress}/admin/categories/${id}`;
+
+  const { error } = await authenticatedFetch({
+    url: reqAddress,
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (error) {
+    console.error("Category deletion failed:", error.message);
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ServerError:
+        throw new Error(ERROR_MESSAGES.SERVER_ERROR);
+      case AuthenticatedFetchErrorType.NotFound:
+        throw new Error(ERROR_MESSAGES.NOT_FOUND);
+      default:
+        throw new Error("카테고리를 삭제할 수 없습니다.");
+    }
+  } else {
+    revalidatePath("/admin/categories");
+  }
+}
+
+export async function validateSlug(
+  categoryId: number,
+  slug: string
+): Promise<ValidateSlugType> {
+  if (!slug.trim()) {
+    throw new Error(ERROR_MESSAGES.MISSING_VALUE);
+  }
+  const reqAddress = `${serverAddress}/admin/categories/${categoryId}/validate-slug?slug=${slug}`;
+
+  const { error, data } = await authenticatedFetch({
+    url: reqAddress,
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ServerError:
+        throw new Error(ERROR_MESSAGES.SERVER_ERROR);
+      case AuthenticatedFetchErrorType.BadRequest:
+        throw new Error(ERROR_MESSAGES.MISSING_VALUE);
+      default:
+        throw new Error("알수 없는 에러 발생");
+    }
+  }
+
+  const result = ValidateSlugSchema.safeParse(data);
+  if (!result.success) {
+    console.error("Validation failed:", result.error);
+    throw new Error("Invalid data format for Category");
+  }
+  return result.data;
+}
