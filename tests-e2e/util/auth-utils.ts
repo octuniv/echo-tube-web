@@ -1,4 +1,4 @@
-import { Page, BrowserContext, expect } from "@playwright/test";
+import { Page, BrowserContext, expect, Browser } from "@playwright/test";
 import { User } from "@/lib/definition";
 import { expectCookiesToBeDefined, expectValidUserCookie } from "./test-utils";
 
@@ -63,4 +63,24 @@ export const loginAsAdmin = async ({
   await page.waitForURL("/dashboard", { timeout: 5000 });
 
   await expect(page).toHaveURL("/dashboard");
+};
+
+export const loginAsAdminIsolated = async (
+  browser: Browser
+): Promise<{ context: BrowserContext; page: Page }> => {
+  const context = await browser.newContext();
+
+  await context.clearCookies();
+
+  const page = await context.newPage();
+  await page.goto("/login");
+
+  await page.fill('input[name="email"]', adminAccount.email);
+  await page.fill('input[name="password"]', adminAccount.password);
+  await page.click('button[type="submit"]');
+
+  await page.waitForURL("/dashboard", { timeout: 5000 });
+  await expect(page).toHaveURL("/dashboard");
+
+  return { context, page };
 };

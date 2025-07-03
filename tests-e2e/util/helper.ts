@@ -12,7 +12,7 @@ export async function withTemporaryLogout(
 ) {
   const cookies = await page.context().cookies();
   await page.context().clearCookies();
-  await page.reload();
+  await page.goto("/");
   try {
     await action(page);
   } catch (error) {
