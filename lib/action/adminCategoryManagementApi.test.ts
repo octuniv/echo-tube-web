@@ -112,15 +112,28 @@ describe("Admin Category API Tests", () => {
     const categoryId = 1;
 
     it("should fetch category details successfully", async () => {
-      const category = mockCategories[0];
-      server.use(
-        http.get(`${serverAddress}/admin/categories/${categoryId}`, () => {
-          return HttpResponse.json(category, { status: 200 });
-        })
-      );
-
       const result = await fetchCategoryById(categoryId);
-      expect(result).toEqual(category);
+
+      expect(result).toEqual({
+        id: expect.any(Number),
+        name: expect.any(String),
+        allowedSlugs: expect.any(Array),
+        boards: expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.any(Number),
+            slug: expect.any(String),
+            name: expect.any(String),
+            type: expect.any(String),
+            requiredRole: expect.any(String),
+          }),
+        ]),
+        createdAt: expect.stringMatching(
+          /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z/
+        ),
+        updatedAt: expect.stringMatching(
+          /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z/
+        ),
+      });
     });
 
     it("should handle not found error", async () => {

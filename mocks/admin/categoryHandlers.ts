@@ -2,13 +2,16 @@
 import { http, HttpResponse } from "msw";
 import { serverAddress } from "../../lib/util";
 import {
-  CategoryDetail,
+  BoardSummary,
+  CategoryDetails,
+  CategorySummary,
   CreateCategorySchema,
   UpdateCategorySchema,
 } from "../../lib/definition/adminCategoryManagementSchema";
+import { BoardPurpose, UserRole } from "../../lib/definition";
 
 // 테스트용 카테고리 데이터
-export const mockCategories: CategoryDetail[] = [
+export const mockCategories: CategorySummary[] = [
   {
     id: 1,
     name: "Technology",
@@ -20,6 +23,30 @@ export const mockCategories: CategoryDetail[] = [
     name: "General",
     allowedSlugs: ["free", "discussion"],
     boardIds: [201],
+  },
+];
+
+const mockBoards: BoardSummary[] = [
+  {
+    id: 101,
+    slug: "tech-discussion",
+    name: "Technology Discussion",
+    type: BoardPurpose.GENERAL,
+    requiredRole: UserRole.USER,
+  },
+  {
+    id: 102,
+    slug: "ai-research",
+    name: "AI Research",
+    type: BoardPurpose.AI_DIGEST,
+    requiredRole: UserRole.ADMIN,
+  },
+  {
+    id: 201,
+    slug: "general-chat",
+    name: "General Chat",
+    type: BoardPurpose.GENERAL,
+    requiredRole: UserRole.USER,
   },
 ];
 
@@ -75,7 +102,7 @@ export const adminCategoryHandlers = [
     }
 
     // 새 카테고리 생성
-    const newCategory: CategoryDetail = {
+    const newCategory: CategorySummary = {
       id: mockCategories.length + 1,
       name,
       allowedSlugs,
@@ -104,7 +131,19 @@ export const adminCategoryHandlers = [
       );
     }
 
-    return HttpResponse.json(category, { status: 200 });
+    const associatedBoards = mockBoards.filter((board) =>
+      category.boardIds.includes(board.id)
+    );
+
+    // Create CategoryDetails response
+    const categoryDetails: CategoryDetails = {
+      ...category,
+      boards: associatedBoards,
+      createdAt: new Date("2023-01-01T00:00:00Z").toISOString(),
+      updatedAt: new Date("2024-01-01T00:00:00Z").toISOString(),
+    };
+
+    return HttpResponse.json(categoryDetails, { status: 200 });
   }),
 
   // PATCH /admin/categories/:id - 카테고리 수정

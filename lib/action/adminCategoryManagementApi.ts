@@ -13,15 +13,16 @@ import {
   UpdateCategory,
   UpdateCategorySchema,
   UpdateCategoryState,
-  CategoryDetail,
-  CategoryDetailSchema,
+  CategorySummary,
   ValidateSlugType,
   ValidateSlugSchema,
+  CategoryDetails,
+  CategoryDetailsSchema,
 } from "../definition/adminCategoryManagementSchema";
 import { serverAddress } from "../util";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 
-export async function fetchCategories(): Promise<CategoryDetail[]> {
+export async function fetchCategories(): Promise<CategorySummary[]> {
   const reqAddress = `${serverAddress}/admin/categories`;
   const { data, error } = await authenticatedFetch({
     method: "GET",
@@ -55,7 +56,7 @@ export async function fetchCategories(): Promise<CategoryDetail[]> {
   }
 }
 
-export async function fetchCategoryById(id: number): Promise<CategoryDetail> {
+export async function fetchCategoryById(id: number): Promise<CategoryDetails> {
   const reqAddress = `${serverAddress}/admin/categories/${id}`;
   const { data, error } = await authenticatedFetch({
     method: "GET",
@@ -77,7 +78,7 @@ export async function fetchCategoryById(id: number): Promise<CategoryDetail> {
     }
   }
 
-  const result = CategoryDetailSchema.safeParse(data);
+  const result = CategoryDetailsSchema.safeParse(data);
   if (!result.success) {
     console.error("Validation failed:", result.error);
     throw new Error("Invalid data format for CategoryList");

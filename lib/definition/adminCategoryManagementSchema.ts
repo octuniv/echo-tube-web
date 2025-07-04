@@ -1,16 +1,37 @@
 import { z } from "zod";
-import { FormState } from "../definition";
+import { BoardPurpose, FormState, UserRole } from "../definition";
 
-export const CategoryDetailSchema = z.object({
+export const CategorySummarySchema = z.object({
   id: z.number(),
   name: z.string(),
   allowedSlugs: z.array(z.string()),
   boardIds: z.array(z.number()),
 });
 
-export type CategoryDetail = z.infer<typeof CategoryDetailSchema>;
+export type CategorySummary = z.infer<typeof CategorySummarySchema>;
 
-export const CategoryListResponseSchema = z.array(CategoryDetailSchema);
+export const CategoryListResponseSchema = z.array(CategorySummarySchema);
+
+const BoardSummarySchema = z.object({
+  id: z.number(),
+  slug: z.string(),
+  name: z.string(),
+  type: z.nativeEnum(BoardPurpose),
+  requiredRole: z.nativeEnum(UserRole),
+});
+
+export type BoardSummary = z.infer<typeof BoardSummarySchema>;
+
+export const CategoryDetailsSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  allowedSlugs: z.array(z.string()),
+  boards: z.array(BoardSummarySchema),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export type CategoryDetails = z.infer<typeof CategoryDetailsSchema>;
 
 const NAME_REGEX = /^[A-Za-z가-힣\s'-]+$/;
 
