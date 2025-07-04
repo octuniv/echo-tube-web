@@ -1,3 +1,5 @@
+"use server";
+
 // app/admin/categories/page.tsx
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
 import Link from "next/link";
@@ -50,6 +52,12 @@ export default async function CategoryList() {
                 </td>
                 <td className="py-3 px-4">{category.boardIds.length}</td>
                 <td className="py-3 px-4 flex justify-end gap-2">
+                  <Link
+                    href={`/admin/categories/${category.id}`}
+                    className="text-gray-600 hover:underline"
+                  >
+                    상세
+                  </Link>
                   <Link
                     href={`/admin/categories/${category.id}/edit`}
                     className="text-blue-600 hover:underline"

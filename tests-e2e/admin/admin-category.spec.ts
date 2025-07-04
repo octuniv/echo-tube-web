@@ -74,7 +74,7 @@ test.describe("Admin Category Management E2E Tests", () => {
       }
     });
 
-    test("수정 및 삭제 버튼이 각 카테고리에 표시되어야 합니다", async ({
+    test("상세, 수정 및 삭제 버튼이 각 카테고리에 표시되어야 합니다", async ({
       page,
     }) => {
       // 각 카테고리 항목 확인
@@ -84,12 +84,182 @@ test.describe("Admin Category Management E2E Tests", () => {
           `table tbody tr:has(td:text("${category.name}"))`
         );
 
+        // 상세 링크 확인
+        await expect(row.locator('a:text("상세")')).toBeVisible();
+
         // 수정 링크 확인
         await expect(row.locator('a:text("수정")')).toBeVisible();
 
         // 삭제 버튼 확인
         await expect(row.locator('button:text("삭제")')).toBeVisible();
       }
+    });
+  });
+
+  test.describe("Category Details Page", () => {
+    test.beforeEach(async ({ page, context }) => {
+      await page.goto("/admin/categories");
+      await page.waitForURL("/admin/categories");
+    });
+    test("should navigate to category details page when clicking '상세' link", async ({
+      page,
+    }) => {
+      const firstCategoryRow = page.locator("table tbody tr").first();
+
+      const categoryId = await firstCategoryRow
+        .locator("td")
+        .first()
+        .textContent();
+
+      let categoryTitle = await firstCategoryRow
+        .locator("td")
+        .nth(1)
+        .textContent();
+      if (categoryTitle === null) {
+        throw new Error("categoryTitle is null");
+      }
+      expect(typeof categoryTitle).toBe("string");
+      categoryTitle = categoryTitle as string;
+
+      await firstCategoryRow.locator('a:text("상세")').click();
+
+      await expect(page).toHaveURL(
+        new RegExp(`/admin/categories/${categoryId}`)
+      );
+
+      const categoryTitleInDetailPage = page.locator("h1");
+      await expect(categoryTitleInDetailPage).toBeVisible();
+      await expect(categoryTitleInDetailPage).toContainText(categoryTitle);
+    });
+
+    test("should display correct category metadata", async ({ page }) => {
+      await page
+        .locator("table tbody tr")
+        .first()
+        .locator('a:text("상세")')
+        .click();
+
+      await expect(
+        page.locator('[aria-label="MetadataCard : Category Name"]')
+      ).toBeVisible();
+      await expect(
+        page.locator('[aria-label="MetadataCard : Allowed Slugs"]')
+      ).toBeVisible();
+      await expect(
+        page.locator('[aria-label="MetadataCard : Created At"]')
+      ).toBeVisible();
+      await expect(
+        page.locator('[aria-label="MetadataCard : Updated At"]')
+      ).toBeVisible();
+
+      await expect(
+        page.locator(
+          '[aria-label="MetadataCard : Category Name"] h3:text("Category Name")'
+        )
+      ).toBeVisible();
+
+      await expect(
+        page.locator(
+          '[aria-label="MetadataCard : Allowed Slugs"] h3:text("Allowed Slugs")'
+        )
+      ).toBeVisible();
+
+      await expect(
+        page.locator(
+          '[aria-label="MetadataCard : Created At"] h3:text("Created At")'
+        )
+      ).toBeVisible();
+      await expect(
+        page.locator('[aria-label="MetadataCard : Created At"] p')
+      ).toBeVisible();
+
+      await expect(
+        page.locator(
+          '[aria-label="MetadataCard : Updated At"] h3:text("Updated At")'
+        )
+      ).toBeVisible();
+      await expect(
+        page.locator('[aria-label="MetadataCard : Updated At"] p')
+      ).toBeVisible();
+    });
+
+    test("should display associated boards correctly", async ({ page }) => {
+      await page
+        .locator("table tbody tr")
+        .first()
+        .locator('a:text("상세")')
+        .click();
+
+      await expect(page.locator("h2:text('Associated Boards')")).toBeVisible();
+
+      const expectedHeaders = ["ID", "Name", "Slug", "Type", "Required Role"];
+      for (const header of expectedHeaders) {
+        await expect(page.locator(`th:text('${header}')`)).toBeVisible();
+      }
+
+      await expect(page.locator('[aria-label="BoardList"]')).toBeVisible();
+
+      const boardRows = page.locator('[aria-label="BoardList"] tbody tr');
+      const boardCount = await boardRows.count();
+
+      if (boardCount > 0) {
+        for (let i = 0; i < boardCount; i++) {
+          const cells = boardRows.nth(i).locator("td");
+          await expect(cells).toHaveCount(5);
+
+          const idText = await cells.nth(0).textContent();
+          expect(!isNaN(parseInt(idText || "NaN"))).toBeTruthy();
+
+          await expect(cells.nth(1)).not.toHaveText("");
+
+          const slugText = await cells.nth(2).textContent();
+          expect(slugText).toMatch(/^[A-Za-z0-9-]+$/);
+
+          const typeText = await cells.nth(3).textContent();
+          expect(["general", "ai_digest"]).toContain(typeText?.toLowerCase());
+
+          const roleText = await cells.nth(4).textContent();
+          expect(["admin", "user", "bot"]).toContain(roleText?.toLowerCase());
+        }
+      } else {
+        await expect(page.locator("div.text-center.py-12")).toBeVisible();
+        await expect(
+          page.locator("p:text('No boards associated with this category')")
+        ).toBeVisible();
+      }
+    });
+
+    // Test case: Verify "Go to categories" button functionality
+    test("should navigate back to categories page when clicking 'Go to categories' button", async ({
+      page,
+    }) => {
+      await page
+        .locator("table tbody tr")
+        .first()
+        .locator('a:text("상세")')
+        .click();
+
+      await page.locator('a:text("Go to categories")').click();
+
+      await expect(page).toHaveURL("/admin/categories");
+      await expect(page.locator("h1:text('카테고리 관리')")).toBeVisible();
+    });
+
+    test("should handle category not found", async ({ page }) => {
+      await page.goto("/admin/categories/999999"); // Assuming this ID doesn't exist
+
+      const mainContainer = page.locator("main.p-4");
+      await expect(mainContainer).toBeVisible();
+
+      // Verify 404 heading
+      const errorHeading = mainContainer.locator("h1.next-error-h1");
+      await expect(errorHeading).toBeVisible();
+      await expect(errorHeading).toContainText("404");
+
+      // Verify error message
+      const errorMessage = mainContainer.locator("h2");
+      await expect(errorMessage).toBeVisible();
+      await expect(errorMessage).toContainText("This page could not be found.");
     });
   });
   /*
