@@ -284,13 +284,20 @@ export async function deleteCategory(id: number) {
 }
 
 export async function validateSlug(
-  categoryId: number,
-  slug: string
+  slug: string,
+  categoryId?: number
 ): Promise<ValidateSlugType> {
   if (!slug.trim()) {
     throw new Error(ERROR_MESSAGES.MISSING_VALUE);
   }
-  const reqAddress = `${serverAddress}/admin/categories/${categoryId}/validate-slug?slug=${slug}`;
+  const params = new URLSearchParams();
+  params.append("slug", slug);
+
+  if (categoryId !== undefined) {
+    params.append("categoryId", categoryId.toString());
+  }
+
+  const reqAddress = `${serverAddress}/admin/categories/validate-slug?${params.toString()}`;
 
   const { error, data } = await authenticatedFetch({
     url: reqAddress,

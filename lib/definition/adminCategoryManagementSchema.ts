@@ -33,7 +33,7 @@ export const CategoryDetailsSchema = z.object({
 
 export type CategoryDetails = z.infer<typeof CategoryDetailsSchema>;
 
-const NAME_REGEX = /^[A-Za-z가-힣\s'-]+$/;
+const NAME_REGEX = /^[A-Za-z가-힣\s'-]*$/;
 
 export const CreateCategorySchema = z.object({
   name: z
@@ -41,11 +41,12 @@ export const CreateCategorySchema = z.object({
       required_error: "Name is required",
       invalid_type_error: "Name must be a string",
     })
+    .nonempty("이름은 필수입니다.")
     .regex(NAME_REGEX, {
       message: "이름은 숫자나 특수문자를 포함할 수 없습니다.",
     }),
   allowedSlugs: z
-    .array(z.string())
+    .array(z.string().nonempty("슬러그는 필수입니다."))
     .min(1, { message: "최소 1개 이상의 슬러그가 필요합니다" }),
 });
 
@@ -117,7 +118,7 @@ export type UpdateCategory = z.infer<typeof UpdateCategorySchema>;
 export type UpdateCategoryState = FormState<UpdateCategory>;
 
 export const ValidateSlugSchema = z.object({
-  isUsedInOtherCategory: z.boolean(),
+  isUsed: z.boolean(),
 });
 
 export type ValidateSlugType = z.infer<typeof ValidateSlugSchema>;

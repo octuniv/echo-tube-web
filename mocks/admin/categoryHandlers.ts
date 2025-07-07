@@ -254,34 +254,24 @@ export const adminCategoryHandlers = [
     return HttpResponse.json({ message: "삭제 성공" }, { status: 200 });
   }),
 
-  // GET /admin/categories/:id/validate-slug - 슬러그 중복 검증
-  http.get(
-    `${serverAddress}/admin/categories/:id/validate-slug`,
-    ({ params, request }) => {
-      const categoryId = Number(params.id);
-      const url = new URL(request.url);
-      const slug = url.searchParams.get("slug");
+  // GET /admin/categories/validate-slug - 슬러그 중복 검증
+  http.get(`${serverAddress}/admin/categories/validate-slug`, ({ request }) => {
+    const url = new URL(request.url);
+    const slug = url.searchParams.get("slug");
+    const categoryId = url.searchParams.get("categoryId");
 
-      if (!slug) {
-        return HttpResponse.json(
-          {
-            message: "slug 파라미터가 필요합니다",
-            error: "Bad Request",
-          },
-          { status: 400 }
-        );
-      }
-
-      const isUsed =
-        usedSlugs.has(slug) &&
-        !mockCategories
-          .find((cat) => cat.id === categoryId)
-          ?.allowedSlugs.includes(slug);
-
-      return HttpResponse.json(
-        { isUsedInOtherCategory: isUsed },
-        { status: 200 }
-      );
+    if (!slug) {
+      return HttpResponse.json({ error: "slug required" }, { status: 400 });
     }
-  ),
+
+    const isUsed =
+      usedSlugs.has(slug) &&
+      (!categoryId ||
+        !mockCategories.some(
+          (cat) =>
+            cat.id === Number(categoryId) && cat.allowedSlugs.includes(slug)
+        ));
+
+    return HttpResponse.json({ isUsed }, { status: 200 });
+  }),
 ];

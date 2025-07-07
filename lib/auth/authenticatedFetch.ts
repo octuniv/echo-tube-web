@@ -28,6 +28,11 @@ export async function authenticatedFetch<T>(
 
     if (response.ok) {
       if (options.revalidatePath) revalidatePath(options.revalidatePath);
+
+      if (response.status === 204) {
+        return { data: null, error: null };
+      }
+
       return {
         data: await response.json(),
         error: null,

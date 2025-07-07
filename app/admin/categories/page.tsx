@@ -1,6 +1,6 @@
 "use server";
 
-// app/admin/categories/page.tsx
+import { DeleteButton } from "@/components/admin/categories/DeleteButton";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
 import Link from "next/link";
 
@@ -64,17 +64,7 @@ export default async function CategoryList() {
                   >
                     수정
                   </Link>
-                  <form
-                    action={`/admin/categories/${category.id}/delete`}
-                    method="POST"
-                  >
-                    <button
-                      type="submit"
-                      className="text-red-600 hover:underline"
-                    >
-                      삭제
-                    </button>
-                  </form>
+                  <DeleteButton categoryId={category.id} />
                 </td>
               </tr>
             ))}

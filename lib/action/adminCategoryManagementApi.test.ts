@@ -194,6 +194,35 @@ describe("Admin Category API Tests", () => {
       });
     });
 
+    it("should return error if both fields are empty", async () => {
+      const formData = formDataMock({
+        name: "",
+        allowedSlugs: [],
+      });
+      const result = await createCategory({} as CreateCategoryState, formData);
+      expect(result).toEqual({
+        errors: {
+          name: ["이름은 필수입니다."],
+          allowedSlugs: ["최소 1개 이상의 슬러그가 필요합니다"],
+        },
+        message: "Missing or invalid fields. Failed to create category.",
+      });
+    });
+
+    it("should return error if allowedSlug is empty", async () => {
+      const formData = formDataMock({
+        name: "John",
+        allowedSlugs: [""],
+      });
+      const result = await createCategory({} as CreateCategoryState, formData);
+      expect(result).toEqual({
+        errors: {
+          allowedSlugs: ["슬러그는 필수입니다."],
+        },
+        message: "Missing or invalid fields. Failed to create category.",
+      });
+    });
+
     it("should return error if name contains numbers", async () => {
       const formData = formDataMock({
         name: "John123",
@@ -481,56 +510,81 @@ describe("Admin Category API Tests", () => {
   });
 
   describe("validateSlug", () => {
-    const categoryId = 1;
     const slug = "test-slug";
 
-    it("should validate slug successfully", async () => {
-      const mockResponse: ValidateSlugType = { isUsedInOtherCategory: false };
+    it("should validate slug successfully with categoryId", async () => {
+      const categoryId = 1;
+      const mockResponse: ValidateSlugType = { isUsed: false };
+
       server.use(
         http.get(
-          `${serverAddress}/admin/categories/${categoryId}/validate-slug`,
-          () => {
+          `${serverAddress}/admin/categories/validate-slug`,
+          ({ request }) => {
+            const url = new URL(request.url);
+            const slugParam = url.searchParams.get("slug");
+            const categoryIdParam = url.searchParams.get("categoryId");
+
+            expect(slugParam).toBe(slug);
+            expect(categoryIdParam).toBe(String(categoryId));
+
             return HttpResponse.json(mockResponse, { status: 200 });
           }
         )
       );
 
-      const result = await validateSlug(categoryId, slug);
+      const result = await validateSlug(slug, categoryId);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it("should validate slug successfully without categoryId", async () => {
+      const mockResponse: ValidateSlugType = { isUsed: false };
+
+      server.use(
+        http.get(
+          `${serverAddress}/admin/categories/validate-slug`,
+          ({ request }) => {
+            const url = new URL(request.url);
+            const slugParam = url.searchParams.get("slug");
+            const categoryIdParam = url.searchParams.get("categoryId");
+
+            expect(slugParam).toBe(slug);
+            expect(categoryIdParam).toBeNull();
+
+            return HttpResponse.json(mockResponse, { status: 200 });
+          }
+        )
+      );
+
+      const result = await validateSlug(slug);
       expect(result).toEqual(mockResponse);
     });
 
     it("should handle missing slug parameter", async () => {
       server.use(
-        http.get(
-          `${serverAddress}/admin/categories/${categoryId}/validate-slug`,
-          () => {
-            return HttpResponse.json(
-              { message: "slug 파라미터가 필요합니다" },
-              { status: 400 }
-            );
-          }
-        )
+        http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
+          return HttpResponse.json(
+            { message: "slug 파라미터가 필요합니다" },
+            { status: 400 }
+          );
+        })
       );
 
-      await expect(validateSlug(categoryId, "")).rejects.toThrow(
+      await expect(validateSlug("")).rejects.toThrow(
         ERROR_MESSAGES.MISSING_VALUE
       );
     });
 
     it("should handle unauthorized access", async () => {
       server.use(
-        http.get(
-          `${serverAddress}/admin/categories/${categoryId}/validate-slug`,
-          () => {
-            return HttpResponse.json(
-              { message: "Unauthorized" },
-              { status: 401 }
-            );
-          }
-        )
+        http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
+          return HttpResponse.json(
+            { message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
       );
 
-      await expect(validateSlug(categoryId, slug)).rejects.toThrow();
+      await expect(validateSlug(slug)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });

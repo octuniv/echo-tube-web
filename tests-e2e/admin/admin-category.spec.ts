@@ -1,8 +1,6 @@
 import { test, expect, Page, Locator } from "@playwright/test";
 import { loginAsAdmin } from "../util/auth-utils";
-import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 
-// 테스트에 사용할 카테고리 데이터
 const CATEGORIES = [
   {
     name: "커뮤니티",
@@ -18,7 +16,11 @@ const CATEGORIES = [
   },
 ];
 
-// 관리자 권한으로 로그인한 상태에서 테스트 실행
+const TEST_CATEGORY = {
+  name: "통합테스트",
+  slugs: ["e2e-test", "e2e-test-1"],
+};
+
 test.describe("Admin Category Management E2E Tests", () => {
   test.beforeEach(async ({ page, context }) => {
     await loginAsAdmin({ page, context });
@@ -30,10 +32,8 @@ test.describe("Admin Category Management E2E Tests", () => {
     test("페이지 제목과 생성 버튼이 올바르게 표시되어야 합니다", async ({
       page,
     }) => {
-      // 페이지 제목 확인
       await expect(page.locator("h1:text('카테고리 관리')")).toBeVisible();
 
-      // "새로운 카테고리 생성" 버튼 확인
       const createButton = page.locator("a:text('새로운 카테고리 생성')");
       await expect(createButton).toBeVisible();
       await expect(createButton).toHaveAttribute(
@@ -51,22 +51,17 @@ test.describe("Admin Category Management E2E Tests", () => {
     });
 
     test("기대한 카테고리들이 테이블에 표시되어야 합니다", async ({ page }) => {
-      // 각 카테고리 항목 확인
       for (const category of CATEGORIES) {
-        // 카테고리 이름이 포함된 행 찾기
         const row = page.locator(
           `table tbody tr:has(td:text("${category.name}"))`
         );
 
-        // 행이 존재하는지 확인
         await expect(row).toBeVisible();
 
-        // 필수 슬러그가 포함되어 있는지 확인 (정확한 일치 여부는 검사하지 않음)
         const slugCell = row.locator("td").nth(2);
         const slugText = await slugCell.textContent();
         expect(slugText?.includes(category.requiredSlug)).toBe(true);
 
-        // 게시판 수가 1 이상인지 확인
         const boardCount = parseInt(
           (await row.locator("td").nth(3).textContent()) || "0"
         );
@@ -77,20 +72,15 @@ test.describe("Admin Category Management E2E Tests", () => {
     test("상세, 수정 및 삭제 버튼이 각 카테고리에 표시되어야 합니다", async ({
       page,
     }) => {
-      // 각 카테고리 항목 확인
       for (const category of CATEGORIES) {
-        // 카테고리 이름이 포함된 행 찾기
         const row = page.locator(
           `table tbody tr:has(td:text("${category.name}"))`
         );
 
-        // 상세 링크 확인
         await expect(row.locator('a:text("상세")')).toBeVisible();
 
-        // 수정 링크 확인
         await expect(row.locator('a:text("수정")')).toBeVisible();
 
-        // 삭제 버튼 확인
         await expect(row.locator('button:text("삭제")')).toBeVisible();
       }
     });
@@ -229,7 +219,6 @@ test.describe("Admin Category Management E2E Tests", () => {
       }
     });
 
-    // Test case: Verify "Go to categories" button functionality
     test("should navigate back to categories page when clicking 'Go to categories' button", async ({
       page,
     }) => {
@@ -246,88 +235,137 @@ test.describe("Admin Category Management E2E Tests", () => {
     });
 
     test("should handle category not found", async ({ page }) => {
-      await page.goto("/admin/categories/999999"); // Assuming this ID doesn't exist
+      await page.goto("/admin/categories/999999");
 
       const mainContainer = page.locator("main.p-4");
       await expect(mainContainer).toBeVisible();
 
-      // Verify 404 heading
       const errorHeading = mainContainer.locator("h1.next-error-h1");
       await expect(errorHeading).toBeVisible();
       await expect(errorHeading).toContainText("404");
 
-      // Verify error message
       const errorMessage = mainContainer.locator("h2");
       await expect(errorMessage).toBeVisible();
       await expect(errorMessage).toContainText("This page could not be found.");
     });
   });
-  /*
-  test.describe("카테고리 삭제 기능 검증", () => {
-    test("삭제 확인 대화상자를 취소하면 카테고리가 삭제되지 않아야 합니다", async ({ page }) => {
-      // 첫 번째 카테고리 행 선택
-      const firstCategoryRow = page.locator("table tbody tr").first();
-      
-      // 삭제 버튼 클릭
-      await firstCategoryRow.locator('button:text("삭제")').click();
-      
-      // 대화상자 취소
-      page.on("dialog", async (dialog) => {
-        await dialog.dismiss();
+
+  test.describe("Test Create-Delete Action", () => {
+    test.describe("Create Category Form", () => {
+      test.beforeEach(async ({ page }) => {
+        await page.goto("/admin/categories");
+        const createButton = page.locator("a:text('새로운 카테고리 생성')");
+        await expect(createButton).toBeVisible();
+        await createButton.click();
+
+        await page.waitForURL("/admin/categories/create", { timeout: 3000 });
+        await expect(
+          page.locator("h1:text('새로운 카테고리 생성')")
+        ).toBeVisible();
       });
-      
-      // 카테고리가 여전히 표시되는지 확인
-      await expect(firstCategoryRow).toBeVisible();
+
+      test("should show validation errors when submitting empty form", async ({
+        page,
+      }) => {
+        await page.click('button[type="submit"]');
+
+        await expect(
+          page.locator(
+            "p:text('Missing or invalid fields. Failed to create category.')"
+          )
+        ).toBeVisible();
+
+        await expect(
+          page.locator("p:text('이름은 필수입니다.')")
+        ).toBeVisible();
+
+        await expect(
+          page.locator("p:text('슬러그는 필수입니다.')")
+        ).toBeVisible();
+      });
+
+      test("should validate duplicate slugs", async ({ page }) => {
+        await page.fill('input[name="name"]', TEST_CATEGORY.name);
+        await page.fill(
+          'input[name="allowedSlugs"]',
+          CATEGORIES[0].requiredSlug
+        );
+
+        await page.waitForTimeout(500);
+
+        await expect(
+          page.locator("p:text('이미 사용 중인 슬러그입니다.')")
+        ).toBeVisible();
+      });
+
+      test("should allow adding/removing slug fields", async ({ page }) => {
+        await page.click('button:text("+ 슬러그 추가")');
+        const slugInputs = page.locator('input[name="allowedSlugs"]');
+        await expect(slugInputs).toHaveCount(2);
+
+        await page.click('button:text("✕")');
+        await expect(slugInputs).toHaveCount(1);
+      });
+
+      test("should successfully create category with valid data", async ({
+        page,
+      }) => {
+        await page.fill('input[name="name"]', TEST_CATEGORY.name);
+
+        await page.click('button:text("+ 슬러그 추가")');
+
+        const slugInputs = page.locator('input[name="allowedSlugs"]');
+        await expect(slugInputs).toHaveCount(2);
+        await slugInputs.nth(0).fill(TEST_CATEGORY.slugs[0]);
+        await slugInputs.nth(1).fill(TEST_CATEGORY.slugs[1]);
+
+        await page.click('button[type="submit"]');
+
+        await expect(page).toHaveURL("/admin/categories");
+
+        const categoryRow = page.locator(
+          `table tbody tr:has(td:text("${TEST_CATEGORY.name}"))`
+        );
+        await expect(categoryRow).toBeVisible();
+
+        const slugCell = categoryRow.locator("td").nth(2);
+        await expect(slugCell).toContainText(TEST_CATEGORY.slugs.join(", "));
+      });
     });
 
-    test("삭제 확인을 하면 카테고리가 성공적으로 삭제되어야 합니다", async ({ page }) => {
-      // 테스트용 카테고리 생성
-      const testCategoryName = "테스트 카테고리";
-      
-      // 테스트 카테고리 생성
-      await page.getByRole("link", { name: "새로운 카테고리 생성" }).click();
-      await page.waitForURL("/admin/categories/create");
-      
-      await page.fill('input[name="name"]', testCategoryName);
-      await page.fill('input[name="allowedSlugs"]', "test-slug");
-      
-      await page.click('button[type="submit"]');
-      await page.waitForURL("/admin/categories");
-      
-      // 생성된 카테고리 행
-      const categoryRow = page.locator(`table tbody tr:has(td:text("${testCategoryName}"))`);
-      
-      // 카테고리 행이 표시되는지 확인
-      await expect(categoryRow).toBeVisible();
-      
-      // 삭제 버튼 클릭
-      await categoryRow.locator('button:text("삭제")').click();
-      
-      // 대화상자 확인
-      page.on("dialog", async (dialog) => {
-        await dialog.accept();
-      });
-      
-      // 페이지 새로고침
-      await page.reload();
-      
-      // 카테고리가 더 이상 표시되지 않는지 확인
-      await expect(categoryRow).toBeHidden();
-    });
-  });
+    test.describe("Delete Category", () => {
+      let categoryRow: Locator;
 
-  test.describe("카테고리 수정 기능 검증", () => {
-    test("수정 링크를 클릭하면 올바른 URL로 이동해야 합니다", async ({ page }) => {
-      // 첫 번째 카테고리의 ID 추출
-      const firstCategoryRow = page.locator("table tbody tr").first();
-      const categoryId = await firstCategoryRow.locator("td").first().textContent();
-      
-      // 수정 링크 클릭
-      await firstCategoryRow.locator('a:text("수정")').click();
-      
-      // URL이 올바른 형식인지 확인
-      await expect(page).toHaveURL(new RegExp(`/admin/categories/${categoryId}/edit`));
+      test.beforeEach(async ({ page }) => {
+        await page.goto("/admin/categories");
+        categoryRow = page
+          .locator(`table tbody tr:has(td:text("${TEST_CATEGORY.name}"))`)
+          .first();
+      });
+
+      test("should cancel deletion when dialog dismissed", async ({ page }) => {
+        const deleteButton = categoryRow.locator('button:text("삭제")');
+
+        page.on("dialog", async (dialog) => await dialog.dismiss());
+
+        await deleteButton.click();
+
+        await expect(categoryRow).toBeVisible();
+      });
+
+      test("should successfully delete category", async ({ page }) => {
+        const initialCount = await page.locator("table tbody tr").count();
+        const deleteButton = categoryRow.locator('button:text("삭제")');
+
+        page.on("dialog", async (dialog) => await dialog.accept());
+
+        await deleteButton.click();
+
+        await page.waitForTimeout(1000);
+
+        const newCount = await page.locator("table tbody tr").count();
+        expect(newCount).toBeLessThan(initialCount);
+      });
     });
   });
-  */
 });
