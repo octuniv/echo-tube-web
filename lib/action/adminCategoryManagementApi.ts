@@ -7,12 +7,9 @@ import { AuthenticatedFetchErrorType } from "../auth/types";
 import { clearAuth } from "../authState";
 import {
   CategoryListResponseSchema,
-  CreateCategory,
-  CreateCategorySchema,
-  CreateCategoryState,
-  UpdateCategory,
-  UpdateCategorySchema,
-  UpdateCategoryState,
+  CategoryFormData,
+  CategoryFormValidationSchema,
+  CategoryFormState,
   CategorySummary,
   ValidateSlugType,
   ValidateSlugSchema,
@@ -87,10 +84,10 @@ export async function fetchCategoryById(id: number): Promise<CategoryDetails> {
 }
 
 export async function createCategory(
-  prevState: CreateCategoryState,
+  prevState: CategoryFormState,
   formData: FormData
-): Promise<CreateCategoryState> {
-  const validatedFields = CreateCategorySchema.safeParse({
+): Promise<CategoryFormState> {
+  const validatedFields = CategoryFormValidationSchema.safeParse({
     name: formData.get("name"),
     allowedSlugs: formData.getAll("allowedSlugs"),
   });
@@ -102,7 +99,7 @@ export async function createCategory(
     };
   }
 
-  const categoryData: CreateCategory = validatedFields.data;
+  const categoryData: CategoryFormData = validatedFields.data;
 
   const reqAddress = `${serverAddress}/admin/categories`;
 
@@ -117,7 +114,7 @@ export async function createCategory(
 
   if (error) {
     const message = error.message;
-    const fieldErrors: Partial<Record<keyof CreateCategory, string[]>> = {};
+    const fieldErrors: Partial<Record<keyof CategoryFormData, string[]>> = {};
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
@@ -170,25 +167,22 @@ export async function createCategory(
 
 export async function updateCategory(
   id: number,
-  prevState: UpdateCategoryState,
+  prevState: CategoryFormState,
   formData: FormData
-): Promise<UpdateCategoryState> {
-  const validatedFields = UpdateCategorySchema.safeParse({
-    name: formData.get("name") || undefined,
-    allowedSlugs:
-      formData.getAll("allowedSlugs").length === 0
-        ? undefined
-        : formData.getAll("allowedSlugs"),
+): Promise<CategoryFormState> {
+  const validatedFields = CategoryFormValidationSchema.safeParse({
+    name: formData.get("name"),
+    allowedSlugs: formData.getAll("allowedSlugs"),
   });
 
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Invalid fields. Please check your input values.",
+      message: "Missing or invalid fields. Failed to create category.",
     };
   }
 
-  const categoryData: UpdateCategory = validatedFields.data;
+  const categoryData: CategoryFormData = validatedFields.data;
 
   const reqAddress = `${serverAddress}/admin/categories/${id}`;
 
@@ -203,7 +197,7 @@ export async function updateCategory(
 
   if (error) {
     const message = error.message;
-    const fieldErrors: Partial<Record<keyof CreateCategory, string[]>> = {};
+    const fieldErrors: Partial<Record<keyof CategoryFormData, string[]>> = {};
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();

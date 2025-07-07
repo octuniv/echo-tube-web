@@ -1,20 +1,24 @@
 import {
-  CreateCategoryState,
+  CategoryFormState,
   ValidateSlugType,
 } from "@/lib/definition/adminCategoryManagementSchema";
-import { GoToCategoriesLink } from "../GoToCategoriesLink";
+import { GoToCategoriesLink } from "./GoToCategoriesLink";
 import { validateSlug } from "@/lib/action/adminCategoryManagementApi";
 import { useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 
-export default function CreateCategoryForm({
+export default function CategoryForm({
   state,
   formAction,
+  initialData = { name: "", allowedSlugs: [""] },
 }: {
-  state: CreateCategoryState;
+  state: CategoryFormState;
   formAction: (payload: FormData) => void;
+  initialData?: { name: string; allowedSlugs: string[] };
 }) {
-  const [slugs, setSlugs] = useState<string[]>([""]);
+  const [slugs, setSlugs] = useState<string[]>(
+    initialData.allowedSlugs || [""]
+  );
   const [validationResults, setValidationResults] = useState<{
     [index: number]: ValidateSlugType | undefined;
   }>({});
@@ -89,6 +93,7 @@ export default function CreateCategoryForm({
             type="text"
             id="name"
             name="name"
+            defaultValue={initialData.name}
             className={`mt-1 block w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
               state.errors?.name ? "border-red-500" : "border-gray-300"
             }`}

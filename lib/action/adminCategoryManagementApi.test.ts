@@ -8,10 +8,8 @@ import {
   validateSlug,
 } from "./adminCategoryManagementApi";
 import {
-  CreateCategory,
-  CreateCategoryState,
-  UpdateCategory,
-  UpdateCategoryState,
+  CategoryFormData,
+  CategoryFormState,
   ValidateSlugType,
 } from "../definition/adminCategoryManagementSchema";
 import { server } from "../../mocks/server";
@@ -165,7 +163,7 @@ describe("Admin Category API Tests", () => {
   });
 
   describe("createCategory", () => {
-    const formDataMock = (data: CreateCategory) => {
+    const formDataMock = (data: CategoryFormData) => {
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
         if (value === undefined || value === null) {
@@ -182,7 +180,7 @@ describe("Admin Category API Tests", () => {
     it("should return validation errors for empty fields", async () => {
       const emptyFormData = new FormData();
       const result = await createCategory(
-        {} as CreateCategoryState,
+        {} as CategoryFormState,
         emptyFormData
       );
       expect(result).toEqual({
@@ -199,7 +197,7 @@ describe("Admin Category API Tests", () => {
         name: "",
         allowedSlugs: [],
       });
-      const result = await createCategory({} as CreateCategoryState, formData);
+      const result = await createCategory({} as CategoryFormState, formData);
       expect(result).toEqual({
         errors: {
           name: ["이름은 필수입니다."],
@@ -214,7 +212,7 @@ describe("Admin Category API Tests", () => {
         name: "John",
         allowedSlugs: [""],
       });
-      const result = await createCategory({} as CreateCategoryState, formData);
+      const result = await createCategory({} as CategoryFormState, formData);
       expect(result).toEqual({
         errors: {
           allowedSlugs: ["슬러그는 필수입니다."],
@@ -228,7 +226,7 @@ describe("Admin Category API Tests", () => {
         name: "John123",
         allowedSlugs: ["existing"],
       });
-      const result = await createCategory({} as CreateCategoryState, formData);
+      const result = await createCategory({} as CategoryFormState, formData);
       expect(result).toEqual({
         errors: {
           name: ["이름은 숫자나 특수문자를 포함할 수 없습니다."],
@@ -242,7 +240,7 @@ describe("Admin Category API Tests", () => {
         name: "John@Doe",
         allowedSlugs: ["existing"],
       });
-      const result = await createCategory({} as CreateCategoryState, formData);
+      const result = await createCategory({} as CategoryFormState, formData);
       expect(result).toEqual({
         errors: {
           name: ["이름은 숫자나 특수문자를 포함할 수 없습니다."],
@@ -266,7 +264,7 @@ describe("Admin Category API Tests", () => {
       );
 
       const result = await createCategory(
-        {} as CreateCategoryState,
+        {} as CategoryFormState,
         formDataMock(categoryData)
       );
       expect(result).toEqual({
@@ -290,13 +288,43 @@ describe("Admin Category API Tests", () => {
       );
 
       const result = await createCategory(
-        {} as CreateCategoryState,
+        {} as CategoryFormState,
         formDataMock(categoryData)
       );
       expect(result).toEqual({
         message: "이미 사용 중인 슬러그가 있습니다: existing",
         errors: {
           allowedSlugs: [ERROR_MESSAGES.DUPLICATE_VALUES(["existing"])],
+        },
+      });
+    });
+
+    it("should handle multiple slug conflict errors", async () => {
+      const categoryData = {
+        name: "New Category",
+        allowedSlugs: ["existing1", "existing2"],
+      };
+      server.use(
+        http.post(`${serverAddress}/admin/categories`, () => {
+          return HttpResponse.json(
+            {
+              message: "이미 사용 중인 슬러그가 있습니다: existing1, existing2",
+            },
+            { status: 400 }
+          );
+        })
+      );
+      const result = await createCategory(
+        {} as CategoryFormState,
+        formDataMock(categoryData)
+      );
+
+      expect(result).toEqual({
+        message: "이미 사용 중인 슬러그가 있습니다: existing1, existing2",
+        errors: {
+          allowedSlugs: [
+            ERROR_MESSAGES.DUPLICATE_VALUES(["existing1", "existing2"]),
+          ],
         },
       });
     });
@@ -315,7 +343,7 @@ describe("Admin Category API Tests", () => {
       );
 
       await expect(
-        createCategory({} as CreateCategoryState, formDataMock(categoryData))
+        createCategory({} as CategoryFormState, formDataMock(categoryData))
       ).rejects.toThrow();
       expect(revalidatePath).toHaveBeenCalledWith("/admin/categories");
       expect(redirect).toHaveBeenCalledWith("/admin/categories");
@@ -324,7 +352,7 @@ describe("Admin Category API Tests", () => {
 
   describe("updateCategory", () => {
     const categoryId = 1;
-    const formDataMock = (data: UpdateCategory) => {
+    const formDataMock = (data: CategoryFormData) => {
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -338,49 +366,40 @@ describe("Admin Category API Tests", () => {
       return formData;
     };
 
-    it("should return validation errors for empty fields", async () => {
-      const emptyFormData = new FormData();
+    it("should return validation errors if both fields are missing", async () => {
+      const emptyFormData = formDataMock({
+        name: "",
+        allowedSlugs: [""],
+      });
       const result = await updateCategory(
         categoryId,
-        {} as UpdateCategoryState,
+        {} as CategoryFormState,
         emptyFormData
       );
       expect(result).toEqual({
         errors: {
-          name: ["name 또는 allowedSlugs 중 하나는 필수입니다."],
-          allowedSlugs: ["name 또는 allowedSlugs 중 하나는 필수입니다."],
+          name: ["이름은 필수입니다."],
+          allowedSlugs: ["슬러그는 필수입니다."],
         },
-        message: "Invalid fields. Please check your input values.",
-      });
-    });
-
-    it("should return error if name contains numbers", async () => {
-      const formData = formDataMock({ name: "John123" });
-      const result = await updateCategory(
-        categoryId,
-        {} as UpdateCategoryState,
-        formData
-      );
-      expect(result).toEqual({
-        errors: {
-          name: ["이름은 숫자나 특수문자를 포함할 수 없습니다."],
-        },
-        message: "Invalid fields. Please check your input values.",
+        message: "Missing or invalid fields. Failed to create category.",
       });
     });
 
     it("should return error if name contains special characters", async () => {
-      const formData = formDataMock({ name: "John@Doe" });
+      const formData = formDataMock({
+        name: "John@Doe",
+        allowedSlugs: ["notice"],
+      });
       const result = await updateCategory(
         categoryId,
-        {} as UpdateCategoryState,
+        {} as CategoryFormState,
         formData
       );
       expect(result).toEqual({
         errors: {
           name: ["이름은 숫자나 특수문자를 포함할 수 없습니다."],
         },
-        message: "Invalid fields. Please check your input values.",
+        message: "Missing or invalid fields. Failed to create category.",
       });
     });
 
@@ -392,18 +411,14 @@ describe("Admin Category API Tests", () => {
       server.use(
         http.patch(`${serverAddress}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
-            {
-              type: "Conflict",
-              message: "이미 사용 중인 카테고리 이름입니다",
-            },
+            { message: "이미 사용 중인 카테고리 이름입니다" },
             { status: 409 }
           );
         })
       );
-
       const result = await updateCategory(
         categoryId,
-        {} as UpdateCategoryState,
+        {} as CategoryFormState,
         formDataMock(updateData)
       );
       expect(result).toEqual({
@@ -412,29 +427,33 @@ describe("Admin Category API Tests", () => {
       });
     });
 
-    it("should handle slug conflict error", async () => {
-      const updateData = {
-        name: "Updated Name",
-        allowedSlugs: ["existing"],
+    it("should handle multiple slug conflict errors", async () => {
+      const categoryData = {
+        name: "New Category",
+        allowedSlugs: ["existing1", "existing2"],
       };
       server.use(
         http.patch(`${serverAddress}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
-            { message: "이미 사용 중인 슬러그가 있습니다: existing" },
+            {
+              message: "이미 사용 중인 슬러그가 있습니다: existing1, existing2",
+            },
             { status: 400 }
           );
         })
       );
-
       const result = await updateCategory(
         categoryId,
-        {} as UpdateCategoryState,
-        formDataMock(updateData)
+        {} as CategoryFormState,
+        formDataMock(categoryData)
       );
+
       expect(result).toEqual({
-        message: "이미 사용 중인 슬러그가 있습니다: existing",
+        message: "이미 사용 중인 슬러그가 있습니다: existing1, existing2",
         errors: {
-          allowedSlugs: [ERROR_MESSAGES.DUPLICATE_VALUES(["existing"])],
+          allowedSlugs: [
+            ERROR_MESSAGES.DUPLICATE_VALUES(["existing1", "existing2"]),
+          ],
         },
       });
     });
@@ -445,17 +464,15 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["updated-slug"],
       };
       const mockResponse = { ...mockCategories[0], ...updateData };
-
       server.use(
         http.patch(`${serverAddress}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(mockResponse, { status: 200 });
         })
       );
-
       await expect(
         updateCategory(
           categoryId,
-          {} as UpdateCategoryState,
+          {} as CategoryFormState,
           formDataMock(updateData)
         )
       ).rejects.toThrow();

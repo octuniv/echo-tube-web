@@ -5,8 +5,7 @@ import {
   BoardSummary,
   CategoryDetails,
   CategorySummary,
-  CreateCategorySchema,
-  UpdateCategorySchema,
+  CategoryFormValidationSchema,
 } from "../../lib/definition/adminCategoryManagementSchema";
 import { BoardPurpose, UserRole } from "../../lib/definition";
 
@@ -62,7 +61,7 @@ export const adminCategoryHandlers = [
   // POST /admin/categories - 카테고리 생성
   http.post(`${serverAddress}/admin/categories`, async ({ request }) => {
     const body = await request.json();
-    const result = CreateCategorySchema.safeParse(body);
+    const result = CategoryFormValidationSchema.safeParse(body);
 
     if (!result.success) {
       return HttpResponse.json(
@@ -152,7 +151,7 @@ export const adminCategoryHandlers = [
     async ({ request, params }) => {
       const id = Number(params.id);
       const body = await request.json();
-      const result = UpdateCategorySchema.safeParse(body);
+      const result = CategoryFormValidationSchema.safeParse(body);
 
       if (!result.success) {
         return HttpResponse.json(
