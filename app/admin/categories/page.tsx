@@ -59,7 +59,7 @@ export default async function CategoryList() {
                     상세
                   </Link>
                   <Link
-                    href={`/admin/categories/${category.id}/edit`}
+                    href={`/admin/categories/edit/${category.id}`}
                     className="text-blue-600 hover:underline"
                   >
                     수정

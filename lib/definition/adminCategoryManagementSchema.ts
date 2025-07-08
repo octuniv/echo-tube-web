@@ -33,7 +33,7 @@ export const CategoryDetailsSchema = z.object({
 
 export type CategoryDetails = z.infer<typeof CategoryDetailsSchema>;
 
-const NAME_REGEX = /^[A-Za-z가-힣\s'-]*$/;
+export const NAME_REGEX = /^[A-Za-z가-힣\s'-]*$/;
 
 export const CategoryFormValidationSchema = z.object({
   name: z
@@ -54,8 +54,8 @@ export type CategoryFormData = z.infer<typeof CategoryFormValidationSchema>;
 
 export type CategoryFormState = FormState<CategoryFormData>;
 
-export const ValidateSlugSchema = z.object({
+export const ValidateDataSchema = z.object({
   isUsed: z.boolean(),
 });
 
-export type ValidateSlugType = z.infer<typeof ValidateSlugSchema>;
+export type ValidateDataType = z.infer<typeof ValidateDataSchema>;

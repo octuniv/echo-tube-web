@@ -11,10 +11,11 @@ import {
   CategoryFormValidationSchema,
   CategoryFormState,
   CategorySummary,
-  ValidateSlugType,
-  ValidateSlugSchema,
+  ValidateDataType,
+  ValidateDataSchema,
   CategoryDetails,
   CategoryDetailsSchema,
+  NAME_REGEX,
 } from "../definition/adminCategoryManagementSchema";
 import { serverAddress } from "../util";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
@@ -178,7 +179,7 @@ export async function updateCategory(
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Missing or invalid fields. Failed to create category.",
+      message: "Missing or invalid fields. Failed to update category.",
     };
   }
 
@@ -280,7 +281,7 @@ export async function deleteCategory(id: number) {
 export async function validateSlug(
   slug: string,
   categoryId?: number
-): Promise<ValidateSlugType> {
+): Promise<ValidateDataType> {
   if (!slug.trim()) {
     throw new Error(ERROR_MESSAGES.MISSING_VALUE);
   }
@@ -311,11 +312,61 @@ export async function validateSlug(
       case AuthenticatedFetchErrorType.BadRequest:
         throw new Error(ERROR_MESSAGES.MISSING_VALUE);
       default:
-        throw new Error("알수 없는 에러 발생");
+        throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
     }
   }
 
-  const result = ValidateSlugSchema.safeParse(data);
+  const result = ValidateDataSchema.safeParse(data);
+  if (!result.success) {
+    console.error("Validation failed:", result.error);
+    throw new Error("Invalid data format for Category");
+  }
+  return result.data;
+}
+
+export async function validateName(
+  name: string,
+  categoryId?: number
+): Promise<ValidateDataType> {
+  if (!name.trim()) {
+    throw new Error(ERROR_MESSAGES.MISSING_VALUE);
+  }
+
+  if (!NAME_REGEX.test(name)) {
+    throw new Error(ERROR_MESSAGES.INVALID_FIELD);
+  }
+  const params = new URLSearchParams();
+  params.append("name", name);
+
+  if (categoryId !== undefined) {
+    params.append("categoryId", categoryId.toString());
+  }
+
+  const reqAddress = `${serverAddress}/admin/categories/validate-name?${params.toString()}`;
+
+  const { error, data } = await authenticatedFetch({
+    url: reqAddress,
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (error) {
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.Unauthorized:
+        await clearAuth();
+        redirect("/login?error=session_expired");
+      case AuthenticatedFetchErrorType.ServerError:
+        throw new Error(ERROR_MESSAGES.SERVER_ERROR);
+      case AuthenticatedFetchErrorType.BadRequest:
+        throw new Error(ERROR_MESSAGES.MISSING_VALUE);
+      default:
+        throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
+    }
+  }
+
+  const result = ValidateDataSchema.safeParse(data);
   if (!result.success) {
     console.error("Validation failed:", result.error);
     throw new Error("Invalid data format for Category");

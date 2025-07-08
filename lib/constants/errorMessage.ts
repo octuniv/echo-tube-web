@@ -12,4 +12,5 @@ export const ERROR_MESSAGES = {
   DUPLICATE_VALUES: (values: string[]) =>
     `이미 사용 중인 값이 있습니다: ${values.join(", ")}`,
   MISSING_VALUE: "요청에 필요한 값이 존재하지 않습니다.",
+  UNKNOWN_ERROR: "알수 없는 에러",
 } as const;

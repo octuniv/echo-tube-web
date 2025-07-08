@@ -1,31 +1,41 @@
 import {
   CategoryFormState,
-  ValidateSlugType,
+  ValidateDataType,
 } from "@/lib/definition/adminCategoryManagementSchema";
-import { GoToCategoriesLink } from "./GoToCategoriesLink";
-import { validateSlug } from "@/lib/action/adminCategoryManagementApi";
+import {
+  validateName,
+  validateSlug,
+} from "@/lib/action/adminCategoryManagementApi";
 import { useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
+import { GoToCategoriesLink } from "./GoToCategoriesLink";
 
 export default function CategoryForm({
   state,
   formAction,
   initialData = { name: "", allowedSlugs: [""] },
+  categoryId,
 }: {
   state: CategoryFormState;
   formAction: (payload: FormData) => void;
   initialData?: { name: string; allowedSlugs: string[] };
+  categoryId?: number;
 }) {
   const [slugs, setSlugs] = useState<string[]>(
     initialData.allowedSlugs || [""]
   );
   const [validationResults, setValidationResults] = useState<{
-    [index: number]: ValidateSlugType | undefined;
+    [index: number]: ValidateDataType | undefined;
   }>({});
 
   const [validationLoading, setValidationLoading] = useState<{
     [index: number]: boolean;
   }>({});
+
+  const [nameValidationResult, setNameValidationResult] =
+    useState<ValidateDataType | null>(null);
+
+  const [nameValidationLoading, setNameValidationLoading] = useState(false);
 
   const validateSlugDebounced = useDebouncedCallback(
     async (index: number, slugValue: string) => {
@@ -36,7 +46,7 @@ export default function CategoryForm({
 
       try {
         setValidationLoading((prev) => ({ ...prev, [index]: true }));
-        const result = await validateSlug(slugValue);
+        const result = await validateSlug(slugValue, categoryId);
         setValidationResults((prev) => ({ ...prev, [index]: result }));
       } catch (error) {
         console.error("Slug validation failed:", error);
@@ -46,6 +56,38 @@ export default function CategoryForm({
     },
     300
   );
+
+  const validateNameDebounced = useDebouncedCallback(
+    async (nameValue: string) => {
+      if (nameValue.trim() === "") {
+        setNameValidationLoading(false);
+        return;
+      }
+
+      try {
+        setNameValidationLoading(true);
+        const result = await validateName(nameValue, categoryId);
+        setNameValidationResult(result);
+      } catch (error) {
+        console.error("Name validation failed:", error);
+        setNameValidationResult(null);
+      } finally {
+        setNameValidationLoading(false);
+      }
+    },
+    300
+  );
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    if (state.errors?.name) {
+      state.errors.name = undefined;
+    }
+
+    setNameValidationResult(null);
+    validateNameDebounced(value);
+  };
 
   const handleSlugChange = (index: number, value: string) => {
     const updatedSlugs = [...slugs];
@@ -94,6 +136,7 @@ export default function CategoryForm({
             id="name"
             name="name"
             defaultValue={initialData.name}
+            onChange={handleNameChange}
             className={`mt-1 block w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
               state.errors?.name ? "border-red-500" : "border-gray-300"
             }`}
@@ -101,6 +144,20 @@ export default function CategoryForm({
           />
           {state.errors?.name && (
             <p className="mt-1 text-sm text-red-600">{state.errors.name[0]}</p>
+          )}
+          {nameValidationLoading && (
+            <p className="mt-1 text-sm text-gray-500">검증 중...</p>
+          )}
+          {!nameValidationLoading && nameValidationResult && (
+            <p
+              className={`mt-1 text-sm ${
+                nameValidationResult.isUsed ? "text-red-600" : "text-green-600"
+              }`}
+            >
+              {nameValidationResult.isUsed
+                ? "이미 사용 중인 이름입니다."
+                : "사용 가능한 이름입니다."}
+            </p>
           )}
           <p className="mt-1 text-sm text-gray-500">
             이름은 숫자나 특수문자를 포함할 수 없습니다.

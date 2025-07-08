@@ -273,4 +273,27 @@ export const adminCategoryHandlers = [
 
     return HttpResponse.json({ isUsed }, { status: 200 });
   }),
+
+  // GET /admin/categories/validate-name - 카테고리 이름 중복 검증
+  http.get(`${serverAddress}/admin/categories/validate-name`, ({ request }) => {
+    const url = new URL(request.url);
+    const name = url.searchParams.get("name");
+    const categoryId = url.searchParams.get("categoryId");
+
+    if (!name) {
+      return HttpResponse.json(
+        { error: "name should not be empty" },
+        { status: 400 }
+      );
+    }
+
+    const isUsed = mockCategories.some((cat) => {
+      if (categoryId && cat.id === Number(categoryId)) {
+        return false;
+      }
+      return cat.name === name;
+    });
+
+    return HttpResponse.json({ isUsed }, { status: 200 });
+  }),
 ];

@@ -6,11 +6,12 @@ import {
   updateCategory,
   deleteCategory,
   validateSlug,
+  validateName,
 } from "./adminCategoryManagementApi";
 import {
   CategoryFormData,
   CategoryFormState,
-  ValidateSlugType,
+  ValidateDataType,
 } from "../definition/adminCategoryManagementSchema";
 import { server } from "../../mocks/server";
 import { http, HttpResponse } from "msw";
@@ -381,7 +382,7 @@ describe("Admin Category API Tests", () => {
           name: ["이름은 필수입니다."],
           allowedSlugs: ["슬러그는 필수입니다."],
         },
-        message: "Missing or invalid fields. Failed to create category.",
+        message: "Missing or invalid fields. Failed to update category.",
       });
     });
 
@@ -399,7 +400,7 @@ describe("Admin Category API Tests", () => {
         errors: {
           name: ["이름은 숫자나 특수문자를 포함할 수 없습니다."],
         },
-        message: "Missing or invalid fields. Failed to create category.",
+        message: "Missing or invalid fields. Failed to update category.",
       });
     });
 
@@ -531,7 +532,7 @@ describe("Admin Category API Tests", () => {
 
     it("should validate slug successfully with categoryId", async () => {
       const categoryId = 1;
-      const mockResponse: ValidateSlugType = { isUsed: false };
+      const mockResponse: ValidateDataType = { isUsed: false };
 
       server.use(
         http.get(
@@ -554,7 +555,7 @@ describe("Admin Category API Tests", () => {
     });
 
     it("should validate slug successfully without categoryId", async () => {
-      const mockResponse: ValidateSlugType = { isUsed: false };
+      const mockResponse: ValidateDataType = { isUsed: false };
 
       server.use(
         http.get(
@@ -604,6 +605,105 @@ describe("Admin Category API Tests", () => {
       await expect(validateSlug(slug)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+  });
+
+  describe("validateName", () => {
+    const name = "test-name";
+    const categoryId = 1;
+
+    it("should validate name successfully with categoryId", async () => {
+      server.use(
+        http.get(
+          `${serverAddress}/admin/categories/validate-name`,
+          ({ request }) => {
+            const url = new URL(request.url);
+            const nameParam = url.searchParams.get("name");
+            const categoryIdParam = url.searchParams.get("categoryId");
+            expect(nameParam).toBe(name);
+            expect(categoryIdParam).toBe(String(categoryId));
+            return HttpResponse.json({ isUsed: false }, { status: 200 });
+          }
+        )
+      );
+
+      const result = await validateName(name, categoryId);
+      expect(result).toEqual({ isUsed: false });
+    });
+
+    it("should validate name successfully without categoryId", async () => {
+      server.use(
+        http.get(
+          `${serverAddress}/admin/categories/validate-name`,
+          ({ request }) => {
+            const url = new URL(request.url);
+            const nameParam = url.searchParams.get("name");
+            const categoryIdParam = url.searchParams.get("categoryId");
+            expect(nameParam).toBe(name);
+            expect(categoryIdParam).toBeNull();
+            return HttpResponse.json({ isUsed: false }, { status: 200 });
+          }
+        )
+      );
+
+      const result = await validateName(name);
+      expect(result).toEqual({ isUsed: false });
+    });
+
+    it("should handle missing name parameter", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+          return HttpResponse.json(
+            { error: "name should not be empty" },
+            { status: 400 }
+          );
+        })
+      );
+
+      await expect(validateName("")).rejects.toThrow(
+        ERROR_MESSAGES.MISSING_VALUE
+      );
+    });
+
+    it("should handle unauthorized access", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+          return HttpResponse.json(
+            { message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+
+      await expect(validateName(name)).rejects.toThrow();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+
+    it("should handle server error", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+          return HttpResponse.json(
+            { message: "Internal Server Error" },
+            { status: 500 }
+          );
+        })
+      );
+
+      await expect(validateName(name)).rejects.toThrow(
+        ERROR_MESSAGES.SERVER_ERROR
+      );
+    });
+
+    it("should handle conflicted name", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+          return HttpResponse.json({ isUsed: true }, { status: 200 });
+        })
+      );
+
+      const result = await validateName(name);
+      expect(result).toEqual({ isUsed: true });
     });
   });
 });

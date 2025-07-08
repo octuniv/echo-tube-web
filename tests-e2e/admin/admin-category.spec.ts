@@ -21,6 +21,10 @@ const TEST_CATEGORY = {
   slugs: ["e2e-test", "e2e-test-1"],
 };
 
+let TEST_CATEGORY_ID: number | null = null;
+
+test.describe.configure({ mode: "serial" });
+
 test.describe("Admin Category Management E2E Tests", () => {
   test.beforeEach(async ({ page, context }) => {
     await loginAsAdmin({ page, context });
@@ -284,6 +288,16 @@ test.describe("Admin Category Management E2E Tests", () => {
         ).toBeVisible();
       });
 
+      test("should validate duplicate name", async ({ page }) => {
+        await page.fill('input[name="name"]', CATEGORIES[0].name);
+
+        await page.waitForTimeout(500);
+
+        await expect(
+          page.locator("p:text('이미 사용 중인 이름입니다.')")
+        ).toBeVisible();
+      });
+
       test("should validate duplicate slugs", async ({ page }) => {
         await page.fill('input[name="name"]', TEST_CATEGORY.name);
         await page.fill(
@@ -319,17 +333,156 @@ test.describe("Admin Category Management E2E Tests", () => {
         await slugInputs.nth(0).fill(TEST_CATEGORY.slugs[0]);
         await slugInputs.nth(1).fill(TEST_CATEGORY.slugs[1]);
 
+        await page.waitForTimeout(500);
+
+        await expect(
+          page.locator("p:text('사용 가능한 이름입니다.')")
+        ).toBeVisible();
+
+        await expect(
+          page.locator("p:text('사용 가능한 슬러그입니다.')")
+        ).toBeVisible();
+
         await page.click('button[type="submit"]');
 
         await expect(page).toHaveURL("/admin/categories");
 
-        const categoryRow = page.locator(
-          `table tbody tr:has(td:text("${TEST_CATEGORY.name}"))`
-        );
+        const categoryRow = page
+          .locator(`table tbody tr:has(td:text("${TEST_CATEGORY.name}"))`)
+          .first();
         await expect(categoryRow).toBeVisible();
 
         const slugCell = categoryRow.locator("td").nth(2);
         await expect(slugCell).toContainText(TEST_CATEGORY.slugs.join(", "));
+
+        const categoryIdCell = categoryRow.locator("td").first();
+        const categoryIdText = await categoryIdCell.textContent();
+
+        TEST_CATEGORY_ID = parseInt(categoryIdText || "0", 10);
+        expect(TEST_CATEGORY_ID).toBeGreaterThan(0);
+      });
+    });
+
+    test.describe("Test Update Category", () => {
+      async function verifyFormPreFilled(page: Page) {
+        const nameInput = page.locator('input[name="name"]');
+        await expect(nameInput).toHaveValue(TEST_CATEGORY.name);
+
+        const slugInputs = page.locator('input[name="allowedSlugs"]');
+        for (let i = 0; i < TEST_CATEGORY.slugs.length; i++) {
+          await expect(slugInputs.nth(i)).toHaveValue(TEST_CATEGORY.slugs[i]);
+        }
+      }
+
+      async function submitValidUpdate(page: Page) {
+        const newName = "업데이트된 이름";
+        const newSlugs = ["updated-slug", "updated-slug-1"];
+
+        // 이름 변경
+        await page.fill('input[name="name"]', newName);
+
+        // 첫 번째 슬러그 수정
+        const slugInputs = page.locator('input[name="allowedSlugs"]');
+        await slugInputs.nth(0).fill(newSlugs[0]);
+
+        // 슬러그 추가
+        await page.click('button:text("+ 슬러그 추가")');
+        await slugInputs.nth(2).fill(newSlugs[1]);
+
+        // 제출
+        await page.click('button[type="submit"]');
+      }
+
+      async function verifyUpdateSuccess(page: Page) {
+        // 목록 페이지로 리다이렉트
+        await expect(page).toHaveURL("/admin/categories");
+
+        // 수정된 카테고리 확인
+        const updatedRow = page.locator(
+          `table tbody tr:has(td:text("업데이트된 이름"))`
+        );
+        await expect(updatedRow).toBeVisible();
+        const slugCell = updatedRow.locator("td").nth(2);
+        await expect(slugCell).toContainText("updated-slug, updated-slug-1");
+      }
+
+      async function submitInvalidUpdate(page: Page) {
+        // 중복된 이름 입력
+        await page.fill('input[name="name"]', CATEGORIES[0].name);
+
+        // 중복된 슬러그 입력
+        const slugInputs = page.locator('input[name="allowedSlugs"]');
+        await slugInputs.nth(0).fill(CATEGORIES[0].requiredSlug);
+
+        // 제출
+        await page.click('button[type="submit"]');
+      }
+
+      async function verifyUpdateErrors(page: Page) {
+        // 이름 중복 오류
+        await expect(
+          page.locator("p:text('이미 사용 중인 이름입니다.')")
+        ).toBeVisible();
+
+        // 슬러그 중복 오류
+        await expect(
+          page.locator("p:text('이미 사용 중인 슬러그입니다.')")
+        ).toBeVisible();
+      }
+
+      async function cancelUpdate(page: Page) {
+        // "Go to categories" 링크 클릭
+        await page.locator('a:text("Go to categories")').click();
+      }
+
+      async function verifyRedirectToCategories(page: Page) {
+        await expect(page).toHaveURL("/admin/categories");
+        await expect(page.locator("h1:text('카테고리 관리')")).toBeVisible();
+      }
+
+      test.beforeEach(async ({ page }) => {
+        await page.goto("/admin/categories");
+
+        const categoryRow = page.locator("table tbody tr").filter({
+          has: page
+            .locator("td")
+            .nth(0)
+            .filter({ hasText: String(TEST_CATEGORY_ID) }),
+        });
+        await expect(categoryRow).toBeVisible();
+
+        const editLink = categoryRow.locator('a:text("수정")');
+        await expect(editLink).toBeVisible();
+        await editLink.click();
+
+        await page.waitForURL(/\/admin\/categories\/edit\/\d+/);
+      });
+
+      test("기존 데이터가 폼에 올바르게 표시되어야 합니다", async ({
+        page,
+      }) => {
+        await verifyFormPreFilled(page);
+      });
+
+      test("유효한 데이터로 카테고리 수정이 성공해야 합니다", async ({
+        page,
+      }) => {
+        await submitValidUpdate(page);
+        await verifyUpdateSuccess(page);
+      });
+
+      test("중복된 이름 또는 슬러그로 수정 실패 시 오류 메시지가 표시됩니다", async ({
+        page,
+      }) => {
+        await submitInvalidUpdate(page);
+        await verifyUpdateErrors(page);
+      });
+
+      test("수정 취소 시 카테고리 목록 페이지로 이동해야 합니다", async ({
+        page,
+      }) => {
+        await cancelUpdate(page);
+        await verifyRedirectToCategories(page);
       });
     });
 
@@ -337,10 +490,15 @@ test.describe("Admin Category Management E2E Tests", () => {
       let categoryRow: Locator;
 
       test.beforeEach(async ({ page }) => {
+        expect(TEST_CATEGORY_ID).not.toBeNull();
         await page.goto("/admin/categories");
-        categoryRow = page
-          .locator(`table tbody tr:has(td:text("${TEST_CATEGORY.name}"))`)
-          .first();
+        categoryRow = page.locator("table tbody tr").filter({
+          has: page
+            .locator("td")
+            .nth(0)
+            .filter({ hasText: String(TEST_CATEGORY_ID) }),
+        });
+        await expect(categoryRow).toBeVisible();
       });
 
       test("should cancel deletion when dialog dismissed", async ({ page }) => {
@@ -362,6 +520,8 @@ test.describe("Admin Category Management E2E Tests", () => {
         await deleteButton.click();
 
         await page.waitForTimeout(1000);
+
+        await expect(categoryRow).not.toBeVisible();
 
         const newCount = await page.locator("table tbody tr").count();
         expect(newCount).toBeLessThan(initialCount);
