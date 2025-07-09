@@ -1,8 +1,8 @@
-"use server";
-
 import { DeleteButton } from "@/components/admin/categories/DeleteButton";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 export default async function CategoryList() {
   let categories;

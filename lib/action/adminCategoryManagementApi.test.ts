@@ -21,6 +21,7 @@ import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { mockCategories } from "../../mocks/admin/categoryHandlers";
+import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -102,7 +103,7 @@ describe("Admin Category API Tests", () => {
       );
 
       await expect(fetchCategories()).rejects.toThrow(
-        "Invalid data format for CategoryList"
+        CATEGORY_ERROR_MESSAGES.INVALID_DATA_TYPE
       );
     });
   });
@@ -186,8 +187,8 @@ describe("Admin Category API Tests", () => {
       );
       expect(result).toEqual({
         errors: {
-          name: ["Name must be a string"],
-          allowedSlugs: ["최소 1개 이상의 슬러그가 필요합니다"],
+          name: [CATEGORY_ERROR_MESSAGES.NAME_SHOULD_BE_STRING],
+          allowedSlugs: [CATEGORY_ERROR_MESSAGES.SLUGS_REQUIRED],
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
@@ -201,8 +202,8 @@ describe("Admin Category API Tests", () => {
       const result = await createCategory({} as CategoryFormState, formData);
       expect(result).toEqual({
         errors: {
-          name: ["이름은 필수입니다."],
-          allowedSlugs: ["최소 1개 이상의 슬러그가 필요합니다"],
+          name: [CATEGORY_ERROR_MESSAGES.NAME_REQUIRED],
+          allowedSlugs: [CATEGORY_ERROR_MESSAGES.SLUGS_REQUIRED],
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
@@ -216,7 +217,7 @@ describe("Admin Category API Tests", () => {
       const result = await createCategory({} as CategoryFormState, formData);
       expect(result).toEqual({
         errors: {
-          allowedSlugs: ["슬러그는 필수입니다."],
+          allowedSlugs: [CATEGORY_ERROR_MESSAGES.SLUG_REQUIRED],
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
@@ -230,7 +231,7 @@ describe("Admin Category API Tests", () => {
       const result = await createCategory({} as CategoryFormState, formData);
       expect(result).toEqual({
         errors: {
-          name: ["이름은 숫자나 특수문자를 포함할 수 없습니다."],
+          name: [CATEGORY_ERROR_MESSAGES.INVALID_NAME],
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
@@ -244,7 +245,7 @@ describe("Admin Category API Tests", () => {
       const result = await createCategory({} as CategoryFormState, formData);
       expect(result).toEqual({
         errors: {
-          name: ["이름은 숫자나 특수문자를 포함할 수 없습니다."],
+          name: [CATEGORY_ERROR_MESSAGES.INVALID_NAME],
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
@@ -258,7 +259,7 @@ describe("Admin Category API Tests", () => {
       server.use(
         http.post(`${serverAddress}/admin/categories`, () => {
           return HttpResponse.json(
-            { message: "이미 사용 중인 카테고리 이름입니다" },
+            { message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME },
             { status: 409 }
           );
         })
@@ -269,8 +270,8 @@ describe("Admin Category API Tests", () => {
         formDataMock(categoryData)
       );
       expect(result).toEqual({
-        message: "이미 사용 중인 카테고리 이름입니다",
-        errors: { name: [ERROR_MESSAGES.NAME_EXISTS] },
+        message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME,
+        errors: { name: [CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME] },
       });
     });
 
@@ -282,7 +283,11 @@ describe("Admin Category API Tests", () => {
       server.use(
         http.post(`${serverAddress}/admin/categories`, () => {
           return HttpResponse.json(
-            { message: "이미 사용 중인 슬러그가 있습니다: existing" },
+            {
+              message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
+                categoryData.allowedSlugs
+              ),
+            },
             { status: 400 }
           );
         })
@@ -293,9 +298,13 @@ describe("Admin Category API Tests", () => {
         formDataMock(categoryData)
       );
       expect(result).toEqual({
-        message: "이미 사용 중인 슬러그가 있습니다: existing",
+        message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
+          categoryData.allowedSlugs
+        ),
         errors: {
-          allowedSlugs: [ERROR_MESSAGES.DUPLICATE_VALUES(["existing"])],
+          allowedSlugs: [
+            CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(categoryData.allowedSlugs),
+          ],
         },
       });
     });
@@ -309,7 +318,9 @@ describe("Admin Category API Tests", () => {
         http.post(`${serverAddress}/admin/categories`, () => {
           return HttpResponse.json(
             {
-              message: "이미 사용 중인 슬러그가 있습니다: existing1, existing2",
+              message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
+                categoryData.allowedSlugs
+              ),
             },
             { status: 400 }
           );
@@ -321,10 +332,12 @@ describe("Admin Category API Tests", () => {
       );
 
       expect(result).toEqual({
-        message: "이미 사용 중인 슬러그가 있습니다: existing1, existing2",
+        message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
+          categoryData.allowedSlugs
+        ),
         errors: {
           allowedSlugs: [
-            ERROR_MESSAGES.DUPLICATE_VALUES(["existing1", "existing2"]),
+            CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(categoryData.allowedSlugs),
           ],
         },
       });
@@ -348,6 +361,45 @@ describe("Admin Category API Tests", () => {
       ).rejects.toThrow();
       expect(revalidatePath).toHaveBeenCalledWith("/admin/categories");
       expect(redirect).toHaveBeenCalledWith("/admin/categories");
+    });
+
+    it("should return error if slug has invalid format", async () => {
+      const formData = formDataMock({
+        name: "Valid Name",
+        allowedSlugs: ["InvalidSlug!"], // 대문자 및 특수문자 포함
+      });
+
+      const result = await createCategory({} as CategoryFormState, formData);
+      expect(result).toEqual({
+        errors: {
+          allowedSlugs: [CATEGORY_ERROR_MESSAGES.INVALID_SLUGS],
+        },
+        message: "Missing or invalid fields. Failed to create category.",
+      });
+    });
+
+    it("should handle to throw server by conflicted slug ", async () => {
+      const formData = formDataMock({
+        name: "Valid Name",
+        allowedSlugs: ["whatever"], // 폼에서 검증 못했다는 가정
+      });
+
+      server.use(
+        http.post(`${serverAddress}/admin/categories`, () => {
+          return HttpResponse.json(
+            { message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS },
+            { status: 400 }
+          );
+        })
+      );
+
+      const result = await createCategory({} as CategoryFormState, formData);
+      expect(result).toEqual({
+        errors: {
+          allowedSlugs: [CATEGORY_ERROR_MESSAGES.INVALID_SLUGS],
+        },
+        message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
+      });
     });
   });
 
@@ -379,8 +431,8 @@ describe("Admin Category API Tests", () => {
       );
       expect(result).toEqual({
         errors: {
-          name: ["이름은 필수입니다."],
-          allowedSlugs: ["슬러그는 필수입니다."],
+          name: [CATEGORY_ERROR_MESSAGES.NAME_REQUIRED],
+          allowedSlugs: [CATEGORY_ERROR_MESSAGES.SLUG_REQUIRED],
         },
         message: "Missing or invalid fields. Failed to update category.",
       });
@@ -398,7 +450,7 @@ describe("Admin Category API Tests", () => {
       );
       expect(result).toEqual({
         errors: {
-          name: ["이름은 숫자나 특수문자를 포함할 수 없습니다."],
+          name: [CATEGORY_ERROR_MESSAGES.INVALID_NAME],
         },
         message: "Missing or invalid fields. Failed to update category.",
       });
@@ -410,9 +462,9 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["new-slug"],
       };
       server.use(
-        http.patch(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
-            { message: "이미 사용 중인 카테고리 이름입니다" },
+            { message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME },
             { status: 409 }
           );
         })
@@ -423,8 +475,8 @@ describe("Admin Category API Tests", () => {
         formDataMock(updateData)
       );
       expect(result).toEqual({
-        message: "이미 사용 중인 카테고리 이름입니다",
-        errors: { name: [ERROR_MESSAGES.NAME_EXISTS] },
+        message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME,
+        errors: { name: [CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME] },
       });
     });
 
@@ -434,10 +486,12 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["existing1", "existing2"],
       };
       server.use(
-        http.patch(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
             {
-              message: "이미 사용 중인 슬러그가 있습니다: existing1, existing2",
+              message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
+                categoryData.allowedSlugs
+              ),
             },
             { status: 400 }
           );
@@ -450,10 +504,12 @@ describe("Admin Category API Tests", () => {
       );
 
       expect(result).toEqual({
-        message: "이미 사용 중인 슬러그가 있습니다: existing1, existing2",
+        message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
+          categoryData.allowedSlugs
+        ),
         errors: {
           allowedSlugs: [
-            ERROR_MESSAGES.DUPLICATE_VALUES(["existing1", "existing2"]),
+            CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(categoryData.allowedSlugs),
           ],
         },
       });
@@ -466,7 +522,7 @@ describe("Admin Category API Tests", () => {
       };
       const mockResponse = { ...mockCategories[0], ...updateData };
       server.use(
-        http.patch(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(mockResponse, { status: 200 });
         })
       );
@@ -479,6 +535,60 @@ describe("Admin Category API Tests", () => {
       ).rejects.toThrow();
       expect(revalidatePath).toHaveBeenCalledWith("/admin/categories");
       expect(redirect).toHaveBeenCalledWith("/admin/categories");
+    });
+
+    it("should handle category not found error", async () => {
+      const nonExistentId = 999;
+
+      server.use(
+        http.put(`${serverAddress}/admin/categories/${nonExistentId}`, () => {
+          return HttpResponse.json(
+            { message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND },
+            { status: 404 }
+          );
+        })
+      );
+
+      const result = await updateCategory(
+        nonExistentId,
+        {} as CategoryFormState,
+        formDataMock({
+          name: "Test",
+          allowedSlugs: ["test"],
+        })
+      );
+
+      expect(result).toEqual({
+        message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND,
+      });
+    });
+
+    it("should handle to throw server by conflicted slug ", async () => {
+      const formData = formDataMock({
+        name: "Valid Name",
+        allowedSlugs: ["whatever"], // 폼에서 검증 못했다는 가정
+      });
+
+      server.use(
+        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+          return HttpResponse.json(
+            { message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS },
+            { status: 400 }
+          );
+        })
+      );
+
+      const result = await updateCategory(
+        categoryId,
+        {} as CategoryFormState,
+        formData
+      );
+      expect(result).toEqual({
+        errors: {
+          allowedSlugs: [CATEGORY_ERROR_MESSAGES.INVALID_SLUGS],
+        },
+        message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
+      });
     });
   });
 
@@ -515,7 +625,7 @@ describe("Admin Category API Tests", () => {
       server.use(
         http.delete(`${serverAddress}/admin/categories/999`, () => {
           return HttpResponse.json(
-            { message: "카테고리를 찾을 수 없습니다" },
+            { message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND },
             { status: 404 }
           );
         })
@@ -580,16 +690,14 @@ describe("Admin Category API Tests", () => {
     it("should handle missing slug parameter", async () => {
       server.use(
         http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
-          return HttpResponse.json(
-            { message: "slug 파라미터가 필요합니다" },
-            { status: 400 }
-          );
+          return HttpResponse.json({ isUsed: false }, { status: 200 });
         })
       );
 
-      await expect(validateSlug("")).rejects.toThrow(
-        ERROR_MESSAGES.MISSING_VALUE
-      );
+      await expect(validateSlug("")).resolves.toEqual({
+        isUsed: false,
+        error: CATEGORY_ERROR_MESSAGES.SLUG_REQUIRED,
+      });
     });
 
     it("should handle unauthorized access", async () => {
@@ -605,6 +713,31 @@ describe("Admin Category API Tests", () => {
       await expect(validateSlug(slug)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+
+    it("should validate slug format correctly", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
+          return HttpResponse.json({ isUsed: false }, { status: 200 });
+        })
+      );
+
+      // 유효한 슬러그
+      await expect(validateSlug("valid-slug")).resolves.toEqual({
+        isUsed: false,
+      });
+
+      // 대문자 포함
+      await expect(validateSlug("InvalidSlug")).resolves.toEqual({
+        isUsed: false,
+        error: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
+      });
+
+      // 특수문자 포함
+      await expect(validateSlug("slug!123")).resolves.toEqual({
+        isUsed: false,
+        error: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
+      });
     });
   });
 
@@ -653,16 +786,15 @@ describe("Admin Category API Tests", () => {
     it("should handle missing name parameter", async () => {
       server.use(
         http.get(`${serverAddress}/admin/categories/validate-name`, () => {
-          return HttpResponse.json(
-            { error: "name should not be empty" },
-            { status: 400 }
-          );
+          return HttpResponse.json({ isUsed: false }, { status: 200 });
         })
       );
 
-      await expect(validateName("")).rejects.toThrow(
-        ERROR_MESSAGES.MISSING_VALUE
-      );
+      const res = await validateName("");
+      expect(res).toEqual({
+        isUsed: false,
+        error: CATEGORY_ERROR_MESSAGES.NAME_REQUIRED,
+      } satisfies ValidateDataType);
     });
 
     it("should handle unauthorized access", async () => {
@@ -704,6 +836,20 @@ describe("Admin Category API Tests", () => {
 
       const result = await validateName(name);
       expect(result).toEqual({ isUsed: true });
+    });
+
+    it("should handle invalid name", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+          return HttpResponse.json({ isUsed: false }, { status: 200 });
+        })
+      );
+
+      const res = await validateName("IN!@Valid");
+      expect(res).toEqual({
+        isUsed: false,
+        error: CATEGORY_ERROR_MESSAGES.INVALID_NAME,
+      } satisfies ValidateDataType);
     });
   });
 });

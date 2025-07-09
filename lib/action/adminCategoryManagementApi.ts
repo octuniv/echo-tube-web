@@ -16,9 +16,11 @@ import {
   CategoryDetails,
   CategoryDetailsSchema,
   NAME_REGEX,
+  SLUG_REGEX,
 } from "../definition/adminCategoryManagementSchema";
 import { serverAddress } from "../util";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
+import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 
 export async function fetchCategories(): Promise<CategorySummary[]> {
   const reqAddress = `${serverAddress}/admin/categories`;
@@ -40,15 +42,13 @@ export async function fetchCategories(): Promise<CategorySummary[]> {
           "카테고리 목록을 불러오던 중 예기치 못한 오류 발생:",
           error
         );
-        throw new Error(
-          "카테고리 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
-        );
+        throw new Error(CATEGORY_ERROR_MESSAGES.FAIL_FETCH_CATEGORY);
     }
   } else {
     const result = CategoryListResponseSchema.safeParse(data);
     if (!result.success) {
       console.error("Validation failed:", result.error);
-      throw new Error("Invalid data format for CategoryList");
+      throw new Error(CATEGORY_ERROR_MESSAGES.INVALID_DATA_TYPE);
     }
     return result.data;
   }
@@ -72,14 +72,14 @@ export async function fetchCategoryById(id: number): Promise<CategoryDetails> {
       case AuthenticatedFetchErrorType.NotFound:
         throw new Error(ERROR_MESSAGES.NOT_FOUND);
       default:
-        throw new Error("카테고리 정보를 불러오지 못했습니다");
+        throw new Error(CATEGORY_ERROR_MESSAGES.FAIL_FETCH_CATEGORY);
     }
   }
 
   const result = CategoryDetailsSchema.safeParse(data);
   if (!result.success) {
     console.error("Validation failed:", result.error);
-    throw new Error("Invalid data format for CategoryList");
+    throw new Error(CATEGORY_ERROR_MESSAGES.INVALID_DATA_TYPE);
   }
   return result.data;
 }
@@ -121,8 +121,8 @@ export async function createCategory(
         await clearAuth();
         redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ConflictError:
-        if (message.includes("이미 사용 중인 카테고리 이름입니다")) {
-          fieldErrors.name = [ERROR_MESSAGES.NAME_EXISTS];
+        if (message.includes(CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME)) {
+          fieldErrors.name = [CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME];
         }
         if (Object.keys(fieldErrors).length > 0) {
           return {
@@ -135,14 +135,21 @@ export async function createCategory(
           };
         }
       case AuthenticatedFetchErrorType.BadRequest:
-        if (message.includes("이미 사용 중인 슬러그가 있습니다")) {
+        if (message.includes(CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS())) {
           const match = message.match(/:\s*(.+)/);
           if (match && match[1]) {
-            const slugs = match[1].split(",").map((s) => s.trim());
-            fieldErrors.allowedSlugs = [ERROR_MESSAGES.DUPLICATE_VALUES(slugs)];
+            const slugs = match[1]
+              .split(",")
+              .map((s) => s.trim())
+              .filter((slug) => slug.length > 0);
+            fieldErrors.allowedSlugs = [
+              CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(slugs),
+            ];
           }
-        } else if (message.includes("최소 1개 이상의 슬러그가 필요합니다")) {
-          fieldErrors.allowedSlugs = [ERROR_MESSAGES.MISSING_VALUE];
+        } else if (message.includes(CATEGORY_ERROR_MESSAGES.SLUGS_REQUIRED)) {
+          fieldErrors.allowedSlugs = [CATEGORY_ERROR_MESSAGES.SLUGS_REQUIRED];
+        } else if (message.includes(CATEGORY_ERROR_MESSAGES.INVALID_SLUGS)) {
+          fieldErrors.allowedSlugs = [CATEGORY_ERROR_MESSAGES.INVALID_SLUGS];
         }
         if (Object.keys(fieldErrors).length > 0) {
           return {
@@ -189,7 +196,7 @@ export async function updateCategory(
 
   const { error } = await authenticatedFetch({
     url: reqAddress,
-    method: "PATCH",
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
@@ -204,8 +211,8 @@ export async function updateCategory(
         await clearAuth();
         redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ConflictError:
-        if (message.includes("이미 사용 중인 카테고리 이름입니다")) {
-          fieldErrors.name = [ERROR_MESSAGES.NAME_EXISTS];
+        if (message.includes(CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME)) {
+          fieldErrors.name = [CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME];
         }
         if (Object.keys(fieldErrors).length > 0) {
           return {
@@ -218,14 +225,21 @@ export async function updateCategory(
           };
         }
       case AuthenticatedFetchErrorType.BadRequest:
-        if (message.includes("이미 사용 중인 슬러그가 있습니다")) {
+        if (message.includes(CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS())) {
           const match = message.match(/:\s*(.+)/);
           if (match && match[1]) {
-            const slugs = match[1].split(",").map((s) => s.trim());
-            fieldErrors.allowedSlugs = [ERROR_MESSAGES.DUPLICATE_VALUES(slugs)];
+            const slugs = match[1]
+              .split(",")
+              .map((s) => s.trim())
+              .filter((slug) => slug.length > 0);
+            fieldErrors.allowedSlugs = [
+              CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(slugs),
+            ];
           }
-        } else if (message.includes("최소 1개 이상의 슬러그가 필요합니다")) {
-          fieldErrors.allowedSlugs = [ERROR_MESSAGES.MISSING_VALUE];
+        } else if (message.includes(CATEGORY_ERROR_MESSAGES.SLUGS_REQUIRED)) {
+          fieldErrors.allowedSlugs = [CATEGORY_ERROR_MESSAGES.SLUGS_REQUIRED];
+        } else if (message.includes(CATEGORY_ERROR_MESSAGES.INVALID_SLUGS)) {
+          fieldErrors.allowedSlugs = [CATEGORY_ERROR_MESSAGES.INVALID_SLUGS];
         }
         if (Object.keys(fieldErrors).length > 0) {
           return {
@@ -237,6 +251,8 @@ export async function updateCategory(
             message,
           };
         }
+      case AuthenticatedFetchErrorType.NotFound:
+        return { message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND };
       default:
         console.error("Unexpected error during category creation:", error);
         return {
@@ -283,7 +299,10 @@ export async function validateSlug(
   categoryId?: number
 ): Promise<ValidateDataType> {
   if (!slug.trim()) {
-    throw new Error(ERROR_MESSAGES.MISSING_VALUE);
+    return { isUsed: false, error: CATEGORY_ERROR_MESSAGES.SLUG_REQUIRED };
+  }
+  if (!SLUG_REGEX.test(slug)) {
+    return { isUsed: false, error: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS };
   }
   const params = new URLSearchParams();
   params.append("slug", slug);
@@ -319,7 +338,7 @@ export async function validateSlug(
   const result = ValidateDataSchema.safeParse(data);
   if (!result.success) {
     console.error("Validation failed:", result.error);
-    throw new Error("Invalid data format for Category");
+    throw new Error(CATEGORY_ERROR_MESSAGES.INVALID_DATA_TYPE);
   }
   return result.data;
 }
@@ -329,11 +348,11 @@ export async function validateName(
   categoryId?: number
 ): Promise<ValidateDataType> {
   if (!name.trim()) {
-    throw new Error(ERROR_MESSAGES.MISSING_VALUE);
+    return { isUsed: false, error: CATEGORY_ERROR_MESSAGES.NAME_REQUIRED };
   }
 
   if (!NAME_REGEX.test(name)) {
-    throw new Error(ERROR_MESSAGES.INVALID_FIELD);
+    return { isUsed: false, error: CATEGORY_ERROR_MESSAGES.INVALID_NAME };
   }
   const params = new URLSearchParams();
   params.append("name", name);
@@ -369,7 +388,7 @@ export async function validateName(
   const result = ValidateDataSchema.safeParse(data);
   if (!result.success) {
     console.error("Validation failed:", result.error);
-    throw new Error("Invalid data format for Category");
+    throw new Error(CATEGORY_ERROR_MESSAGES.INVALID_DATA_TYPE);
   }
   return result.data;
 }

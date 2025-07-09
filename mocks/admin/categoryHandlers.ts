@@ -6,8 +6,10 @@ import {
   CategoryDetails,
   CategorySummary,
   CategoryFormValidationSchema,
+  SLUG_REGEX,
 } from "../../lib/definition/adminCategoryManagementSchema";
 import { BoardPurpose, UserRole } from "../../lib/definition";
+import { CATEGORY_ERROR_MESSAGES } from "../../lib/constants/category/errorMessage";
 
 // 테스트용 카테고리 데이터
 export const mockCategories: CategorySummary[] = [
@@ -79,7 +81,7 @@ export const adminCategoryHandlers = [
     if (mockCategories.some((cat) => cat.name === name)) {
       return HttpResponse.json(
         {
-          message: "이미 사용 중인 카테고리 이름입니다",
+          message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME,
           error: "Conflict",
         },
         { status: 409 }
@@ -91,9 +93,19 @@ export const adminCategoryHandlers = [
     if (duplicateSlugs.length > 0) {
       return HttpResponse.json(
         {
-          message: `이미 사용 중인 슬러그가 있습니다: ${duplicateSlugs.join(
-            ", "
-          )}`,
+          message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(duplicateSlugs),
+          error: "Bad Request",
+        },
+        { status: 400 }
+      );
+    }
+
+    // 유효하지 않은 슬러그 체크
+    const invalidSlugs = allowedSlugs.filter((slug) => !SLUG_REGEX.test(slug));
+    if (invalidSlugs.length > 0) {
+      return HttpResponse.json(
+        {
+          message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
           error: "Bad Request",
         },
         { status: 400 }
@@ -123,7 +135,7 @@ export const adminCategoryHandlers = [
     if (!category) {
       return HttpResponse.json(
         {
-          message: "카테고리를 찾을 수 없습니다",
+          message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND,
           error: "Not Found",
         },
         { status: 404 }
@@ -145,8 +157,8 @@ export const adminCategoryHandlers = [
     return HttpResponse.json(categoryDetails, { status: 200 });
   }),
 
-  // PATCH /admin/categories/:id - 카테고리 수정
-  http.patch(
+  // PUT /admin/categories/:id - 카테고리 수정
+  http.put(
     `${serverAddress}/admin/categories/:id`,
     async ({ request, params }) => {
       const id = Number(params.id);
@@ -167,7 +179,7 @@ export const adminCategoryHandlers = [
       if (!category) {
         return HttpResponse.json(
           {
-            message: "카테고리를 찾을 수 없습니다",
+            message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND,
             error: "Not Found",
           },
           { status: 404 }
@@ -177,11 +189,11 @@ export const adminCategoryHandlers = [
       const { name, allowedSlugs } = result.data;
 
       // 이름 변경 시 중복 체크
-      if (name && name !== category.name) {
+      if (name !== category.name) {
         if (mockCategories.some((cat) => cat.name === name)) {
           return HttpResponse.json(
             {
-              message: "이미 사용 중인 카테고리 이름입니다",
+              message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME,
               error: "Conflict",
             },
             { status: 409 }
@@ -190,40 +202,49 @@ export const adminCategoryHandlers = [
         category.name = name;
       }
 
-      // 슬러그 변경 시 중복 체크
-      if (allowedSlugs) {
-        if (allowedSlugs.length === 0) {
-          return HttpResponse.json(
-            {
-              message: "최소 1개 이상의 슬러그가 필요합니다",
-              error: "Bad Request",
-            },
-            { status: 400 }
-          );
-        }
-
-        const duplicateSlugs = allowedSlugs.filter(
-          (slug) => usedSlugs.has(slug) && !category.allowedSlugs.includes(slug)
+      if (allowedSlugs.length === 0) {
+        return HttpResponse.json(
+          {
+            message: CATEGORY_ERROR_MESSAGES.SLUGS_REQUIRED,
+            error: "Bad Request",
+          },
+          { status: 400 }
         );
-
-        if (duplicateSlugs.length > 0) {
-          return HttpResponse.json(
-            {
-              message: `이미 사용 중인 슬러그가 있습니다: ${duplicateSlugs.join(
-                ", "
-              )}`,
-              error: "Bad Request",
-            },
-            { status: 400 }
-          );
-        }
-
-        // 기존 슬러그 제거
-        category.allowedSlugs.forEach((slug) => usedSlugs.delete(slug));
-        // 새 슬러그 등록
-        allowedSlugs.forEach((slug) => usedSlugs.add(slug));
-        category.allowedSlugs = allowedSlugs;
       }
+
+      const duplicateSlugs = allowedSlugs.filter(
+        (slug) => usedSlugs.has(slug) && !category.allowedSlugs.includes(slug)
+      );
+
+      if (duplicateSlugs.length > 0) {
+        return HttpResponse.json(
+          {
+            message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(duplicateSlugs),
+            error: "Bad Request",
+          },
+          { status: 400 }
+        );
+      }
+
+      // 유효하지 않은 슬러그 체크
+      const invalidSlugs = allowedSlugs.filter(
+        (slug) => !SLUG_REGEX.test(slug)
+      );
+      if (invalidSlugs.length > 0) {
+        return HttpResponse.json(
+          {
+            message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
+            error: "Bad Request",
+          },
+          { status: 400 }
+        );
+      }
+
+      // 기존 슬러그 제거
+      category.allowedSlugs.forEach((slug) => usedSlugs.delete(slug));
+      // 새 슬러그 등록
+      allowedSlugs.forEach((slug) => usedSlugs.add(slug));
+      category.allowedSlugs = allowedSlugs;
 
       return HttpResponse.json(category, { status: 200 });
     }
@@ -237,7 +258,7 @@ export const adminCategoryHandlers = [
     if (index === -1) {
       return HttpResponse.json(
         {
-          message: "카테고리를 찾을 수 없습니다",
+          message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND,
           error: "Not Found",
         },
         { status: 404 }

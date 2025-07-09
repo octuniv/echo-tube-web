@@ -1,5 +1,3 @@
-"use server";
-
 import { GoToCategoriesLink } from "@/components/admin/categories/GoToCategoriesLink";
 import { RetryButton } from "@/components/admin/categories/RetryButton";
 import { fetchCategoryById } from "@/lib/action/adminCategoryManagementApi";

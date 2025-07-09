@@ -151,12 +151,17 @@ export default function CategoryForm({
           {!nameValidationLoading && nameValidationResult && (
             <p
               className={`mt-1 text-sm ${
-                nameValidationResult.isUsed ? "text-red-600" : "text-green-600"
+                nameValidationResult?.error
+                  ? "text-red-600"
+                  : nameValidationResult.isUsed
+                  ? "text-red-600"
+                  : "text-green-600"
               }`}
             >
-              {nameValidationResult.isUsed
-                ? "이미 사용 중인 이름입니다."
-                : "사용 가능한 이름입니다."}
+              {nameValidationResult?.error ||
+                (nameValidationResult.isUsed
+                  ? "이미 사용 중인 이름입니다."
+                  : "사용 가능한 이름입니다.")}
             </p>
           )}
           <p className="mt-1 text-sm text-gray-500">
@@ -206,14 +211,17 @@ export default function CategoryForm({
                   validationResults[index] !== undefined && (
                     <p
                       className={`mt-1 text-sm ${
-                        validationResults[index]?.isUsed
+                        validationResults[index]?.error
+                          ? "text-red-600"
+                          : validationResults[index]?.isUsed
                           ? "text-red-600"
                           : "text-green-600"
                       }`}
                     >
-                      {validationResults[index]?.isUsed
-                        ? "이미 사용 중인 슬러그입니다."
-                        : "사용 가능한 슬러그입니다."}
+                      {validationResults[index]?.error ||
+                        (validationResults[index]?.isUsed
+                          ? "이미 사용 중인 슬러그입니다."
+                          : "사용 가능한 슬러그입니다.")}
                     </p>
                   )}
               </div>

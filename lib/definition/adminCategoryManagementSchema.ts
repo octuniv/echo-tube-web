@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BoardPurpose, FormState, UserRole } from "../definition";
+import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 
 export const CategorySummarySchema = z.object({
   id: z.number(),
@@ -35,19 +36,28 @@ export type CategoryDetails = z.infer<typeof CategoryDetailsSchema>;
 
 export const NAME_REGEX = /^[A-Za-z가-힣\s'-]*$/;
 
+export const SLUG_REGEX = /^[a-z0-9-]+$/;
+
 export const CategoryFormValidationSchema = z.object({
   name: z
     .string({
-      required_error: "Name is required",
-      invalid_type_error: "Name must be a string",
+      required_error: CATEGORY_ERROR_MESSAGES.NAME_REQUIRED,
+      invalid_type_error: CATEGORY_ERROR_MESSAGES.NAME_SHOULD_BE_STRING,
     })
-    .nonempty("이름은 필수입니다.")
+    .nonempty(CATEGORY_ERROR_MESSAGES.NAME_REQUIRED)
     .regex(NAME_REGEX, {
-      message: "이름은 숫자나 특수문자를 포함할 수 없습니다.",
+      message: CATEGORY_ERROR_MESSAGES.INVALID_NAME,
     }),
   allowedSlugs: z
-    .array(z.string().nonempty("슬러그는 필수입니다."))
-    .min(1, { message: "최소 1개 이상의 슬러그가 필요합니다" }),
+    .array(
+      z
+        .string()
+        .nonempty(CATEGORY_ERROR_MESSAGES.SLUG_REQUIRED)
+        .refine((slug) => slug === "" || SLUG_REGEX.test(slug), {
+          message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
+        })
+    )
+    .min(1, { message: CATEGORY_ERROR_MESSAGES.SLUGS_REQUIRED }),
 });
 
 export type CategoryFormData = z.infer<typeof CategoryFormValidationSchema>;
@@ -56,6 +66,7 @@ export type CategoryFormState = FormState<CategoryFormData>;
 
 export const ValidateDataSchema = z.object({
   isUsed: z.boolean(),
+  error: z.string().optional(),
 });
 
 export type ValidateDataType = z.infer<typeof ValidateDataSchema>;

@@ -1,5 +1,6 @@
 import { test, expect, Page, Locator } from "@playwright/test";
 import { loginAsAdmin } from "../util/auth-utils";
+import { CATEGORY_ERROR_MESSAGES } from "@/lib/constants/category/errorMessage";
 
 const CATEGORIES = [
   {
@@ -280,11 +281,44 @@ test.describe("Admin Category Management E2E Tests", () => {
         ).toBeVisible();
 
         await expect(
-          page.locator("p:text('이름은 필수입니다.')")
+          page.locator("p.text-red-600", {
+            hasText: CATEGORY_ERROR_MESSAGES.NAME_REQUIRED,
+          })
         ).toBeVisible();
 
         await expect(
-          page.locator("p:text('슬러그는 필수입니다.')")
+          page.locator("p.text-red-600", {
+            hasText: CATEGORY_ERROR_MESSAGES.SLUG_REQUIRED,
+          })
+        ).toBeVisible();
+      });
+
+      test("should validate invalid values", async ({ page }) => {
+        await page.fill('input[name="name"]', "IN@@VALID");
+        await page.fill('input[name="allowedSlugs"]', "INVALID__SLUG");
+
+        await page.waitForTimeout(500);
+
+        await expect(
+          page.locator("p.text-red-600", {
+            hasText: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
+          })
+        ).toBeVisible();
+
+        await expect(
+          page.locator("p.text-red-600", {
+            hasText: CATEGORY_ERROR_MESSAGES.INVALID_NAME,
+          })
+        ).toBeVisible();
+
+        await page.click('button[type="submit"]');
+
+        await expect(page).toHaveURL("/admin/categories/create");
+
+        await expect(
+          page.locator("p.text-red-500", {
+            hasText: "Missing or invalid fields. Failed to create category.",
+          })
         ).toBeVisible();
       });
 
@@ -469,6 +503,37 @@ test.describe("Admin Category Management E2E Tests", () => {
       }) => {
         await submitValidUpdate(page);
         await verifyUpdateSuccess(page);
+      });
+
+      test("유효하지 않은 데이터는 오류를 발생시켜야 합니다.", async ({
+        page,
+      }) => {
+        await page.fill('input[name="name"]', "IN@@VALID");
+        await page.fill('input[name="allowedSlugs"]', "INVALID__SLUG");
+
+        await page.waitForTimeout(500);
+
+        await expect(
+          page.locator("p.text-red-600", {
+            hasText: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
+          })
+        ).toBeVisible();
+
+        await expect(
+          page.locator("p.text-red-600", {
+            hasText: CATEGORY_ERROR_MESSAGES.INVALID_NAME,
+          })
+        ).toBeVisible();
+
+        await page.click('button[type="submit"]');
+
+        await expect(page).toHaveURL(/\/admin\/categories\/edit\/\d+/);
+
+        await expect(
+          page.locator("p.text-red-500", {
+            hasText: "Missing or invalid fields. Failed to update category.",
+          })
+        ).toBeVisible();
       });
 
       test("중복된 이름 또는 슬러그로 수정 실패 시 오류 메시지가 표시됩니다", async ({
