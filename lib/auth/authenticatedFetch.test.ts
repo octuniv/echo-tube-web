@@ -278,4 +278,35 @@ describe("AuthenticatedFetch", () => {
 
     expect(revalidatePathMock).toHaveBeenCalledWith("/admin/users");
   });
+
+  it("should handle 403 Forbidden error", async () => {
+    setupCookies();
+    server.use(
+      http.get(`${mockServerAddress}/test-endpoint`, () =>
+        HttpResponse.json(
+          { message: ERROR_MESSAGES.FORBIDDEN },
+          { status: 403 }
+        )
+      )
+    );
+    const response = await authenticatedFetch({
+      url: `${mockServerAddress}/test-endpoint`,
+    });
+    expect(response.error?.type).toBe(AuthenticatedFetchErrorType.Forbidden);
+    expect(response.error?.message).toBe(ERROR_MESSAGES.FORBIDDEN);
+  });
+
+  it("should not revalidate path on Forbidden error", async () => {
+    setupCookies();
+    server.use(
+      http.get(`${mockServerAddress}/test-endpoint`, () =>
+        HttpResponse.json({}, { status: 403 })
+      )
+    );
+    await authenticatedFetch({
+      url: `${mockServerAddress}/test-endpoint`,
+      revalidatePath: "/admin/users",
+    });
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
 });

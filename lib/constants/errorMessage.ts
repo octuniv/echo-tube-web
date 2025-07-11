@@ -13,4 +13,6 @@ export const ERROR_MESSAGES = {
     `이미 사용 중인 값이 있습니다: ${values.join(", ")}`,
   MISSING_VALUE: "요청에 필요한 값이 존재하지 않습니다.",
   UNKNOWN_ERROR: "알수 없는 에러",
+  INVALID_DATA_TYPE: "유효하지 않은 데이터가 불려왔습니다.",
+  FORBIDDEN: "허락되지 않은 접근입니다.",
 } as const;

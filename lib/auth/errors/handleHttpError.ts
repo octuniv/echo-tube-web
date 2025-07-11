@@ -24,10 +24,18 @@ export async function handleHttpError(
             : body.message || ERROR_MESSAGES.BAD_REQUEST,
         status,
       };
+
     case 401:
       return {
         type: AuthenticatedFetchErrorType.Unauthorized,
         message: ERROR_MESSAGES.UNAUTHORIZED,
+        status,
+      };
+
+    case 403:
+      return {
+        type: AuthenticatedFetchErrorType.Forbidden,
+        message: ERROR_MESSAGES.FORBIDDEN,
         status,
       };
 

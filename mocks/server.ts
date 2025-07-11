@@ -12,6 +12,7 @@ import {
 } from "../lib/definition";
 import { adminUserHandlers } from "./admin/userHandlers";
 import { adminCategoryHandlers } from "./admin/categoryHandlers";
+import { adminBoardHandlers } from "./admin/boardHandlers";
 
 export const mockPosts: PostResponse[] = [
   {
@@ -274,5 +275,6 @@ export const server = setupServer(
   }),
 
   ...adminUserHandlers,
-  ...adminCategoryHandlers
+  ...adminCategoryHandlers,
+  ...adminBoardHandlers
 );
