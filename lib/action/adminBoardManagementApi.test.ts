@@ -12,7 +12,7 @@ import {
 } from "./adminBoardManagementApi";
 import { BOARD_ERROR_MESSAGES } from "../constants/board/errorMessage";
 import { clearAuth } from "../authState";
-import { redirect, forbidden, unauthorized } from "next/navigation";
+import { redirect, forbidden } from "next/navigation";
 import {
   BoardFormData,
   BoardFormState,
@@ -39,15 +39,6 @@ jest.mock("next/navigation", () => ({
     });
     throw error;
   }),
-  unauthorized: jest.fn().mockImplementation(() => {
-    const error = new Error("Unauthorized access");
-    Object.defineProperty(error, "digest", {
-      value: "NEXT_UNAUTHORIZED",
-      configurable: false,
-      writable: false,
-    });
-    throw error;
-  }),
   forbidden: jest.fn().mockImplementation(() => {
     const error = new Error("Forbidden access");
     Object.defineProperty(error, "digest", {
@@ -67,6 +58,17 @@ jest.mock("../authState", () => ({
   clearAuth: jest.fn(),
 }));
 
+// 테스트 파일 내부 상단
+const consoleErrorSpy = jest.spyOn(console, "error");
+
+beforeAll(() => {
+  consoleErrorSpy.mockImplementation(() => {});
+});
+
+afterAll(() => {
+  consoleErrorSpy.mockRestore();
+});
+
 describe("fetchBoards", () => {
   it("보드 목록을 성공적으로 가져와야 합니다", async () => {
     const result = await fetchBoards();
@@ -83,7 +85,7 @@ describe("fetchBoards", () => {
 
     await expect(fetchBoards()).rejects.toThrow();
     expect(clearAuth).toHaveBeenCalled();
-    expect(unauthorized).toHaveBeenCalled();
+    expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
   });
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
@@ -119,7 +121,7 @@ describe("fetchBoardById", () => {
 
     await expect(fetchBoardById(1)).rejects.toThrow();
     expect(clearAuth).toHaveBeenCalled();
-    expect(unauthorized).toHaveBeenCalled();
+    expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
   });
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
@@ -287,7 +289,7 @@ describe("createBoard", () => {
       createBoard({} as BoardFormState, boardFormDataMock(validData))
     ).rejects.toThrow();
     expect(clearAuth).toHaveBeenCalled();
-    expect(unauthorized).toHaveBeenCalled();
+    expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
   });
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
@@ -466,7 +468,7 @@ describe("updateBoard", () => {
       updateBoard(boardId, {} as BoardFormState, boardFormDataMock(validData))
     ).rejects.toThrow();
     expect(clearAuth).toHaveBeenCalled();
-    expect(unauthorized).toHaveBeenCalled();
+    expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
   });
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
@@ -506,7 +508,7 @@ describe("deleteBoard", () => {
 
     await expect(deleteBoard(1)).rejects.toThrow();
     expect(clearAuth).toHaveBeenCalled();
-    expect(unauthorized).toHaveBeenCalled();
+    expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
   });
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {

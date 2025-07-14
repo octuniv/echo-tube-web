@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { forbidden, redirect, unauthorized } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import { clearAuth } from "../authState";
@@ -33,7 +33,7 @@ export async function fetchBoards(): Promise<AdminBoardResponse[]> {
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
-        unauthorized();
+        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.Forbidden:
         forbidden();
       default:
@@ -64,7 +64,7 @@ export async function fetchBoardById(id: number): Promise<AdminBoardResponse> {
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
-        unauthorized();
+        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.Forbidden:
         forbidden();
       case AuthenticatedFetchErrorType.NotFound:
@@ -125,7 +125,7 @@ export async function createBoard(
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
-        unauthorized();
+        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.Forbidden:
         forbidden();
       case AuthenticatedFetchErrorType.BadRequest:
@@ -214,7 +214,7 @@ export async function updateBoard(
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
-        unauthorized();
+        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.Forbidden:
         forbidden();
       case AuthenticatedFetchErrorType.NotFound:
@@ -281,7 +281,7 @@ export async function deleteBoard(id: number) {
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
-        unauthorized();
+        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.Forbidden:
         forbidden();
       case AuthenticatedFetchErrorType.NotFound:
