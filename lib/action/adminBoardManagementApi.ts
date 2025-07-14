@@ -1,10 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { forbidden, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
-import { clearAuth } from "../authState";
 import {
   AdminBoardResponse,
   AdminBoardResponseSchema,
@@ -16,6 +15,7 @@ import { serverAddress } from "../util";
 import { AuthenticatedFetchErrorType } from "../auth/types";
 import { BOARD_ERROR_MESSAGES } from "../constants/board/errorMessage";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
+import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
 
 const boardApiHeadAddress = `${serverAddress}/admin/boards`;
 
@@ -30,16 +30,10 @@ export async function fetchBoards(): Promise<AdminBoardResponse[]> {
   });
 
   if (error) {
-    switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
-      case AuthenticatedFetchErrorType.Forbidden:
-        forbidden();
-      default:
-        console.error("보드 목록을 불러오던 중 예기치 못한 오류 발생:", error);
-        throw new Error(BOARD_ERROR_MESSAGES.FAIL_FETCH_BOARD);
-    }
+    await handleAuthRedirects(error);
+
+    console.error("보드 목록을 불러오던 중 예기치 못한 오류 발생:", error);
+    throw new Error(BOARD_ERROR_MESSAGES.FAIL_FETCH_BOARD);
   } else {
     const result = z.array(AdminBoardResponseSchema).safeParse(data);
     if (!result.success) {
@@ -61,12 +55,9 @@ export async function fetchBoardById(id: number): Promise<AdminBoardResponse> {
   });
 
   if (error) {
+    await handleAuthRedirects(error);
+
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
-      case AuthenticatedFetchErrorType.Forbidden:
-        forbidden();
       case AuthenticatedFetchErrorType.NotFound:
         throw new Error(BOARD_ERROR_MESSAGES.NOT_FOUND_BOARD);
       case AuthenticatedFetchErrorType.BadRequest:
@@ -122,12 +113,8 @@ export async function createBoard(
   if (error) {
     const message = error.message;
     const fieldErrors: Partial<Record<keyof BoardFormData, string[]>> = {};
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
-      case AuthenticatedFetchErrorType.Forbidden:
-        forbidden();
       case AuthenticatedFetchErrorType.BadRequest:
         let slug: string | null = null;
 
@@ -211,12 +198,8 @@ export async function updateBoard(
   if (error) {
     const message = error.message;
     const fieldErrors: Partial<Record<keyof BoardFormData, string[]>> = {};
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
-      case AuthenticatedFetchErrorType.Forbidden:
-        forbidden();
       case AuthenticatedFetchErrorType.NotFound:
         return { message: BOARD_ERROR_MESSAGES.NOT_FOUND_BOARD };
       case AuthenticatedFetchErrorType.BadRequest:
@@ -278,12 +261,8 @@ export async function deleteBoard(id: number) {
 
   if (error) {
     console.error("Board deletion failed: ", error.message);
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
-      case AuthenticatedFetchErrorType.Forbidden:
-        forbidden();
       case AuthenticatedFetchErrorType.NotFound:
         throw new Error(BOARD_ERROR_MESSAGES.NOT_FOUND_BOARD);
       default:

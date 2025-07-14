@@ -18,7 +18,7 @@ import { serverAddress } from "../util";
 import { clearAuth } from "../authState";
 import { UserRole } from "../definition";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
-import { redirect } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 jest.mock("next/headers", () => ({
@@ -36,6 +36,15 @@ jest.mock("next/navigation", () => ({
     const error = new Error(`Redirect to ${url}`);
     Object.defineProperty(error, "digest", {
       value: `NEXT_REDIRECT: ${url}`,
+      configurable: false,
+      writable: false,
+    });
+    throw error;
+  }),
+  forbidden: jest.fn().mockImplementation(() => {
+    const error = new Error("Forbidden access");
+    Object.defineProperty(error, "digest", {
+      value: "NEXT_FORBIDDEN",
       configurable: false,
       writable: false,
     });
@@ -121,6 +130,18 @@ describe("Admin User API Test", () => {
       ).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+
+    it("should handle permission denied", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/users`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(
+        FetchUserPaginatedList({ page: 1, limit: 10 })
+      ).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
   });
 
@@ -223,6 +244,18 @@ describe("Admin User API Test", () => {
       await expect(
         FetchUserSearchResults({ page: 1, limit: 10 })
       ).rejects.toThrow("Failed to fetch search results");
+    });
+
+    it("should handle permission denied", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/users/search`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(
+        FetchUserSearchResults({ page: 1, limit: 10 })
+      ).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
   });
 
@@ -400,6 +433,25 @@ describe("Admin User API Test", () => {
         message: "An unexpected error occurred. Please try again.",
       });
     });
+
+    it("should handle permission denied", async () => {
+      const userData = {
+        name: "Test User",
+        nickname: "testnick",
+        email: "test@example.com",
+        password: "password123",
+        role: UserRole.ADMIN,
+      };
+      server.use(
+        http.post(`${serverAddress}/admin/users`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(
+        AdminSignUpAction({} as AdminUserCreateState, formDataMock(userData))
+      ).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
+    });
   });
 
   describe("fetchUserDetails", () => {
@@ -527,6 +579,17 @@ describe("Admin User API Test", () => {
       expect(result).toEqual(userWithOptionalFields);
       expect(result.deletedAt).toBeUndefined();
     });
+
+    it("should handle permission denied", async () => {
+      const userId = 1;
+      server.use(
+        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(fetchUserDetails(userId)).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
+    });
   });
 
   describe("deleteUser", () => {
@@ -615,6 +678,17 @@ describe("Admin User API Test", () => {
       await expect(deleteUser(userId)).rejects.toThrow(
         "사용자를 삭제할 수 없습니다."
       );
+    });
+
+    it("should handle permission denied", async () => {
+      const userId = 1;
+      server.use(
+        http.delete(`${serverAddress}/admin/users/${userId}`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(deleteUser(userId)).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
   });
 
@@ -773,6 +847,20 @@ describe("Admin User API Test", () => {
       expect(result).toEqual({
         message: "An unexpected error occurred. Please try again.",
       });
+    });
+
+    it("should handle permission denied", async () => {
+      const formData = new FormData();
+      formData.append("nickname", "newnick");
+      server.use(
+        http.patch(`${serverAddress}/admin/users/1`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(
+        AdminUserUpdateAction(1, {} as AdminUserUpdateState, formData)
+      ).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
   });
 });

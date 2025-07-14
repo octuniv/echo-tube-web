@@ -7,7 +7,7 @@ import {
 } from "./types";
 import { getTokens } from "../tokenUtils";
 import { refreshAccessToken } from "./refreshToken";
-import { handleHttpError } from "./errors/handleHttpError";
+import { handleHttpError } from "./errors/httpErrorParser";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 
 export async function authenticatedFetch<T>(

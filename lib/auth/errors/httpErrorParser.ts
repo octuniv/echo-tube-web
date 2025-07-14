@@ -1,4 +1,3 @@
-// errors/handleHttpError.ts
 import { ERROR_MESSAGES } from "../../constants/errorMessage";
 import { AuthenticatedFetchError, AuthenticatedFetchErrorType } from "../types";
 

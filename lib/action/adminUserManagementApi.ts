@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import { AuthenticatedFetchErrorType } from "../auth/types";
-import { clearAuth } from "../authState";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { UserRole } from "../definition";
 import {
@@ -21,6 +20,7 @@ import {
   AdminUserDetailResponseSchema,
 } from "../definition/adminUserManagementSchema";
 import { serverAddress } from "../util";
+import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
 
 export async function FetchUserPaginatedList(
   query: PaginationDto
@@ -43,19 +43,11 @@ export async function FetchUserPaginatedList(
   });
 
   if (error) {
-    switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
-      default:
-        console.error(
-          "사용자 목록을 불러오던 중 예기치 못한 오류 발생:",
-          error
-        );
-        throw new Error(
-          "사용자 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
-        );
-    }
+    await handleAuthRedirects(error);
+    console.error("사용자 목록을 불러오던 중 예기치 못한 오류 발생:", error);
+    throw new Error(
+      "사용자 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+    );
   } else {
     const result = AdminUserListPaginatedSchema.safeParse(data);
     if (!result.success) {
@@ -112,14 +104,9 @@ export async function FetchUserSearchResults(query: {
   });
 
   if (error) {
-    switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
-      default:
-        console.error("Failed to fetch search results:", error);
-        throw new Error("Failed to fetch search results");
-    }
+    await handleAuthRedirects(error);
+    console.error("Failed to fetch search results:", error);
+    throw new Error("Failed to fetch search results");
   } else {
     const result = AdminUserListPaginatedSchema.safeParse(data);
     if (!result.success) {
@@ -162,10 +149,8 @@ export async function AdminSignUpAction(
     url: reqAddress,
   });
   if (error) {
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ConflictError:
         const message = error.message;
         const fieldErrors: Partial<Record<keyof AdminUserCreate, string[]>> =
@@ -230,10 +215,8 @@ export async function AdminUserUpdateAction(
   });
 
   if (error) {
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ConflictError:
         const message = error.message;
         const fieldErrors: Partial<Record<keyof AdminUserCreate, string[]>> =
@@ -277,10 +260,8 @@ export async function fetchUserDetails(
   });
 
   if (error) {
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.NotFound:
         throw new Error("사용자를 찾을 수 없습니다");
       default:
@@ -308,10 +289,8 @@ export async function deleteUser(userId: number) {
 
   if (error) {
     console.error("User deletion failed:", error.message);
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ServerError:
         throw new Error("서버 오류가 발생했습니다.");
       case AuthenticatedFetchErrorType.NotFound:

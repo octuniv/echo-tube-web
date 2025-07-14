@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import { AuthenticatedFetchErrorType } from "../auth/types";
-import { clearAuth } from "../authState";
 import {
   CategoryListResponseSchema,
   CategoryFormData,
@@ -21,6 +20,7 @@ import {
 import { serverAddress } from "../util";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
+import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
 
 export async function fetchCategories(): Promise<CategorySummary[]> {
   const reqAddress = `${serverAddress}/admin/categories`;
@@ -33,17 +33,9 @@ export async function fetchCategories(): Promise<CategorySummary[]> {
   });
 
   if (error) {
-    switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
-      default:
-        console.error(
-          "카테고리 목록을 불러오던 중 예기치 못한 오류 발생:",
-          error
-        );
-        throw new Error(CATEGORY_ERROR_MESSAGES.FAIL_FETCH_CATEGORY);
-    }
+    await handleAuthRedirects(error);
+    console.error("카테고리 목록을 불러오던 중 예기치 못한 오류 발생:", error);
+    throw new Error(CATEGORY_ERROR_MESSAGES.FAIL_FETCH_CATEGORY);
   } else {
     const result = CategoryListResponseSchema.safeParse(data);
     if (!result.success) {
@@ -65,10 +57,8 @@ export async function fetchCategoryById(id: number): Promise<CategoryDetails> {
   });
 
   if (error) {
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.NotFound:
         throw new Error(ERROR_MESSAGES.NOT_FOUND);
       default:
@@ -116,10 +106,8 @@ export async function createCategory(
   if (error) {
     const message = error.message;
     const fieldErrors: Partial<Record<keyof CategoryFormData, string[]>> = {};
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ConflictError:
         if (message.includes(CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME)) {
           fieldErrors.name = [CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME];
@@ -206,10 +194,8 @@ export async function updateCategory(
   if (error) {
     const message = error.message;
     const fieldErrors: Partial<Record<keyof CategoryFormData, string[]>> = {};
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ConflictError:
         if (message.includes(CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME)) {
           fieldErrors.name = [CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME];
@@ -278,10 +264,8 @@ export async function deleteCategory(id: number) {
 
   if (error) {
     console.error("Category deletion failed:", error.message);
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ServerError:
         throw new Error(ERROR_MESSAGES.SERVER_ERROR);
       case AuthenticatedFetchErrorType.NotFound:
@@ -322,10 +306,8 @@ export async function validateSlug(
   });
 
   if (error) {
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ServerError:
         throw new Error(ERROR_MESSAGES.SERVER_ERROR);
       case AuthenticatedFetchErrorType.BadRequest:
@@ -372,10 +354,8 @@ export async function validateName(
   });
 
   if (error) {
+    await handleAuthRedirects(error);
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        await clearAuth();
-        redirect("/login?error=session_expired");
       case AuthenticatedFetchErrorType.ServerError:
         throw new Error(ERROR_MESSAGES.SERVER_ERROR);
       case AuthenticatedFetchErrorType.BadRequest:

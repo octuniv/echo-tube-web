@@ -18,7 +18,7 @@ import { http, HttpResponse } from "msw";
 import { serverAddress } from "../util";
 import { clearAuth } from "../authState";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
-import { redirect } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { mockCategories } from "../../mocks/admin/categoryHandlers";
 import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
@@ -38,6 +38,15 @@ jest.mock("next/navigation", () => ({
     const error = new Error(`Redirect to ${url}`);
     Object.defineProperty(error, "digest", {
       value: `NEXT_REDIRECT: ${url}`,
+      configurable: false,
+      writable: false,
+    });
+    throw error;
+  }),
+  forbidden: jest.fn().mockImplementation(() => {
+    const error = new Error("Forbidden access");
+    Object.defineProperty(error, "digest", {
+      value: "NEXT_FORBIDDEN",
       configurable: false,
       writable: false,
     });
@@ -92,6 +101,16 @@ describe("Admin Category API Tests", () => {
       await expect(fetchCategories()).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+
+    it("should handle permission denied", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(fetchCategories()).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
 
     it("should handle validation errors", async () => {
@@ -161,6 +180,17 @@ describe("Admin Category API Tests", () => {
       await expect(fetchCategoryById(categoryId)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+
+    it("should handle permission denied", async () => {
+      const categoryId = 1;
+      server.use(
+        http.get(`${serverAddress}/admin/categories/${categoryId}`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(fetchCategoryById(categoryId)).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
   });
 
@@ -401,6 +431,44 @@ describe("Admin Category API Tests", () => {
         message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
       });
     });
+
+    it("should handle unauthorized access", async () => {
+      const categoryData = {
+        name: "New Category",
+        allowedSlugs: ["new-category"],
+      };
+      server.use(
+        http.post(`${serverAddress}/admin/categories`, () => {
+          return HttpResponse.json(
+            { message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+      const formData = formDataMock(categoryData);
+      await expect(
+        createCategory({} as CategoryFormState, formData)
+      ).rejects.toThrow();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+
+    it("should handle permission denied", async () => {
+      const categoryData = {
+        name: "New Category",
+        allowedSlugs: ["new-category"],
+      };
+      server.use(
+        http.post(`${serverAddress}/admin/categories`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      const formData = formDataMock(categoryData);
+      await expect(
+        createCategory({} as CategoryFormState, formData)
+      ).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
+    });
   });
 
   describe("updateCategory", () => {
@@ -590,6 +658,46 @@ describe("Admin Category API Tests", () => {
         message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
       });
     });
+
+    it("should handle unauthorized access", async () => {
+      const categoryId = 1;
+      const updateData = {
+        name: "Updated Name",
+        allowedSlugs: ["updated-slug"],
+      };
+      server.use(
+        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+          return HttpResponse.json(
+            { message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+      const formData = formDataMock(updateData);
+      await expect(
+        updateCategory(categoryId, {} as CategoryFormState, formData)
+      ).rejects.toThrow();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+
+    it("should handle permission denied", async () => {
+      const categoryId = 1;
+      const updateData = {
+        name: "Updated Name",
+        allowedSlugs: ["updated-slug"],
+      };
+      server.use(
+        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      const formData = formDataMock(updateData);
+      await expect(
+        updateCategory(categoryId, {} as CategoryFormState, formData)
+      ).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
+    });
   });
 
   describe("deleteCategory", () => {
@@ -634,6 +742,17 @@ describe("Admin Category API Tests", () => {
       await expect(deleteCategory(999)).rejects.toThrow(
         ERROR_MESSAGES.NOT_FOUND
       );
+    });
+
+    it("should handle permission denied", async () => {
+      const categoryId = 1;
+      server.use(
+        http.delete(`${serverAddress}/admin/categories/${categoryId}`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(deleteCategory(categoryId)).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
   });
 
@@ -738,6 +857,16 @@ describe("Admin Category API Tests", () => {
         isUsed: false,
         error: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
       });
+    });
+
+    it("should handle permission denied", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(validateSlug("test-slug")).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
   });
 
@@ -850,6 +979,16 @@ describe("Admin Category API Tests", () => {
         isUsed: false,
         error: CATEGORY_ERROR_MESSAGES.INVALID_NAME,
       } satisfies ValidateDataType);
+    });
+
+    it("should handle permission denied", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(validateName("test-name")).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
     });
   });
 });
