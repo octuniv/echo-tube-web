@@ -12,7 +12,7 @@ import {
 } from "./adminBoardManagementApi";
 import { BOARD_ERROR_MESSAGES } from "../constants/board/errorMessage";
 import { clearAuth } from "../authState";
-import { redirect, forbidden } from "next/navigation";
+import { redirect, forbidden, notFound } from "next/navigation";
 import {
   BoardFormData,
   BoardFormState,
@@ -43,6 +43,15 @@ jest.mock("next/navigation", () => ({
     const error = new Error("Forbidden access");
     Object.defineProperty(error, "digest", {
       value: "NEXT_FORBIDDEN",
+      configurable: false,
+      writable: false,
+    });
+    throw error;
+  }),
+  notFound: jest.fn().mockImplementation(() => {
+    const error = new Error("NotFound");
+    Object.defineProperty(error, "digest", {
+      value: "NEXT_NOTFOUND",
       configurable: false,
       writable: false,
     });
@@ -106,10 +115,9 @@ describe("fetchBoardById", () => {
     expect(result.id).toBe(1);
   });
 
-  it("존재하지 않는 보드 요청 시 에러를 던져야 합니다", async () => {
-    await expect(fetchBoardById(999)).rejects.toThrow(
-      BOARD_ERROR_MESSAGES.NOT_FOUND_BOARD
-    );
+  it("존재하지 않는 보드 요청 시 notfound 페이지로 이동합니다", async () => {
+    await expect(fetchBoardById(999)).rejects.toThrow();
+    expect(notFound).toHaveBeenCalled();
   });
 
   it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {

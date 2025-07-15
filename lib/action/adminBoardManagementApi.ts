@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import {
@@ -59,7 +59,7 @@ export async function fetchBoardById(id: number): Promise<AdminBoardResponse> {
 
     switch (error.type) {
       case AuthenticatedFetchErrorType.NotFound:
-        throw new Error(BOARD_ERROR_MESSAGES.NOT_FOUND_BOARD);
+        notFound();
       case AuthenticatedFetchErrorType.BadRequest:
         if (error.message === BOARD_ERROR_MESSAGES.INVALID_ID_TYPE) {
           redirect("/admin/boards");
