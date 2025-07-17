@@ -16,6 +16,8 @@ import {
   CategoryDetailsSchema,
   NAME_REGEX,
   SLUG_REGEX,
+  AvailableCategoriesResponseSchema,
+  AvailableCategoriesResponse,
 } from "../definition/adminCategoryManagementSchema";
 import { serverAddress } from "../util";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
@@ -371,4 +373,35 @@ export async function validateName(
     throw new Error(CATEGORY_ERROR_MESSAGES.INVALID_DATA_TYPE);
   }
   return result.data;
+}
+
+export async function getAvailableCategories(
+  boardId?: number
+): Promise<AvailableCategoriesResponse> {
+  const url = new URL(`${serverAddress}/admin/categories/available`);
+  if (boardId !== undefined) {
+    url.searchParams.append("boardId", boardId.toString());
+  }
+  const reqAddress = url.toString();
+
+  const { data, error } = await authenticatedFetch({
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: reqAddress,
+  });
+
+  if (error) {
+    await handleAuthRedirects(error);
+    console.error("카테고리 목록을 불러오던 중 예기치 못한 오류 발생:", error);
+    throw new Error(CATEGORY_ERROR_MESSAGES.FAIL_FETCH_CATEGORY);
+  } else {
+    const result = AvailableCategoriesResponseSchema.safeParse(data);
+    if (!result.success) {
+      console.error("Validation failed:", result.error);
+      throw new Error(CATEGORY_ERROR_MESSAGES.INVALID_DATA_TYPE);
+    }
+    return result.data;
+  }
 }

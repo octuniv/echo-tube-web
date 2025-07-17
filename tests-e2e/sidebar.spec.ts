@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { withTemporaryLogout } from "./util/helper";
-import { clickSideBarElement } from "./util/test-utils";
+import { clickSideBarBoard } from "./util/test-utils";
 
 test.describe("Sidebar test", () => {
   test.beforeEach(async ({ page }) => {
@@ -23,16 +23,12 @@ test.describe("Sidebar test", () => {
     let categoryName = "커뮤니티";
     let boardName = "자유 게시판";
     let boardSlug = "free";
-    await clickSideBarElement(page, categoryName, boardName, boardSlug);
-
-    await expect(page).toHaveURL(`/boards/${boardSlug}`);
+    await clickSideBarBoard(page, categoryName, boardName, boardSlug);
 
     categoryName = "공지사항";
     boardName = "공지 게시판";
     boardSlug = "notices";
-    await clickSideBarElement(page, categoryName, boardName, boardSlug);
-
-    await expect(page).toHaveURL(`/boards/${boardSlug}`);
+    await clickSideBarBoard(page, categoryName, boardName, boardSlug);
   });
 
   test("Only permitted buttons should be accessible in the logout state.", async ({
@@ -51,16 +47,12 @@ test.describe("Sidebar test", () => {
       let categoryName = "커뮤니티";
       let boardName = "자유 게시판";
       let boardSlug = "free";
-      await clickSideBarElement(page, categoryName, boardName, boardSlug);
-
-      await expect(page).toHaveURL(`/boards/${boardSlug}`);
+      await clickSideBarBoard(page, categoryName, boardName, boardSlug);
 
       categoryName = "공지사항";
       boardName = "공지 게시판";
       boardSlug = "notices";
-      await clickSideBarElement(page, categoryName, boardName, boardSlug);
-
-      await expect(page).toHaveURL(`/boards/${boardSlug}`);
+      await clickSideBarBoard(page, categoryName, boardName, boardSlug);
     });
   });
 });

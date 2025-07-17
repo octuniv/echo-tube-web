@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { clickSideBarElement } from "./util/test-utils";
+import { clickSideBarBoard } from "./util/test-utils";
 
 test.use({
   storageState: undefined,
@@ -48,9 +48,7 @@ test.describe("Page-to-page movement test", () => {
     const categoryName = "커뮤니티";
     const boardName = "자유 게시판";
     const boardSlug = "free";
-    await clickSideBarElement(page, categoryName, boardName, boardSlug);
-
-    await expect(page).toHaveURL(`/boards/${boardSlug}`);
+    await clickSideBarBoard(page, categoryName, boardName, boardSlug);
 
     const postButton = page.getByRole("button", {
       name: "게시물 작성",

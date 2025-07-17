@@ -10,7 +10,7 @@ export async function handleAuthRedirects(error: {
 }) {
   switch (error.type) {
     case AuthenticatedFetchErrorType.Unauthorized:
-      clearAuth();
+      await clearAuth();
       redirect("/login?error=session_expired");
     case AuthenticatedFetchErrorType.Forbidden:
       forbidden();

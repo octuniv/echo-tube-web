@@ -51,7 +51,7 @@ export const createTestUser = (overrides: Partial<User> = {}): User => ({
   password: overrides.password || "password123",
 });
 
-export async function clickSideBarElement(
+export async function clickSideBarBoard(
   page: Page,
   categoryName: string,
   boardName: string,
@@ -81,4 +81,19 @@ export async function clickSideBarElement(
   await expect(boardLocator).toBeVisible();
 
   await boardLocator.click();
+
+  await expect(page).toHaveURL(`/boards/${boardSlug}`);
+
+  const sidebarCloseButton = page.getByRole("button", { name: "×" });
+
+  await expect(sidebarCloseButton).toBeVisible();
+
+  await sidebarCloseButton.click();
+
+  await expect
+    .poll(async () => {
+      const updatedSidebarClass = await sidebarLocator.getAttribute("class");
+      return updatedSidebarClass;
+    }, "사이드바가 닫히지 않았습니다.")
+    .toContain("-translate-x-full");
 }

@@ -7,6 +7,8 @@ import {
   CategorySummary,
   CategoryFormValidationSchema,
   SLUG_REGEX,
+  AvailableCategoryDto,
+  AvailableCategoriesResponse,
 } from "../../lib/definition/adminCategoryManagementSchema";
 import { BoardPurpose, UserRole } from "../../lib/definition";
 import { CATEGORY_ERROR_MESSAGES } from "../../lib/constants/category/errorMessage";
@@ -53,6 +55,19 @@ const mockBoards: BoardSummary[] = [
 
 // 중복 체크용 슬러그 저장소
 const usedSlugs = new Set<string>(["tech", "free"]);
+
+export const availableCategoriesMock: AvailableCategoriesResponse = [
+  {
+    id: 1,
+    name: "Technology",
+    availableSlugs: [{ slug: "tech" }, { slug: "innovation" }],
+  },
+  {
+    id: 2,
+    name: "General",
+    availableSlugs: [{ slug: "free" }, { slug: "discussion" }],
+  },
+];
 
 export const adminCategoryHandlers = [
   // GET /admin/categories - 카테고리 목록 조회
@@ -125,6 +140,27 @@ export const adminCategoryHandlers = [
     mockCategories.push(newCategory);
 
     return HttpResponse.json(newCategory, { status: 201 });
+  }),
+
+  // GET /admin/categories/available - 사용 가능한 카테고리 조회
+  http.get(`${serverAddress}/admin/categories/available`, ({ request }) => {
+    const url = new URL(request.url);
+    const boardId = url.searchParams.get("boardId");
+
+    if (boardId && isNaN(Number(boardId))) {
+      return HttpResponse.json(
+        {
+          message: "boardId must be a number",
+          error: "Bad Request",
+        },
+        { status: 400 }
+      );
+    }
+
+    // 실제 API 응답 구조와 일치하도록 변환
+    const response = availableCategoriesMock;
+
+    return HttpResponse.json(response, { status: 200 });
   }),
 
   // GET /admin/categories/:id - 카테고리 상세 조회

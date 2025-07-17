@@ -542,7 +542,6 @@ export async function FetchAllBoards(): Promise<BoardListItemDto[]> {
   const response = await fetch(`${serverAddress}/boards`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
-    next: { revalidate: 3600 },
   });
 
   if (!response.ok) throw new Error("Failed to fetch boards");

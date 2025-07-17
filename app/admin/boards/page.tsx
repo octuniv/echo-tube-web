@@ -1,3 +1,4 @@
+import { DeleteButton } from "@/components/admin/boards/DeleteButton";
 import { fetchBoards } from "@/lib/action/adminBoardManagementApi";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
 import { AdminBoardResponse } from "@/lib/definition/adminBoardManagementSchema";
@@ -6,21 +7,8 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function BoardList() {
-  let categories;
-  let boards;
-
-  try {
-    categories = await fetchCategories();
-    boards = await fetchBoards();
-  } catch (error) {
-    return (
-      <div className="p-6 text-red-600">
-        {error instanceof Error
-          ? error.message
-          : "알 수 없는 오류가 발생했습니다."}
-      </div>
-    );
-  }
+  const categories = await fetchCategories();
+  const boards = await fetchBoards();
 
   const boardMap = boards.reduce((acc, board) => {
     if (!acc[board.categoryId]) {
@@ -38,6 +26,14 @@ export default async function BoardList() {
 
   return (
     <div className="p-6 space-y-8">
+      <div className="flex justify-end">
+        <Link
+          href="/admin/boards/create"
+          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors"
+        >
+          새로운 보드 생성
+        </Link>
+      </div>
       {categories.length === 0 ? (
         <p className="text-gray-500">등록된 카테고리가 없습니다.</p>
       ) : (
@@ -97,6 +93,7 @@ export default async function BoardList() {
                           >
                             수정
                           </Link>
+                          <DeleteButton boardId={board.id} />
                         </td>
                       </tr>
                     ))}

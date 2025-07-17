@@ -70,3 +70,35 @@ export const ValidateDataSchema = z.object({
 });
 
 export type ValidateDataType = z.infer<typeof ValidateDataSchema>;
+
+export const AvailableCategorySlugSchema = z.object({
+  slug: z.string().regex(SLUG_REGEX, {
+    message:
+      "Invalid slug format (only lowercase letters, numbers, and hyphens allowed)",
+  }),
+});
+
+// 카테고리 검증 스키마
+export const AvailableCategoryDtoSchema = z.object({
+  id: z.number({
+    required_error: "Category ID is required",
+    invalid_type_error: "Category ID must be a number",
+  }),
+  name: z.string({
+    required_error: "Category name is required",
+    invalid_type_error: "Category name must be a string",
+  }),
+  availableSlugs: z.array(AvailableCategorySlugSchema),
+});
+
+// 전체 응답 검증 스키마
+export const AvailableCategoriesResponseSchema = z.array(
+  AvailableCategoryDtoSchema
+);
+
+// 타입 정의
+export type AvailableCategorySlug = z.infer<typeof AvailableCategorySlugSchema>;
+export type AvailableCategoryDto = z.infer<typeof AvailableCategoryDtoSchema>;
+export type AvailableCategoriesResponse = z.infer<
+  typeof AvailableCategoriesResponseSchema
+>;

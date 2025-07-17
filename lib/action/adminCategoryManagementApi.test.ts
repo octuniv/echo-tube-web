@@ -7,6 +7,7 @@ import {
   deleteCategory,
   validateSlug,
   validateName,
+  getAvailableCategories,
 } from "./adminCategoryManagementApi";
 import {
   CategoryFormData,
@@ -20,7 +21,10 @@ import { clearAuth } from "../authState";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { forbidden, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { mockCategories } from "../../mocks/admin/categoryHandlers";
+import {
+  availableCategoriesMock,
+  mockCategories,
+} from "../../mocks/admin/categoryHandlers";
 import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 
 jest.mock("next/headers", () => ({
@@ -989,6 +993,56 @@ describe("Admin Category API Tests", () => {
       );
       await expect(validateName("test-name")).rejects.toThrow();
       expect(forbidden).toHaveBeenCalled();
+    });
+  });
+
+  describe("getAvailableCategories", () => {
+    it("should fetch categories successfully", async () => {
+      const result = await getAvailableCategories(1);
+      expect(result).toEqual(availableCategoriesMock);
+    });
+
+    it("should fetch categories successfully without boardId", async () => {
+      const result = await getAvailableCategories();
+      expect(result).toEqual(availableCategoriesMock);
+    });
+
+    it("should handle unauthorized access", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/available`, () => {
+          return HttpResponse.json(
+            { message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+
+      await expect(getAvailableCategories()).rejects.toThrow();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    });
+
+    it("should handle permission denied", async () => {
+      server.use(
+        http.get(`${serverAddress}/admin/categories/available`, () => {
+          return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+        })
+      );
+      await expect(getAvailableCategories()).rejects.toThrow();
+      expect(forbidden).toHaveBeenCalled();
+    });
+
+    it("should handle validation errors", async () => {
+      const invalidData = { invalid: "data" };
+      server.use(
+        http.get(`${serverAddress}/admin/categories/available`, () => {
+          return HttpResponse.json(invalidData, { status: 200 });
+        })
+      );
+
+      await expect(getAvailableCategories()).rejects.toThrow(
+        CATEGORY_ERROR_MESSAGES.INVALID_DATA_TYPE
+      );
     });
   });
 });
