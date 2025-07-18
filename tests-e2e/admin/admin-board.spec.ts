@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../util/auth-utils";
 import { BoardPurpose, UserRole } from "@/lib/definition";
 import { clickSideBarBoard } from "../util/test-utils";
+import { BOARD_ERROR_MESSAGES } from "@/lib/constants/board/errorMessage";
 
 const initState = {
   커뮤니티: [
@@ -292,6 +293,57 @@ test.describe("Admin Board Management E2E Tests", () => {
         TEST_BOARD.name,
         TEST_CATEGORY.slugs[1]
       );
+    });
+
+    test("보드 폼 권한 부족 오류 확인 테스트", async ({ page }) => {
+      const categoryTable = page.locator(
+        `table[data-category='${TEST_CATEGORY.name}']`
+      );
+
+      const editLink = categoryTable
+        .locator("tbody tr")
+        .locator("td")
+        .filter({ hasText: TEST_BOARD.name })
+        .locator("..") // tr로 상위 요소 이동
+        .locator("td a:text('수정')");
+
+      await expect(editLink).toBeVisible();
+      await editLink.click();
+
+      await expect(page).toHaveURL(/\/admin\/boards\/edit\/\d+/);
+
+      await page.selectOption('select[name="requiredRole"]', {
+        value: UserRole.USER,
+      });
+
+      const currentRole = await page
+        .locator('select[name="requiredRole"]')
+        .inputValue();
+      expect(currentRole).toBe(UserRole.USER);
+
+      await page.selectOption('select[name="type"]', {
+        value: BoardPurpose.AI_DIGEST,
+      });
+
+      const currentType = await page
+        .locator('select[name="type"]')
+        .inputValue();
+      expect(currentType).toBe(BoardPurpose.AI_DIGEST);
+
+      await page.click('button[type="submit"]');
+
+      await expect(page).not.toHaveURL("/admin/boards");
+
+      const typeErrorParagraph = page.locator('select[name="type"] + p', {
+        hasText: BOARD_ERROR_MESSAGES.NOT_ALLOWED_BOARD_TYPE,
+      });
+      await expect(typeErrorParagraph).toBeVisible();
+
+      // 전체 상태 메시지 검증
+      const generalMessage = page.locator("div.text-sm.text-red-600", {
+        hasText: BOARD_ERROR_MESSAGES.NOT_ALLOWED_BOARD_TYPE,
+      });
+      await expect(generalMessage).toBeVisible();
     });
 
     test("보드 삭제 테스트", async ({ page }) => {

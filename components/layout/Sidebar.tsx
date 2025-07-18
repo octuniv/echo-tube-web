@@ -1,13 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { HomeIcon, CogIcon } from "@heroicons/react/24/outline";
+import {
+  HomeIcon,
+  CogIcon,
+  UserGroupIcon,
+  FolderIcon,
+  ClipboardDocumentListIcon,
+} from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
 import { BoardPurpose, CategoryWithBoardsResponse } from "@/lib/definition";
 
 interface SidebarProps {
   isOpen: boolean;
   isLogined: boolean;
+  isAdmin: boolean;
   categoriesWithBoards: CategoryWithBoardsResponse;
   onClose: () => void;
 }
@@ -15,6 +22,7 @@ interface SidebarProps {
 const Sidebar = ({
   isOpen,
   isLogined,
+  isAdmin,
   categoriesWithBoards,
   onClose,
 }: SidebarProps) => {
@@ -62,6 +70,50 @@ const Sidebar = ({
                 <CogIcon className="w-6 h-6 mr-3" />
                 Settings
               </Link>
+            </>
+          )}
+          {isAdmin && (
+            <>
+              <h3 className="px-4 py-2 font-semibold text-sm text-gray-500 uppercase tracking-wider">
+                관리자
+              </h3>
+              <div className="pl-2 space-y-1">
+                <Link
+                  href="/admin/users"
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    pathname === "/admin/users"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-700"
+                  } hover:bg-blue-50`}
+                >
+                  <UserGroupIcon className="w-6 h-6 mr-3" />
+                  사용자 관리
+                </Link>
+
+                <Link
+                  href="/admin/categories"
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    pathname === "/admin/categories"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-700"
+                  } hover:bg-blue-50`}
+                >
+                  <FolderIcon className="w-6 h-6 mr-3" />
+                  카테고리 관리
+                </Link>
+
+                <Link
+                  href="/admin/boards"
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    pathname === "/admin/boards"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-700"
+                  } hover:bg-blue-50`}
+                >
+                  <ClipboardDocumentListIcon className="w-6 h-6 mr-3" />
+                  게시판 관리
+                </Link>
+              </div>
             </>
           )}
         </div>

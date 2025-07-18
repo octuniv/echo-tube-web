@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { loginStatus } from "@/lib/authState";
+import { hasAdminRole, loginStatus } from "@/lib/authState";
 import AppShell from "@/components/layout/AppShell";
 import { FetchCategoriesWithBoards } from "@/lib/actions";
 
@@ -26,6 +26,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const isLogined = await loginStatus();
+  const isAdmin = await hasAdminRole();
   const categoriesWithBoards = await FetchCategoriesWithBoards();
   return (
     <html lang="en">
@@ -34,6 +35,7 @@ export default async function RootLayout({
       >
         <AppShell
           isLogined={isLogined}
+          isAdmin={isAdmin}
           categoriesWithBoards={categoriesWithBoards}
         >
           {children}

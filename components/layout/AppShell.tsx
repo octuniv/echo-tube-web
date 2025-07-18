@@ -7,12 +7,14 @@ import { CategoryWithBoardsResponse } from "@/lib/definition";
 
 interface AppShellProps {
   isLogined: boolean;
+  isAdmin: boolean;
   children: React.ReactNode;
   categoriesWithBoards: CategoryWithBoardsResponse;
 }
 
 const AppShell = ({
   isLogined,
+  isAdmin,
   children,
   categoriesWithBoards,
 }: AppShellProps) => {
@@ -24,6 +26,7 @@ const AppShell = ({
       <Sidebar
         isOpen={isSidebarOpen}
         isLogined={isLogined}
+        isAdmin={isAdmin}
         categoriesWithBoards={categoriesWithBoards}
         onClose={() => setIsSidebarOpen(false)}
       />
