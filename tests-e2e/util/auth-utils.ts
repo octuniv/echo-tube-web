@@ -75,12 +75,17 @@ export const loginAsAdminIsolated = async (
   const page = await context.newPage();
   await page.goto("/login");
 
-  await page.fill('input[name="email"]', adminAccount.email);
-  await page.fill('input[name="password"]', adminAccount.password);
-  await page.click('button[type="submit"]');
-
-  await page.waitForURL("/dashboard", { timeout: 5000 });
-  await expect(page).toHaveURL("/dashboard");
+  try {
+    await page.fill('input[name="email"]', adminAccount.email);
+    await page.fill('input[name="password"]', adminAccount.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL("/dashboard", { timeout: 5000 });
+    await expect(page).toHaveURL("/dashboard");
+  } catch (error) {
+    if (page) await page.close();
+    await context.close();
+    throw error;
+  }
 
   return { context, page };
 };

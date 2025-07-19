@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, BrowserContext, Page } from "@playwright/test";
 import { withTemporaryLogout } from "./util/helper";
 import { clickSideBarBoard } from "./util/test-utils";
 import { loginAsAdminIsolated } from "./util/auth-utils";
@@ -68,8 +68,14 @@ test.describe("Sidebar test", () => {
   });
 
   test("어드민은 사이드 바의 모든 링크가 보여야 함.", async ({ browser }) => {
-    const { context, page } = await loginAsAdminIsolated(browser);
+    let context: BrowserContext | undefined;
+    let page: Page | undefined;
+
     try {
+      const result = await loginAsAdminIsolated(browser);
+      context = result.context;
+      page = result.page;
+
       await page.goto("/");
       await page.getByRole("button", { name: "Sidebar Activation" }).click();
 
@@ -98,8 +104,12 @@ test.describe("Sidebar test", () => {
         await page.getByRole("link", { name: key }).click();
         await expect(page).toHaveURL(value);
       }
+    } catch (error) {
+      test.fail();
     } finally {
-      await context.close();
+      if (context) {
+        await context.close();
+      }
     }
   });
 });
