@@ -6,44 +6,63 @@ import { generateAdminUrls } from "../util/adminRoutes";
 // 테스트 대상 admin 페이지 목록
 const adminPages = generateAdminUrls();
 
-adminPages.forEach((pageUrl) => {
-  test.describe(`Admin Page Access - ${pageUrl}`, () => {
-    test(`일반 회원 접근 시 forbidden 페이지로 리다이렉트 - ${pageUrl}`, async ({
-      page,
-    }) => {
-      await page.goto(pageUrl);
-      await page.waitForURL("/forbidden", { timeout: 5000 });
-    });
-
-    test(`비로그인 상태 접근 시 로그아웃으로 리다이렉트 및 세션 아웃 메세지 표시 - ${pageUrl}`, async ({
-      page,
-    }) => {
-      await withTemporaryLogout(page, async () => {
+test.describe("Admin Page Access", () => {
+  // 1. 비관리자 접근 테스트 (모든 URL)
+  test.describe("Non-Admin Access", () => {
+    adminPages.forEach((pageUrl) => {
+      test(`일반 회원 접근 시 forbidden 리다이렉트 - ${pageUrl}`, async ({
+        page,
+      }) => {
+        await page.goto("/");
+        await expect(page).toHaveURL("/");
         await page.goto(pageUrl);
-        await page.waitForURL("/login?error=session_expired", {
-          timeout: 5000,
+        await page.waitForURL("/forbidden", { timeout: 5000 });
+      });
+    });
+  });
+
+  // 2. 비로그인 상태 테스트 (모든 URL)
+  test.describe("Logout Access", () => {
+    adminPages.forEach((pageUrl) => {
+      test(`비로그인 상태 접근 시 로그인 페이지 리다이렉트 - ${pageUrl}`, async ({
+        page,
+      }) => {
+        await withTemporaryLogout(page, async () => {
+          await page.goto("/");
+          await expect(page).toHaveURL("/");
+          await page.goto(pageUrl);
+          await page.waitForURL("/login?error=session_expired", {
+            timeout: 5000,
+          });
         });
       });
     });
+  });
 
-    test(`관리자 접근 시 리다이렉트 없음 - ${pageUrl}`, async ({ browser }) => {
-      let context: BrowserContext | undefined;
-      let page: Page | undefined;
+  // 3. 관리자 접근 테스트 (모든 URL)
+  test.describe("Admin Access", () => {
+    let adminContext: BrowserContext;
+    let adminPage: Page;
 
-      try {
-        const result = await loginAsAdminIsolated(browser);
-        context = result.context;
-        page = result.page;
+    // 관리자 컨텍스트를 한 번만 생성
+    test.beforeAll(async ({ browser }) => {
+      const result = await loginAsAdminIsolated(browser);
+      adminContext = result.context;
+      adminPage = result.page;
+    });
 
-        await page.goto(pageUrl);
-        await expect(page).toHaveURL(pageUrl);
-      } catch (error) {
-        test.fail();
-      } finally {
-        if (context) {
-          await context.close();
-        }
-      }
+    // 모든 URL 테스트 후 컨텍스트 종료
+    test.afterAll(async () => {
+      await adminContext.close();
+    });
+
+    adminPages.forEach((pageUrl) => {
+      test(`관리자 접근 시 리다이렉트 없음 - ${pageUrl}`, async () => {
+        await adminPage.goto("/");
+        await expect(adminPage).toHaveURL("/");
+        await adminPage.goto(pageUrl);
+        await expect(adminPage).toHaveURL(pageUrl);
+      });
     });
   });
 });
