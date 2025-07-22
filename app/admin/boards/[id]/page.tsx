@@ -1,5 +1,9 @@
+import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoardById } from "@/lib/action/adminBoardManagementApi";
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
+import { AdminBoardResponse } from "@/lib/definition/adminBoardManagementSchema";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 function formatDateTime(dateString: string): string {
   const date = new Date(dateString);
@@ -13,13 +17,42 @@ function formatDateTime(dateString: string): string {
   });
 }
 
+function ErrorMessage({ message }: { message: string }) {
+  return (
+    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-6">
+      <h3 className="text-red-800 font-medium">Error</h3>
+      <p className="text-red-700">{message}</p>
+    </div>
+  );
+}
+
 export default async function BoardDetail({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const id = Number((await params).id);
-  const boardData = await fetchBoardById(id);
+  let boardData: AdminBoardResponse | null;
+  let errorMessage: string;
+  try {
+    boardData = await fetchBoardById(id);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === ERROR_MESSAGES.FORBIDDEN) {
+        return <UnauthorizedRedirect />;
+      } else {
+        errorMessage = error.message;
+      }
+    } else {
+      errorMessage = "서버로부터 정보를 받아오는 데 실패했습니다.";
+    }
+    return <ErrorMessage message={errorMessage} />;
+  }
+
+  if (!boardData) {
+    notFound();
+  }
+
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">

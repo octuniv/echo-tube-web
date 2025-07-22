@@ -24,7 +24,7 @@ jest.mock("next/headers", () => ({
   ),
 }));
 
-const mockServerAddress = process.env.SERVER_ADDRESS || "http://localhost:3000";
+const mockServerAddress = process.env.BASE_API_URL || "http://localhost:3000";
 
 const setupCookies = (
   access_token = "valid-access-token",

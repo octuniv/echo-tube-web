@@ -2,9 +2,16 @@ import { test, expect, BrowserContext, Page } from "@playwright/test";
 import { withTemporaryLogout } from "../util/helper";
 import { loginAsAdminIsolated } from "../util/auth-utils";
 import { generateAdminUrls } from "../util/adminRoutes";
+import {
+  expectCookiesToBeDefined,
+  expectCookiesToNotExist,
+} from "../util/test-utils";
 
 // 테스트 대상 admin 페이지 목록
 const adminPages = generateAdminUrls();
+const dataFetchingAdminPages = adminPages.filter(
+  (url) => !url.endsWith("/create")
+);
 
 test.describe("Admin Page Access", () => {
   // 1. 비관리자 접근 테스트 (모든 URL)
@@ -68,7 +75,7 @@ test.describe("Admin Page Access", () => {
 });
 
 // 4. access_token 만료 후 refreshing 테스트
-test.describe("Refresh Token Flow", () => {
+test.describe("admin 페이지 접근 시 리프레싱 작동 테스트", () => {
   let adminContext: BrowserContext;
   let adminPage: Page;
 
@@ -104,11 +111,59 @@ test.describe("Refresh Token Flow", () => {
 
       // 새로운 access_token이 발급되었는지 확인
       const cookies = await adminContext.cookies();
-      const accessTokenCookie = cookies.find(
-        (cookie) => cookie.name === "access_token"
-      );
-      expect(accessTokenCookie).toBeDefined();
-      expect(accessTokenCookie!.value).not.toBe("");
+      expectCookiesToBeDefined(cookies, ["access_token"]);
+    });
+  });
+});
+
+test.describe("토큰 위조 후 정보 조회하는 admin 페이지 접근 시 로그아웃 후 로그인 리다이렉트", () => {
+  let adminContext: BrowserContext;
+  let adminPage: Page;
+
+  // 관리자 로그인 후 access_token만 삭제
+  test.beforeEach(async ({ browser }) => {
+    // 기존 컨텍스트가 있다면 종료
+    if (adminContext) await adminContext.close();
+
+    // 관리자 로그인
+    const result = await loginAsAdminIsolated(browser);
+    adminContext = result.context;
+    adminPage = result.page;
+
+    // access_token과 refresh_token만 유효하지 않은 값으로 대체
+    const cookies = await adminContext.cookies();
+    const modifiedTokens = cookies
+      .filter(
+        (cookie) =>
+          cookie.name === "access_token" || cookie.name === "refresh_token"
+      )
+      .map((cookie) => ({
+        ...cookie,
+        value: "invalid_token",
+      }));
+
+    // 기존 쿠키는 유지 + 토큰만 교체
+    await adminContext.addCookies(modifiedTokens);
+  });
+
+  test.afterAll(async () => {
+    await adminContext.close();
+  });
+
+  dataFetchingAdminPages.forEach((pageUrl) => {
+    test(`토큰 위조 후 정보 조회하는 admin 페이지 접근 시 로그아웃 후 로그인 페이지 리다이렉트 - ${pageUrl}`, async () => {
+      await adminPage.goto(pageUrl);
+
+      await adminPage.waitForURL("/login?error=session_expired", {
+        timeout: 5000,
+      });
+
+      const cookies = await adminContext.cookies();
+      expectCookiesToNotExist(cookies, [
+        "access_token",
+        "refresh_token",
+        "user",
+      ]);
     });
   });
 });

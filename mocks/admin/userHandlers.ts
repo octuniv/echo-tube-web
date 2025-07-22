@@ -3,7 +3,7 @@ import {
   AdminUserDetailResponse,
   AdminUserListPaginatedResponse,
 } from "../../lib/definition/adminUserManagementSchema";
-import { serverAddress } from "../../lib/util";
+import { BASE_API_URL } from "../../lib/util";
 import { http, HttpResponse } from "msw";
 
 export const mockUserList: AdminUserDetailResponse[] = [
@@ -37,7 +37,7 @@ export const mockSearchResults: AdminUserListPaginatedResponse = {
 };
 
 export const adminUserHandlers = [
-  http.get(`${serverAddress}/admin/users`, ({ request }) => {
+  http.get(`${BASE_API_URL}/admin/users`, ({ request }) => {
     const url = new URL(request.url);
     const sort = url.searchParams.get("sort") || "createdAt";
     const order = url.searchParams.get("order") || "DESC";
@@ -59,7 +59,7 @@ export const adminUserHandlers = [
   }),
 
   // Add new mock for search endpoint
-  http.get(`${serverAddress}/admin/users/search`, ({ request }) => {
+  http.get(`${BASE_API_URL}/admin/users/search`, ({ request }) => {
     const url = new URL(request.url);
     const searchEmail = url.searchParams.get("searchEmail");
     const searchNickname = url.searchParams.get("searchNickname");
@@ -103,44 +103,41 @@ export const adminUserHandlers = [
     );
   }),
 
-  http.patch(
-    `${serverAddress}/admin/users/:id`,
-    async ({ request, params }) => {
-      const url = new URL(request.url);
-      const userId = Number(params.id);
+  http.patch(`${BASE_API_URL}/admin/users/:id`, async ({ request, params }) => {
+    const url = new URL(request.url);
+    const userId = Number(params.id);
 
-      if (userId === 777) {
-        // 삭제된 사용자 ID
-        return HttpResponse.json(
-          { message: "User not found. Please check the user ID." },
-          { status: 404 }
-        );
-      }
-
-      if (userId === 999) {
-        return HttpResponse.json(
-          { message: "This nickname already exists" },
-          { status: 409 }
-        );
-      }
-
-      if (userId === 888) {
-        return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
-      }
-
-      const body = await request.json();
+    if (userId === 777) {
+      // 삭제된 사용자 ID
       return HttpResponse.json(
-        {
-          message: "User updated successfully",
-          success: true,
-          updatedFields: body,
-        },
-        { status: 200 }
+        { message: "User not found. Please check the user ID." },
+        { status: 404 }
       );
     }
-  ),
 
-  http.get(`${serverAddress}/admin/users/:id`, ({ params }) => {
+    if (userId === 999) {
+      return HttpResponse.json(
+        { message: "This nickname already exists" },
+        { status: 409 }
+      );
+    }
+
+    if (userId === 888) {
+      return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    return HttpResponse.json(
+      {
+        message: "User updated successfully",
+        success: true,
+        updatedFields: body,
+      },
+      { status: 200 }
+    );
+  }),
+
+  http.get(`${BASE_API_URL}/admin/users/:id`, ({ params }) => {
     const userId = Number(params.id);
 
     // 예시 데이터
@@ -171,7 +168,7 @@ export const adminUserHandlers = [
     return HttpResponse.json(mockUserDetail, { status: 200 });
   }),
 
-  http.delete(`${serverAddress}/admin/users/:id`, ({ params }) => {
+  http.delete(`${BASE_API_URL}/admin/users/:id`, ({ params }) => {
     const userId = Number(params.id);
 
     // 테스트용 특수 ID 처리

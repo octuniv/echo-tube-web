@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SERVER_ADDRESS = process.env.SERVER_ADDRESS;
+const BASE_API_URL = process.env.BASE_API_URL;
 
 const baseCookieOptions = {
   httpOnly: true,
@@ -9,7 +9,7 @@ const baseCookieOptions = {
   secure: process.env.NODE_ENV === "production",
   domain:
     process.env.NODE_ENV === "production"
-      ? process.env.HOST_SERVER_ADDRESS
+      ? process.env.NEXT_PUBLIC_SERVER_ADDRESS
       : "localhost",
 };
 
@@ -23,7 +23,7 @@ async function logout(req: NextRequest) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     try {
-      const response = await fetch(`${SERVER_ADDRESS}/auth/logout`, {
+      const response = await fetch(`${BASE_API_URL}/auth/logout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token }),
@@ -54,7 +54,7 @@ async function refresh(req: NextRequest) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     try {
-      const res = await fetch(`${SERVER_ADDRESS}/auth/refresh`, {
+      const res = await fetch(`${BASE_API_URL}/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token }),

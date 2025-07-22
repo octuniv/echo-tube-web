@@ -1,6 +1,6 @@
 import { test, expect, Cookie } from "@playwright/test";
 import { expectCookiesToNotExist } from "./util/test-utils";
-import { serverAddress } from "@/lib/util";
+import { BASE_API_URL } from "@/lib/util";
 
 test.describe("Logout Button", () => {
   test.beforeEach(async ({ page }) => {
@@ -46,7 +46,7 @@ test.describe("Logout Button", () => {
     ).not.toBeVisible();
 
     // 7. 무효화된 refresh_token 사용 시도
-    const response = await request.post(`${serverAddress}/auth/refresh`, {
+    const response = await request.post(`${BASE_API_URL}/auth/refresh`, {
       data: {
         refresh_token: refreshToken,
       },

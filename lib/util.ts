@@ -8,7 +8,9 @@ import {
 
 dotenv.config();
 
-export const serverAddress = `${process.env.SERVER_ADDRESS}`;
+export const BASE_API_URL = `${process.env.BASE_API_URL}`;
+export const SERVER_ADDRESS =
+  process.env.NEXT_PUBLIC_SERVER_ADDRESS || "http://localhost:3000";
 
 export const baseCookieOptions = {
   httpOnly: true,

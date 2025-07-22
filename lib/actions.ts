@@ -20,7 +20,7 @@ import {
   CategoryWithBoardsResponse,
   CategoryWithBoardsResponseSchema,
 } from "./definition";
-import { baseCookieOptions, serverAddress } from "./util";
+import { baseCookieOptions, BASE_API_URL } from "./util";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { clearAuth } from "./authState";
@@ -47,7 +47,7 @@ export async function signUpAction(prevState: UserState, formData: FormData) {
   }
 
   const params = validatedFields.data;
-  const reqAddress = serverAddress + "/users";
+  const reqAddress = BASE_API_URL + "/users";
 
   try {
     const response = await fetch(reqAddress, {
@@ -109,7 +109,7 @@ export async function LoginAction(
   }
 
   const params = validatedFields.data;
-  const reqAddress = serverAddress + "/auth/login";
+  const reqAddress = BASE_API_URL + "/auth/login";
   try {
     const response = await fetch(reqAddress, {
       method: "POST",
@@ -157,7 +157,7 @@ export async function LogoutAction() {
   const { refreshToken: refresh_token } = await getTokens();
   try {
     if (refresh_token) {
-      const response = await fetch(`${serverAddress}/auth/logout`, {
+      const response = await fetch(`${BASE_API_URL}/auth/logout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token }),
@@ -179,7 +179,7 @@ export async function LogoutAction() {
 export async function FetchPostsByBoardId(
   boardId: number
 ): Promise<PostResponse[]> {
-  const reqAddress = `${serverAddress}/posts/board/${boardId}`;
+  const reqAddress = `${BASE_API_URL}/posts/board/${boardId}`;
   const response = await fetch(reqAddress, {
     method: "GET",
     headers: {
@@ -203,7 +203,7 @@ export async function FetchPostsByBoardId(
 }
 
 export async function FetchPost(id: number): Promise<PostResponse> {
-  const reqAddress = serverAddress + `/posts/${id}`;
+  const reqAddress = BASE_API_URL + `/posts/${id}`;
   const response = await fetch(reqAddress, {
     method: "GET",
     headers: {
@@ -254,7 +254,7 @@ export async function CreatePost(
     delete params.videoUrl;
   }
 
-  const reqAddress = serverAddress + "/posts";
+  const reqAddress = BASE_API_URL + "/posts";
 
   const { error } = await authenticatedFetch({
     method: "POST",
@@ -281,7 +281,7 @@ export async function CreatePost(
 }
 
 export async function DeletePost(id: number, boardSlug: string) {
-  const reqAddress = new URL(`/posts/${id}`, serverAddress).toString();
+  const reqAddress = new URL(`/posts/${id}`, BASE_API_URL).toString();
 
   const { error } = await authenticatedFetch({
     method: "DELETE",
@@ -335,7 +335,7 @@ export async function EditPost(
     delete params.videoUrl;
   }
 
-  const reqAddress = serverAddress + `/posts/${id}`;
+  const reqAddress = BASE_API_URL + `/posts/${id}`;
 
   const { error } = await authenticatedFetch({
     method: "PATCH",
@@ -362,7 +362,7 @@ export async function EditPost(
 }
 
 export async function DeleteUser(): Promise<void> {
-  const reqAddress = new URL("/users", serverAddress).toString();
+  const reqAddress = new URL("/users", BASE_API_URL).toString();
 
   const { error } = await authenticatedFetch({
     method: "DELETE",
@@ -406,7 +406,7 @@ export async function UpdateNicknameAction(
   }
 
   const params = validatedFields.data;
-  const reqAddress = `${serverAddress}/users/nickname`;
+  const reqAddress = `${BASE_API_URL}/users/nickname`;
   const { error } = await authenticatedFetch({
     method: "PATCH",
     headers: {
@@ -464,7 +464,7 @@ export async function UpdatePasswordAction(
   }
 
   const params = validatedFields.data;
-  const reqAddress = `${serverAddress}/users/password`;
+  const reqAddress = `${BASE_API_URL}/users/password`;
 
   const { error } = await authenticatedFetch({
     method: "PATCH",
@@ -492,7 +492,7 @@ export async function UpdatePasswordAction(
 }
 
 export async function checkEmailExists(value: string) {
-  const reqAddress = `${serverAddress}/users/check-email`;
+  const reqAddress = `${BASE_API_URL}/users/check-email`;
 
   try {
     const response = await fetch(reqAddress, {
@@ -515,7 +515,7 @@ export async function checkEmailExists(value: string) {
 }
 
 export async function checkNicknameExists(value: string) {
-  const reqAddress = `${serverAddress}/users/check-nickname`;
+  const reqAddress = `${BASE_API_URL}/users/check-nickname`;
 
   try {
     const response = await fetch(reqAddress, {
@@ -539,7 +539,7 @@ export async function checkNicknameExists(value: string) {
 }
 
 export async function FetchAllBoards(): Promise<BoardListItemDto[]> {
-  const response = await fetch(`${serverAddress}/boards`, {
+  const response = await fetch(`${BASE_API_URL}/boards`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
@@ -559,7 +559,7 @@ export async function FetchAllBoards(): Promise<BoardListItemDto[]> {
 
 export async function FetchCategoriesWithBoards(): Promise<CategoryWithBoardsResponse> {
   try {
-    const response = await fetch(`${serverAddress}/categories/with-boards`, {
+    const response = await fetch(`${BASE_API_URL}/categories/with-boards`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -589,7 +589,7 @@ export async function FetchCategoriesWithBoards(): Promise<CategoryWithBoardsRes
 
 export async function FetchDashboardSummary(): Promise<DashboardSummaryDto> {
   // need to control caching later......
-  const response = await fetch(`${serverAddress}/dashboard/summary`, {
+  const response = await fetch(`${BASE_API_URL}/dashboard/summary`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
     // next: { revalidate: 300 },

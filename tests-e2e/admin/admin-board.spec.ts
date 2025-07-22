@@ -394,4 +394,19 @@ test.describe("Admin Board Management E2E Tests", () => {
       ).not.toBeVisible();
     });
   });
+
+  test.describe("Admin Boards Page notFound Test", () => {
+    const targets = ["/admin/boards/99999999", "/admin/boards/edit/99999999"];
+
+    targets.forEach((url) => {
+      test(`Admin Boards Page notFound Test - ${url}`, async ({ page }) => {
+        await page.goto(url);
+        await expect(page.locator("h1")).toContainText("404");
+
+        await expect(
+          page.locator("h2", { hasText: "This page could not be found" })
+        ).toBeVisible();
+      });
+    });
+  });
 });

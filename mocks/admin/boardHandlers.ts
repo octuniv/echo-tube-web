@@ -2,7 +2,7 @@
 import { BoardPurpose, UserRole } from "../../lib/definition";
 import { BOARD_ERROR_MESSAGES } from "../../lib/constants/board/errorMessage";
 import { http, HttpResponse } from "msw";
-import { serverAddress } from "../../lib/util";
+import { BASE_API_URL } from "../../lib/util";
 import {
   AdminBoardResponse,
   BoardFormSchema,
@@ -34,7 +34,7 @@ export const usedSlugs = new Set<string>(["used", "used1"]);
 
 export const adminBoardHandlers = [
   // GET /admin/boards
-  http.get(`${serverAddress}/admin/boards`, () => {
+  http.get(`${BASE_API_URL}/admin/boards`, () => {
     return HttpResponse.json(
       mockBoards.filter((board) => !board.deletedAt),
       { status: 200 }
@@ -42,7 +42,7 @@ export const adminBoardHandlers = [
   }),
 
   // GET /admin/boards/:id
-  http.get(`${serverAddress}/admin/boards/:id`, ({ params }) => {
+  http.get(`${BASE_API_URL}/admin/boards/:id`, ({ params }) => {
     const id = Number(params.id);
     const board = mockBoards.find((b) => b.id === id && !b.deletedAt);
     if (!board) {
@@ -55,7 +55,7 @@ export const adminBoardHandlers = [
   }),
 
   // POST /admin/boards
-  http.post(`${serverAddress}/admin/boards`, async ({ request }) => {
+  http.post(`${BASE_API_URL}/admin/boards`, async ({ request }) => {
     const body = await request.json();
     const result = BoardFormSchema.safeParse(body);
 
@@ -114,7 +114,7 @@ export const adminBoardHandlers = [
   }),
 
   // PUT /admin/boards/:id
-  http.put(`${serverAddress}/admin/boards/:id`, async ({ request, params }) => {
+  http.put(`${BASE_API_URL}/admin/boards/:id`, async ({ request, params }) => {
     const id = Number(params.id);
     const body = await request.json();
     const result = BoardFormSchema.safeParse(body);
@@ -188,7 +188,7 @@ export const adminBoardHandlers = [
   }),
 
   // DELETE /admin/boards/:id
-  http.delete(`${serverAddress}/admin/boards/:id`, ({ params }) => {
+  http.delete(`${BASE_API_URL}/admin/boards/:id`, ({ params }) => {
     const id = Number(params.id);
     const boardIndex = mockBoards.findIndex((b) => b.id === id);
 

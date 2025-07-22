@@ -1,7 +1,7 @@
 // auth/refreshToken.ts
 import { getTokens, setAccessToken, setRefreshToken } from "../tokenUtils";
 
-const API_BASE_URL = process.env.SERVER_ADDRESS;
+const API_BASE_URL = process.env.BASE_API_URL;
 
 export async function refreshAccessToken(): Promise<{
   accessToken: string;

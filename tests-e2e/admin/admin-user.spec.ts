@@ -328,6 +328,21 @@ test.describe("Admin User Management E2E Tests", () => {
       await expect(testerRow.locator('a:text("수정")')).toBeHidden();
     });
   });
+
+  test.describe("Admin User Page notFound Test", () => {
+    const targets = ["/admin/users/99999999", "/admin/users/edit/99999999"];
+
+    targets.forEach((url) => {
+      test(`Admin User Page notFound Test - ${url}`, async ({ page }) => {
+        await page.goto(url);
+        await expect(page.locator("h1")).toContainText("404");
+
+        await expect(
+          page.locator("h2", { hasText: "This page could not be found" })
+        ).toBeVisible();
+      });
+    });
+  });
 });
 
 test.describe("User Detail Page E2E Tests", () => {
@@ -453,11 +468,6 @@ test.describe("User Detail Page E2E Tests", () => {
 
     await expect(page.getByRole("button", { name: "수정" })).toBeHidden();
     await expect(page.getByRole("button", { name: "삭제" })).toBeHidden();
-  });
-
-  test("should show error message for invalid user ID", async ({ page }) => {
-    await page.goto(`/admin/users/99999999`);
-    await expect(page.locator("text=사용자를 찾을 수 없습니다")).toBeVisible();
   });
 
   test("should navigate back to user list when '목록으로' is clicked", async ({

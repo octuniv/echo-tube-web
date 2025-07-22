@@ -2,7 +2,7 @@ import { http, HttpResponse } from "msw";
 import { mockBoards } from "../../mocks/admin/boardHandlers";
 import { server } from "../../mocks/server";
 import { BoardPurpose, UserRole } from "../definition";
-import { serverAddress } from "../util";
+import { BASE_API_URL } from "../util";
 import {
   createBoard,
   deleteBoard,
@@ -12,12 +12,13 @@ import {
 } from "./adminBoardManagementApi";
 import { BOARD_ERROR_MESSAGES } from "../constants/board/errorMessage";
 import { clearAuth } from "../authState";
-import { redirect, forbidden, notFound } from "next/navigation";
+import { redirect, forbidden } from "next/navigation";
 import {
   BoardFormData,
   BoardFormState,
 } from "../definition/adminBoardManagementSchema";
 import { revalidatePath } from "next/cache";
+import { ERROR_MESSAGES } from "../constants/errorMessage";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -43,15 +44,6 @@ jest.mock("next/navigation", () => ({
     const error = new Error("Forbidden access");
     Object.defineProperty(error, "digest", {
       value: "NEXT_FORBIDDEN",
-      configurable: false,
-      writable: false,
-    });
-    throw error;
-  }),
-  notFound: jest.fn().mockImplementation(() => {
-    const error = new Error("NotFound");
-    Object.defineProperty(error, "digest", {
-      value: "NEXT_NOTFOUND",
       configurable: false,
       writable: false,
     });
@@ -85,62 +77,56 @@ describe("fetchBoards", () => {
     expect(result[0].id).toBe(mockBoards[0].id);
   });
 
-  it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {
+  it("인증 실패 시 에러를 발생합니다.", async () => {
     server.use(
-      http.get(`${serverAddress}/admin/boards`, () => {
+      http.get(`${BASE_API_URL}/admin/boards`, () => {
         return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
       })
     );
 
-    await expect(fetchBoards()).rejects.toThrow();
-    expect(clearAuth).toHaveBeenCalled();
-    expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    await expect(fetchBoards()).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
   });
 
-  it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
+  it("권한 부족 시 에러를 발생합니다.", async () => {
     server.use(
-      http.get(`${serverAddress}/admin/boards`, () => {
+      http.get(`${BASE_API_URL}/admin/boards`, () => {
         return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
       })
     );
 
-    await expect(fetchBoards()).rejects.toThrow();
-    expect(forbidden).toHaveBeenCalled();
+    await expect(fetchBoards()).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
   });
 });
 
 describe("fetchBoardById", () => {
   it("특정 ID의 보드를 성공적으로 가져와야 합니다", async () => {
     const result = await fetchBoardById(1);
-    expect(result.id).toBe(1);
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe(1);
   });
 
-  it("존재하지 않는 보드 요청 시 notfound 페이지로 이동합니다", async () => {
-    await expect(fetchBoardById(999)).rejects.toThrow();
-    expect(notFound).toHaveBeenCalled();
+  it("존재하지 않는 보드 요청 시 빈 값을 출력합니다.", async () => {
+    await expect(fetchBoardById(999)).resolves.toBeNull();
   });
 
-  it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {
+  it("인증 실패 시 에러를 발생합니다", async () => {
     server.use(
-      http.get(`${serverAddress}/admin/boards/:id`, () => {
+      http.get(`${BASE_API_URL}/admin/boards/:id`, () => {
         return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
       })
     );
 
-    await expect(fetchBoardById(1)).rejects.toThrow();
-    expect(clearAuth).toHaveBeenCalled();
-    expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    await expect(fetchBoardById(1)).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
   });
 
-  it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
+  it("권한 부족 시 에러를 발생합니다", async () => {
     server.use(
-      http.get(`${serverAddress}/admin/boards/:id`, () => {
+      http.get(`${BASE_API_URL}/admin/boards/:id`, () => {
         return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
       })
     );
 
-    await expect(fetchBoardById(1)).rejects.toThrow();
-    expect(forbidden).toHaveBeenCalled();
+    await expect(fetchBoardById(1)).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
   });
 });
 
@@ -288,7 +274,7 @@ describe("createBoard", () => {
 
   it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {
     server.use(
-      http.post(`${serverAddress}/admin/boards`, () => {
+      http.post(`${BASE_API_URL}/admin/boards`, () => {
         return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
       })
     );
@@ -302,7 +288,7 @@ describe("createBoard", () => {
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
     server.use(
-      http.post(`${serverAddress}/admin/boards`, () => {
+      http.post(`${BASE_API_URL}/admin/boards`, () => {
         return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
       })
     );
@@ -467,7 +453,7 @@ describe("updateBoard", () => {
 
   it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {
     server.use(
-      http.put(`${serverAddress}/admin/boards/:id`, () => {
+      http.put(`${BASE_API_URL}/admin/boards/:id`, () => {
         return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
       })
     );
@@ -481,7 +467,7 @@ describe("updateBoard", () => {
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
     server.use(
-      http.put(`${serverAddress}/admin/boards/:id`, () => {
+      http.put(`${BASE_API_URL}/admin/boards/:id`, () => {
         return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
       })
     );
@@ -509,7 +495,7 @@ describe("deleteBoard", () => {
 
   it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {
     server.use(
-      http.delete(`${serverAddress}/admin/boards/:id`, () => {
+      http.delete(`${BASE_API_URL}/admin/boards/:id`, () => {
         return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
       })
     );
@@ -521,7 +507,7 @@ describe("deleteBoard", () => {
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
     server.use(
-      http.delete(`${serverAddress}/admin/boards/:id`, () => {
+      http.delete(`${BASE_API_URL}/admin/boards/:id`, () => {
         return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
       })
     );

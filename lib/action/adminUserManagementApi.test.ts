@@ -14,7 +14,7 @@ import {
 import { mockUserList } from "../../mocks/admin/userHandlers";
 import { server } from "../../mocks/server";
 import { http, HttpResponse } from "msw";
-import { serverAddress } from "../util";
+import { BASE_API_URL } from "../util";
 import { clearAuth } from "../authState";
 import { UserRole } from "../definition";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
@@ -108,7 +108,7 @@ describe("Admin User API Test", () => {
       };
 
       server.use(
-        http.get(`${serverAddress}/admin/users`, () =>
+        http.get(`${BASE_API_URL}/admin/users`, () =>
           HttpResponse.json(invalidData, { status: 200 })
         )
       );
@@ -120,28 +120,25 @@ describe("Admin User API Test", () => {
 
     it("should handle unauthorized access", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/users`, () =>
+        http.get(`${BASE_API_URL}/admin/users`, () =>
           HttpResponse.json({ message: "Unauthorized" }, { status: 401 })
         )
       );
 
       await expect(
         FetchUserPaginatedList({ page: 1, limit: 10 })
-      ).rejects.toThrow();
-      expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      ).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
     });
 
     it("should handle permission denied", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/users`, () => {
+        http.get(`${BASE_API_URL}/admin/users`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
       await expect(
         FetchUserPaginatedList({ page: 1, limit: 10 })
-      ).rejects.toThrow();
-      expect(forbidden).toHaveBeenCalled();
+      ).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
     });
   });
 
@@ -223,7 +220,7 @@ describe("Admin User API Test", () => {
       };
 
       server.use(
-        http.get(`${serverAddress}/admin/users/search`, () =>
+        http.get(`${BASE_API_URL}/admin/users/search`, () =>
           HttpResponse.json(invalidData, { status: 200 })
         )
       );
@@ -236,26 +233,27 @@ describe("Admin User API Test", () => {
     it("should handle network errors", async () => {
       server.use(
         http.get(
-          `${serverAddress}/admin/users/search`,
+          `${BASE_API_URL}/admin/users/search`,
           () => new HttpResponse(null, { status: 503 })
         )
       );
 
       await expect(
         FetchUserSearchResults({ page: 1, limit: 10 })
-      ).rejects.toThrow("Failed to fetch search results");
+      ).rejects.toThrow(
+        "사용자 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+      );
     });
 
     it("should handle permission denied", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/users/search`, () => {
+        http.get(`${BASE_API_URL}/admin/users/search`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
       await expect(
         FetchUserSearchResults({ page: 1, limit: 10 })
-      ).rejects.toThrow();
-      expect(forbidden).toHaveBeenCalled();
+      ).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
     });
   });
 
@@ -301,7 +299,7 @@ describe("Admin User API Test", () => {
       };
 
       server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
+        http.post(`${BASE_API_URL}/admin/users`, () => {
           return new HttpResponse(
             JSON.stringify({
               type: "Conflict",
@@ -333,7 +331,7 @@ describe("Admin User API Test", () => {
       };
 
       server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
+        http.post(`${BASE_API_URL}/admin/users`, () => {
           return new HttpResponse(
             JSON.stringify({
               type: "Conflict",
@@ -365,7 +363,7 @@ describe("Admin User API Test", () => {
       };
 
       server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
+        http.post(`${BASE_API_URL}/admin/users`, () => {
           return new HttpResponse(null, { status: 401 });
         })
       );
@@ -389,7 +387,7 @@ describe("Admin User API Test", () => {
       };
 
       server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
+        http.post(`${BASE_API_URL}/admin/users`, () => {
           return HttpResponse.json({
             email: "newadmin@example.com",
             message: "Successfully created account",
@@ -415,7 +413,7 @@ describe("Admin User API Test", () => {
       };
 
       server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
+        http.post(`${BASE_API_URL}/admin/users`, () => {
           return new HttpResponse(null, { status: 500 });
         })
       );
@@ -443,7 +441,7 @@ describe("Admin User API Test", () => {
         role: UserRole.ADMIN,
       };
       server.use(
-        http.post(`${serverAddress}/admin/users`, () => {
+        http.post(`${BASE_API_URL}/admin/users`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
@@ -473,50 +471,49 @@ describe("Admin User API Test", () => {
     it("should fetch user details successfully for valid ID", async () => {
       const userId = 1;
       server.use(
-        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+        http.get(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return HttpResponse.json(mockUser, { status: 200 });
         })
       );
 
       const result = await fetchUserDetails(userId);
+      expect(result).not.toBeNull();
       expect(result).toEqual(mockUser);
-      expect(result.id).toBe(userId);
-      expect(result.email).toBe(mockUser.email);
+      expect(result?.id).toBe(userId);
+      expect(result?.email).toBe(mockUser.email);
     });
 
-    it("should handle 404 error when user does not exist", async () => {
+    it("should return null when user does not exist", async () => {
       const userId = 999;
       server.use(
-        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+        http.get(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return HttpResponse.json(
             { error: "User not found" },
             { status: 404 }
           );
         })
       );
-
-      await expect(fetchUserDetails(userId)).rejects.toThrow(
-        "사용자를 찾을 수 없습니다"
-      );
+      const result = await fetchUserDetails(userId);
+      expect(result).toBeNull();
     });
 
     it("should handle unauthorized access (401 error)", async () => {
       const userId = 1;
       server.use(
-        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+        http.get(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return HttpResponse.json({ error: "Unauthorized" }, { status: 401 });
         })
       );
 
-      await expect(fetchUserDetails(userId)).rejects.toThrow();
-      expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      await expect(fetchUserDetails(userId)).rejects.toThrow(
+        ERROR_MESSAGES.FORBIDDEN
+      );
     });
 
     it("should handle network errors", async () => {
       const userId = 1;
       server.use(
-        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+        http.get(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return new HttpResponse(null, { status: 500 });
         })
       );
@@ -534,7 +531,7 @@ describe("Admin User API Test", () => {
         email: "invalid-email",
       };
       server.use(
-        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+        http.get(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return HttpResponse.json(invalidData, { status: 200 });
         })
       );
@@ -552,14 +549,15 @@ describe("Admin User API Test", () => {
         deletedAt: "2024-01-03T00:00:00Z",
       };
       server.use(
-        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+        http.get(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return HttpResponse.json(mockDeletedUser, { status: 200 });
         })
       );
 
       const result = await fetchUserDetails(userId);
+      expect(result).not.toBeNull();
       expect(result).toEqual(mockDeletedUser);
-      expect(result.deletedAt).toBe(mockDeletedUser.deletedAt);
+      expect(result?.deletedAt).toBe(mockDeletedUser.deletedAt);
     });
 
     it("should handle optional fields correctly", async () => {
@@ -570,31 +568,33 @@ describe("Admin User API Test", () => {
         deletedAt: undefined, // 선택적 필드
       };
       server.use(
-        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+        http.get(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return HttpResponse.json(userWithOptionalFields, { status: 200 });
         })
       );
 
       const result = await fetchUserDetails(userId);
+      expect(result).not.toBeNull();
       expect(result).toEqual(userWithOptionalFields);
-      expect(result.deletedAt).toBeUndefined();
+      expect(result?.deletedAt).toBeUndefined();
     });
 
     it("should handle permission denied", async () => {
       const userId = 1;
       server.use(
-        http.get(`${serverAddress}/admin/users/${userId}`, () => {
+        http.get(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
-      await expect(fetchUserDetails(userId)).rejects.toThrow();
-      expect(forbidden).toHaveBeenCalled();
+      await expect(fetchUserDetails(userId)).rejects.toThrow(
+        ERROR_MESSAGES.FORBIDDEN
+      );
     });
   });
 
   describe("deleteUser", () => {
     const userId = 1;
-    const apiUrl = `${serverAddress}/admin/users/${userId}`;
+    const apiUrl = `${BASE_API_URL}/admin/users/${userId}`;
 
     beforeEach(() => {
       jest.clearAllMocks();
@@ -683,7 +683,7 @@ describe("Admin User API Test", () => {
     it("should handle permission denied", async () => {
       const userId = 1;
       server.use(
-        http.delete(`${serverAddress}/admin/users/${userId}`, () => {
+        http.delete(`${BASE_API_URL}/admin/users/${userId}`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
@@ -732,7 +732,7 @@ describe("Admin User API Test", () => {
       formData.append("nickname", "newnick");
 
       server.use(
-        http.patch(`${serverAddress}/admin/users/1`, () => {
+        http.patch(`${BASE_API_URL}/admin/users/1`, () => {
           return HttpResponse.json({ success: true }, { status: 200 });
         })
       );
@@ -750,7 +750,7 @@ describe("Admin User API Test", () => {
       formData.append("nickname", "newnick");
 
       server.use(
-        http.patch(`${serverAddress}/admin/users/1`, () => {
+        http.patch(`${BASE_API_URL}/admin/users/1`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -771,7 +771,7 @@ describe("Admin User API Test", () => {
       formData.append("nickname", "takennick");
 
       server.use(
-        http.patch(`${serverAddress}/admin/users/1`, () => {
+        http.patch(`${BASE_API_URL}/admin/users/1`, () => {
           return HttpResponse.json(
             {
               type: "Conflict",
@@ -799,7 +799,7 @@ describe("Admin User API Test", () => {
       formData.append("nickname", "test");
 
       server.use(
-        http.patch(`${serverAddress}/admin/users/1`, () => {
+        http.patch(`${BASE_API_URL}/admin/users/1`, () => {
           return HttpResponse.json(
             {
               type: "Conflict",
@@ -826,7 +826,7 @@ describe("Admin User API Test", () => {
       formData.append("nickname", "test");
 
       server.use(
-        http.patch(`${serverAddress}/admin/users/1`, () => {
+        http.patch(`${BASE_API_URL}/admin/users/1`, () => {
           return HttpResponse.json(
             { message: "Internal Server Error" },
             { status: 500 }
@@ -853,7 +853,7 @@ describe("Admin User API Test", () => {
       const formData = new FormData();
       formData.append("nickname", "newnick");
       server.use(
-        http.patch(`${serverAddress}/admin/users/1`, () => {
+        http.patch(`${BASE_API_URL}/admin/users/1`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );

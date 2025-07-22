@@ -238,21 +238,6 @@ test.describe("Admin Category Management E2E Tests", () => {
       await expect(page).toHaveURL("/admin/categories");
       await expect(page.locator("h1:text('카테고리 관리')")).toBeVisible();
     });
-
-    test("should handle category not found", async ({ page }) => {
-      await page.goto("/admin/categories/999999");
-
-      const mainContainer = page.locator("main.p-4");
-      await expect(mainContainer).toBeVisible();
-
-      const errorHeading = mainContainer.locator("h1.next-error-h1");
-      await expect(errorHeading).toBeVisible();
-      await expect(errorHeading).toContainText("404");
-
-      const errorMessage = mainContainer.locator("h2");
-      await expect(errorMessage).toBeVisible();
-      await expect(errorMessage).toContainText("This page could not be found.");
-    });
   });
 
   test.describe("Test Create-Delete Action", () => {
@@ -590,6 +575,24 @@ test.describe("Admin Category Management E2E Tests", () => {
 
         const newCount = await page.locator("table tbody tr").count();
         expect(newCount).toBeLessThan(initialCount);
+      });
+    });
+  });
+
+  test.describe("Admin Category Page notFound Test", () => {
+    const targets = [
+      "/admin/categories/99999999",
+      "/admin/categories/edit/99999999",
+    ];
+
+    targets.forEach((url) => {
+      test(`Admin Category Page notFound Test - ${url}`, async ({ page }) => {
+        await page.goto(url);
+        await expect(page.locator("h1")).toContainText("404");
+
+        await expect(
+          page.locator("h2", { hasText: "This page could not be found" })
+        ).toBeVisible();
       });
     });
   });

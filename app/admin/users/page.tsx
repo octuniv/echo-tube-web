@@ -4,10 +4,12 @@ import EditButton from "@/components/admin/users/buttons/EditButton";
 import LimitSelector from "@/components/admin/users/LimitSelector";
 import SortControls from "@/components/admin/users/SortControls";
 import UserSearchForm from "@/components/admin/users/UserSearchForm";
+import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import {
   FetchUserPaginatedList,
   FetchUserSearchResults,
 } from "@/lib/action/adminUserManagementApi";
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 import {
   AdminUserListPaginatedResponse,
   SearchUserDtoSchema,
@@ -77,13 +79,10 @@ export default async function UserList({
             데이터 형식이 올바르지 않습니다.
           </div>
         );
-      } else {
-        return (
-          <div className="text-red-500 p-4">
-            서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
-          </div>
-        );
+      } else if (error.message === ERROR_MESSAGES.FORBIDDEN) {
+        return <UnauthorizedRedirect />;
       }
+      return <div className="text-red-500 p-4">{error.message}</div>;
     }
     return (
       <div className="text-red-500 p-4">알 수 없는 오류가 발생했습니다.</div>

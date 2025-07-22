@@ -1,6 +1,6 @@
 // mocks/admin/categoryHandlers.ts
 import { http, HttpResponse } from "msw";
-import { serverAddress } from "../../lib/util";
+import { BASE_API_URL } from "../../lib/util";
 import {
   BoardSummary,
   CategoryDetails,
@@ -71,12 +71,12 @@ export const availableCategoriesMock: AvailableCategoriesResponse = [
 
 export const adminCategoryHandlers = [
   // GET /admin/categories - 카테고리 목록 조회
-  http.get(`${serverAddress}/admin/categories`, () => {
+  http.get(`${BASE_API_URL}/admin/categories`, () => {
     return HttpResponse.json(mockCategories, { status: 200 });
   }),
 
   // POST /admin/categories - 카테고리 생성
-  http.post(`${serverAddress}/admin/categories`, async ({ request }) => {
+  http.post(`${BASE_API_URL}/admin/categories`, async ({ request }) => {
     const body = await request.json();
     const result = CategoryFormValidationSchema.safeParse(body);
 
@@ -143,7 +143,7 @@ export const adminCategoryHandlers = [
   }),
 
   // GET /admin/categories/available - 사용 가능한 카테고리 조회
-  http.get(`${serverAddress}/admin/categories/available`, ({ request }) => {
+  http.get(`${BASE_API_URL}/admin/categories/available`, ({ request }) => {
     const url = new URL(request.url);
     const boardId = url.searchParams.get("boardId");
 
@@ -164,7 +164,7 @@ export const adminCategoryHandlers = [
   }),
 
   // GET /admin/categories/:id - 카테고리 상세 조회
-  http.get(`${serverAddress}/admin/categories/:id`, ({ params }) => {
+  http.get(`${BASE_API_URL}/admin/categories/:id`, ({ params }) => {
     const id = Number(params.id);
     const category = mockCategories.find((cat) => cat.id === id);
 
@@ -195,7 +195,7 @@ export const adminCategoryHandlers = [
 
   // PUT /admin/categories/:id - 카테고리 수정
   http.put(
-    `${serverAddress}/admin/categories/:id`,
+    `${BASE_API_URL}/admin/categories/:id`,
     async ({ request, params }) => {
       const id = Number(params.id);
       const body = await request.json();
@@ -287,7 +287,7 @@ export const adminCategoryHandlers = [
   ),
 
   // DELETE /admin/categories/:id - 카테고리 삭제
-  http.delete(`${serverAddress}/admin/categories/:id`, ({ params }) => {
+  http.delete(`${BASE_API_URL}/admin/categories/:id`, ({ params }) => {
     const id = Number(params.id);
     const index = mockCategories.findIndex((cat) => cat.id === id);
 
@@ -311,7 +311,7 @@ export const adminCategoryHandlers = [
   }),
 
   // GET /admin/categories/validate-slug - 슬러그 중복 검증
-  http.get(`${serverAddress}/admin/categories/validate-slug`, ({ request }) => {
+  http.get(`${BASE_API_URL}/admin/categories/validate-slug`, ({ request }) => {
     const url = new URL(request.url);
     const slug = url.searchParams.get("slug");
     const categoryId = url.searchParams.get("categoryId");
@@ -332,7 +332,7 @@ export const adminCategoryHandlers = [
   }),
 
   // GET /admin/categories/validate-name - 카테고리 이름 중복 검증
-  http.get(`${serverAddress}/admin/categories/validate-name`, ({ request }) => {
+  http.get(`${BASE_API_URL}/admin/categories/validate-name`, ({ request }) => {
     const url = new URL(request.url);
     const name = url.searchParams.get("name");
     const categoryId = url.searchParams.get("categoryId");

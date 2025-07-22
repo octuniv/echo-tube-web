@@ -26,7 +26,7 @@ import {
   server,
 } from "../mocks/server";
 import { http, HttpResponse } from "msw";
-import { serverAddress } from "./util";
+import { BASE_API_URL } from "./util";
 import { revalidatePath } from "next/cache";
 import {
   BoardListItemDto,
@@ -90,7 +90,7 @@ describe("Actions Module", () => {
       formData.append("password", "password123");
 
       server.use(
-        http.post(`${serverAddress}/users`, () => {
+        http.post(`${BASE_API_URL}/users`, () => {
           return HttpResponse.json({ success: true }, { status: 200 });
         })
       );
@@ -123,7 +123,7 @@ describe("Actions Module", () => {
       formData.append("password", "password123");
 
       server.use(
-        http.post(`${serverAddress}/users`, () => {
+        http.post(`${BASE_API_URL}/users`, () => {
           return HttpResponse.json(
             {
               message: "This nickname Duplicated is already existed!",
@@ -153,7 +153,7 @@ describe("Actions Module", () => {
       formData.append("password", "password123");
 
       server.use(
-        http.post(`${serverAddress}/users`, () => {
+        http.post(`${BASE_API_URL}/users`, () => {
           return HttpResponse.json(
             {
               message: "This email duplicated@example.com is already existed!",
@@ -187,7 +187,7 @@ describe("Actions Module", () => {
       formData.append("password", "password123");
 
       server.use(
-        http.post(`${serverAddress}/auth/login`, () => {
+        http.post(`${BASE_API_URL}/auth/login`, () => {
           return HttpResponse.json(
             {
               access_token: "valid-access-token",
@@ -239,7 +239,7 @@ describe("Actions Module", () => {
       formData.append("password", "wrong-password");
 
       server.use(
-        http.post(`${serverAddress}/auth/login`, () => {
+        http.post(`${BASE_API_URL}/auth/login`, () => {
           return HttpResponse.json(
             { error: ERROR_MESSAGES.INVALID_CREDENTIALS },
             { status: 401 }
@@ -274,7 +274,7 @@ describe("Actions Module", () => {
     it("should successfully logout and clear auth data", async () => {
       // Mock successful server response
       server.use(
-        http.post(`${serverAddress}/auth/logout`, () => {
+        http.post(`${BASE_API_URL}/auth/logout`, () => {
           return HttpResponse.json(
             { message: "Logged out successfully" },
             { status: 200 }
@@ -307,7 +307,7 @@ describe("Actions Module", () => {
       // Mock 401 response
 
       server.use(
-        http.post(`${serverAddress}/auth/logout`, () => {
+        http.post(`${BASE_API_URL}/auth/logout`, () => {
           return HttpResponse.json(
             { statusCode: 401, message: "Invalid refresh token" },
             { status: 401 }
@@ -325,7 +325,7 @@ describe("Actions Module", () => {
     it("should handle 500 internal server error", async () => {
       // Mock 500 error
       server.use(
-        http.post(`${serverAddress}/auth/logout`, () => {
+        http.post(`${BASE_API_URL}/auth/logout`, () => {
           return HttpResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
@@ -343,7 +343,7 @@ describe("Actions Module", () => {
     it("should handle network errors gracefully", async () => {
       // Mock network error
       server.use(
-        http.post(`${serverAddress}/auth/logout`, () => {
+        http.post(`${BASE_API_URL}/auth/logout`, () => {
           return new HttpResponse(null, { status: 503 });
         })
       );
@@ -367,7 +367,7 @@ describe("Actions Module", () => {
     it("should fetch posts by boardId successfully", async () => {
       const boardId = 1;
       server.use(
-        http.get(`${serverAddress}/posts/board/${boardId}`, () =>
+        http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json(mockPosts, { status: 200 })
         )
       );
@@ -378,7 +378,7 @@ describe("Actions Module", () => {
     it("should throw error when response is not ok", async () => {
       const boardId = 999;
       server.use(
-        http.get(`${serverAddress}/posts/board/${boardId}`, () =>
+        http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json({ error: "Not Found" }, { status: 404 })
         )
       );
@@ -390,7 +390,7 @@ describe("Actions Module", () => {
     it("should handle empty posts array", async () => {
       const boardId = 1;
       server.use(
-        http.get(`${serverAddress}/posts/board/${boardId}`, () =>
+        http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json([], { status: 200 })
         )
       );
@@ -411,7 +411,7 @@ describe("Actions Module", () => {
         },
       ];
       server.use(
-        http.get(`${serverAddress}/posts/board/${boardId}`, () =>
+        http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json(invalidData, { status: 200 })
         )
       );
@@ -453,7 +453,7 @@ describe("Actions Module", () => {
       };
 
       server.use(
-        http.get(`${serverAddress}/posts/${postId}`, () => {
+        http.get(`${BASE_API_URL}/posts/${postId}`, () => {
           return HttpResponse.json(mockPost, { status: 200 });
         })
       );
@@ -467,7 +467,7 @@ describe("Actions Module", () => {
       const postId = 999; // 존재하지 않는 게시물 ID
 
       server.use(
-        http.get(`${serverAddress}/posts/${postId}`, () => {
+        http.get(`${BASE_API_URL}/posts/${postId}`, () => {
           return HttpResponse.json(
             { error: "Post not found" },
             { status: 404 }
@@ -483,7 +483,7 @@ describe("Actions Module", () => {
       const postId = 1;
 
       server.use(
-        http.get(`${serverAddress}/posts/${postId}`, () => {
+        http.get(`${BASE_API_URL}/posts/${postId}`, () => {
           return HttpResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
@@ -505,7 +505,7 @@ describe("Actions Module", () => {
         board: { requiredRole: "invalid-role" },
       };
       server.use(
-        http.get(`${serverAddress}/posts/${postId}`, () =>
+        http.get(`${BASE_API_URL}/posts/${postId}`, () =>
           HttpResponse.json(invalidPostData, { status: 200 })
         )
       );
@@ -525,7 +525,7 @@ describe("Actions Module", () => {
       formData.append("videoUrl", "https://example.com/video");
 
       server.use(
-        http.post(`${serverAddress}/posts`, async ({ request }) => {
+        http.post(`${BASE_API_URL}/posts`, async ({ request }) => {
           capturedBody = (await request.json()) as CreatePostRequestBody;
           return HttpResponse.json({ success: true }, { status: 201 });
         })
@@ -565,7 +565,7 @@ describe("Actions Module", () => {
       formData.append("videoUrl", "https://example.com/video");
 
       server.use(
-        http.post(`${serverAddress}/posts`, () => {
+        http.post(`${BASE_API_URL}/posts`, () => {
           return HttpResponse.json(
             { statusCode: 401, message: "Unauthorized" },
             { status: 401 }
@@ -586,7 +586,7 @@ describe("Actions Module", () => {
       formData.append("videoUrl", "https://example.com/video");
 
       server.use(
-        http.post(`${serverAddress}/posts`, () => {
+        http.post(`${BASE_API_URL}/posts`, () => {
           return HttpResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
@@ -612,7 +612,7 @@ describe("Actions Module", () => {
 
       // Mock the server response for a successful DELETE request
       server.use(
-        http.delete(`${serverAddress}/posts/${postId}`, () => {
+        http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
           return HttpResponse.json(
             { message: "Post deleted successfully." },
             { status: 200 }
@@ -631,7 +631,7 @@ describe("Actions Module", () => {
 
       // Mock the server response for a 401 Unauthorized error
       server.use(
-        http.delete(`${serverAddress}/posts/${postId}`, () => {
+        http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
           return HttpResponse.json(
             { statusCode: 401, message: "Unauthorized" },
             { status: 401 }
@@ -649,7 +649,7 @@ describe("Actions Module", () => {
 
       // Mock the server response for a 500 Internal Server Error
       server.use(
-        http.delete(`${serverAddress}/posts/${postId}`, () => {
+        http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
           return HttpResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
@@ -666,7 +666,7 @@ describe("Actions Module", () => {
 
       // Mock the server response for a 404 Not Found error
       server.use(
-        http.delete(`${serverAddress}/posts/${postId}`, () => {
+        http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
           return HttpResponse.json(
             { error: "Post not found" },
             { status: 404 }
@@ -694,7 +694,7 @@ describe("Actions Module", () => {
       formData.append("videoUrl", "https://example.com/new-video");
 
       server.use(
-        http.patch(`${serverAddress}/posts/1`, () => {
+        http.patch(`${BASE_API_URL}/posts/1`, () => {
           return HttpResponse.json(
             {
               ...mockPosts[0],
@@ -735,7 +735,7 @@ describe("Actions Module", () => {
       let capturedBody: CapturedBody = { title: "", content: "" };
 
       server.use(
-        http.patch(`${serverAddress}/posts/1`, async ({ request }) => {
+        http.patch(`${BASE_API_URL}/posts/1`, async ({ request }) => {
           capturedBody = (await request.json()) as CapturedBody;
           return HttpResponse.json(
             {
@@ -785,7 +785,7 @@ describe("Actions Module", () => {
       formData.append("videoUrl", "");
 
       server.use(
-        http.patch(`${serverAddress}/posts/1`, () => {
+        http.patch(`${BASE_API_URL}/posts/1`, () => {
           return HttpResponse.json(
             { statusCode: 401, message: "Unauthorized" },
             { status: 401 }
@@ -806,7 +806,7 @@ describe("Actions Module", () => {
       formData.append("videoUrl", "");
 
       server.use(
-        http.patch(`${serverAddress}/posts/1`, () => {
+        http.patch(`${BASE_API_URL}/posts/1`, () => {
           return HttpResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
@@ -828,7 +828,7 @@ describe("Actions Module", () => {
     it("should delete a user successfully and redirect to /", async () => {
       // Mock the server response for a successful DELETE request
       server.use(
-        http.delete(`${serverAddress}/users`, () => {
+        http.delete(`${BASE_API_URL}/users`, () => {
           return HttpResponse.json(
             { message: "Successfully deleted account" },
             { status: 200 }
@@ -847,7 +847,7 @@ describe("Actions Module", () => {
     it("should handle unauthorized access during user deletion", async () => {
       // Mock the server response for a 401 Unauthorized error
       server.use(
-        http.delete(`${serverAddress}/users`, () => {
+        http.delete(`${BASE_API_URL}/users`, () => {
           return HttpResponse.json(
             { statusCode: 401, message: "Unauthorized" },
             { status: 401 }
@@ -864,7 +864,7 @@ describe("Actions Module", () => {
     it("should handle unexpected errors during user deletion", async () => {
       // Mock the server response for a 500 Internal Server Error
       server.use(
-        http.delete(`${serverAddress}/users`, () => {
+        http.delete(`${BASE_API_URL}/users`, () => {
           return HttpResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
@@ -879,7 +879,7 @@ describe("Actions Module", () => {
 
     it("should throw generic error for 404 Not Found", async () => {
       server.use(
-        http.delete(`${serverAddress}/users`, () => {
+        http.delete(`${BASE_API_URL}/users`, () => {
           return HttpResponse.json({ error: "Not Found" }, { status: 404 });
         })
       );
@@ -912,7 +912,7 @@ describe("Actions Module", () => {
       formData.append("nickname", "newnickname");
 
       server.use(
-        http.patch(`${serverAddress}/users/nickname`, () => {
+        http.patch(`${BASE_API_URL}/users/nickname`, () => {
           return HttpResponse.json(
             { message: "Nickname change successful." },
             { status: 200 }
@@ -944,7 +944,7 @@ describe("Actions Module", () => {
       formData.append("nickname", "newnickname");
 
       server.use(
-        http.patch(`${serverAddress}/users/nickname`, () => {
+        http.patch(`${BASE_API_URL}/users/nickname`, () => {
           return HttpResponse.json(
             { error: ERROR_MESSAGES.INVALID_CREDENTIALS },
             { status: 401 }
@@ -963,7 +963,7 @@ describe("Actions Module", () => {
       formData.append("nickname", duplicatedNick);
 
       server.use(
-        http.patch(`${serverAddress}/users/nickname`, () => {
+        http.patch(`${BASE_API_URL}/users/nickname`, () => {
           return HttpResponse.json(
             { message: `This nickname ${duplicatedNick} is already existed!` },
             { status: 409 }
@@ -984,7 +984,7 @@ describe("Actions Module", () => {
       const formData = new FormData();
       formData.append("nickname", "newnickname");
       server.use(
-        http.patch(`${serverAddress}/users/nickname`, () => {
+        http.patch(`${BASE_API_URL}/users/nickname`, () => {
           return HttpResponse.json(
             { message: `Internal Server Error` },
             { status: 500 }
@@ -1015,7 +1015,7 @@ describe("Actions Module", () => {
       formData.append("confirmPassword", "newpassword");
 
       server.use(
-        http.patch(`${serverAddress}/users/password`, () => {
+        http.patch(`${BASE_API_URL}/users/password`, () => {
           return HttpResponse.json(
             { message: "Passcode change successful." },
             { status: 200 }
@@ -1043,7 +1043,7 @@ describe("Actions Module", () => {
       formData.append("confirmPassword", "12");
 
       server.use(
-        http.patch(`${serverAddress}/users/password`, () => {
+        http.patch(`${BASE_API_URL}/users/password`, () => {
           return HttpResponse.json(
             { message: "Passcode change successful." },
             { status: 200 }
@@ -1077,7 +1077,7 @@ describe("Actions Module", () => {
       formData.append("confirmPassword", "differpassword");
 
       server.use(
-        http.patch(`${serverAddress}/users/password`, () => {
+        http.patch(`${BASE_API_URL}/users/password`, () => {
           return HttpResponse.json(
             { message: "Passcode change successful." },
             { status: 500 }
@@ -1101,7 +1101,7 @@ describe("Actions Module", () => {
       formData.append("confirmPassword", "newpassword");
 
       server.use(
-        http.patch(`${serverAddress}/users/password`, () => {
+        http.patch(`${BASE_API_URL}/users/password`, () => {
           return HttpResponse.json(
             { error: ERROR_MESSAGES.INVALID_CREDENTIALS },
             { status: 401 }
@@ -1119,7 +1119,7 @@ describe("Actions Module", () => {
       formData.append("password", "newpassword");
       formData.append("confirmPassword", "newpassword");
       server.use(
-        http.patch(`${serverAddress}/users/password`, () => {
+        http.patch(`${BASE_API_URL}/users/password`, () => {
           return HttpResponse.json(
             { message: `Internal Server Error` },
             { status: 500 }
@@ -1141,7 +1141,7 @@ describe("Actions Module", () => {
 
     it("should check userExist by email successfully", async () => {
       server.use(
-        http.post(`${serverAddress}/users/check-email`, () => {
+        http.post(`${BASE_API_URL}/users/check-email`, () => {
           return HttpResponse.json({ exists: true }, { status: 200 });
         })
       );
@@ -1152,7 +1152,7 @@ describe("Actions Module", () => {
 
     it("should check non-exists user by email successfully", async () => {
       server.use(
-        http.post(`${serverAddress}/users/check-email`, () => {
+        http.post(`${BASE_API_URL}/users/check-email`, () => {
           return HttpResponse.json({ exists: false }, { status: 200 });
         })
       );
@@ -1169,7 +1169,7 @@ describe("Actions Module", () => {
 
     it("should check userExist by nickname successfully", async () => {
       server.use(
-        http.post(`${serverAddress}/users/check-nickname`, () => {
+        http.post(`${BASE_API_URL}/users/check-nickname`, () => {
           return HttpResponse.json({ exists: true }, { status: 200 });
         })
       );
@@ -1180,7 +1180,7 @@ describe("Actions Module", () => {
 
     it("should check non-exists user by nickname successfully", async () => {
       server.use(
-        http.post(`${serverAddress}/users/check-nickname`, () => {
+        http.post(`${BASE_API_URL}/users/check-nickname`, () => {
           return HttpResponse.json({ exists: false }, { status: 200 });
         })
       );
@@ -1217,7 +1217,7 @@ describe("Actions Module", () => {
         ];
 
         server.use(
-          http.get(`${serverAddress}/boards`, () =>
+          http.get(`${BASE_API_URL}/boards`, () =>
             HttpResponse.json(mockBoards, { status: 200 })
           )
         );
@@ -1231,7 +1231,7 @@ describe("Actions Module", () => {
 
       it("should throw error on failure", async () => {
         server.use(
-          http.get(`${serverAddress}/boards`, () =>
+          http.get(`${BASE_API_URL}/boards`, () =>
             HttpResponse.json(
               { error: "Internal Server Error" },
               { status: 500 }
@@ -1255,7 +1255,7 @@ describe("Actions Module", () => {
           },
         ];
         server.use(
-          http.get(`${serverAddress}/boards`, () =>
+          http.get(`${BASE_API_URL}/boards`, () =>
             HttpResponse.json(invalidBoards, { status: 200 })
           )
         );
@@ -1284,7 +1284,7 @@ describe("Actions Module", () => {
       it("should throw error when response is invalid", async () => {
         // Mock invalid response format
         server.use(
-          http.get(`${serverAddress}/categories/with-boards`, () => {
+          http.get(`${BASE_API_URL}/categories/with-boards`, () => {
             return HttpResponse.json([{ invalid: "data" }], { status: 200 });
           })
         );
@@ -1295,7 +1295,7 @@ describe("Actions Module", () => {
 
       it("should handle server error", async () => {
         server.use(
-          http.get(`${serverAddress}/categories/with-boards`, () => {
+          http.get(`${BASE_API_URL}/categories/with-boards`, () => {
             return HttpResponse.json(
               { error: "Internal Server Error" },
               { status: 500 }
@@ -1309,7 +1309,7 @@ describe("Actions Module", () => {
 
       it("should handle empty response", async () => {
         server.use(
-          http.get(`${serverAddress}/categories/with-boards`, () => {
+          http.get(`${BASE_API_URL}/categories/with-boards`, () => {
             return HttpResponse.json([], { status: 200 });
           })
         );
@@ -1323,7 +1323,7 @@ describe("Actions Module", () => {
         const fetchSpy = jest.spyOn(global, "fetch");
 
         server.use(
-          http.get(`${serverAddress}/categories/with-boards`, () => {
+          http.get(`${BASE_API_URL}/categories/with-boards`, () => {
             return HttpResponse.json(mockCategoriesWithBoards, { status: 200 });
           })
         );
@@ -1364,7 +1364,7 @@ describe("Actions Module", () => {
         };
 
         server.use(
-          http.get(`${serverAddress}/dashboard/summary`, () =>
+          http.get(`${BASE_API_URL}/dashboard/summary`, () =>
             HttpResponse.json(invalidData, { status: 200 })
           )
         );
@@ -1377,7 +1377,7 @@ describe("Actions Module", () => {
 
       it("should throw error when server returns 500", async () => {
         server.use(
-          http.get(`${serverAddress}/dashboard/summary`, () =>
+          http.get(`${BASE_API_URL}/dashboard/summary`, () =>
             HttpResponse.json(
               { error: "Internal Server Error" },
               { status: 500 }

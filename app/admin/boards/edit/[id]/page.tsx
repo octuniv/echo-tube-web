@@ -1,6 +1,11 @@
 import EditBoardPage from "@/components/admin/boards/edit/EditBoardPage";
+import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoardById } from "@/lib/action/adminBoardManagementApi";
 import { getAvailableCategories } from "@/lib/action/adminCategoryManagementApi";
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
+import { AdminBoardResponse } from "@/lib/definition/adminBoardManagementSchema";
+import { AvailableCategoriesResponse } from "@/lib/definition/adminCategoryManagementSchema";
+import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{
@@ -8,10 +13,41 @@ interface PageProps {
   }>;
 }
 
+function ErrorMessage({ message }: { message: string }) {
+  return (
+    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-6">
+      <h3 className="text-red-800 font-medium">Error</h3>
+      <p className="text-red-700">{message}</p>
+    </div>
+  );
+}
+
 export default async function BoardUpdate({ params }: PageProps) {
   const { id } = await params;
   const boardId = Number(id);
-  const board = await fetchBoardById(boardId);
-  const categories = await getAvailableCategories(boardId);
+
+  let board: AdminBoardResponse | null;
+  let categories: AvailableCategoriesResponse;
+  let errorMessage: string;
+
+  try {
+    board = await fetchBoardById(boardId);
+    categories = await getAvailableCategories(boardId);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === ERROR_MESSAGES.FORBIDDEN) {
+        return <UnauthorizedRedirect />;
+      } else {
+        errorMessage = error.message;
+      }
+    } else {
+      errorMessage = "서버로부터 정보를 받아오는 데 실패했습니다.";
+    }
+    return <ErrorMessage message={errorMessage} />;
+  }
+
+  if (!board) {
+    notFound();
+  }
   return <EditBoardPage categories={categories} boardData={board} />;
 }

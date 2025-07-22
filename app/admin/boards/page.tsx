@@ -1,14 +1,46 @@
 import { DeleteButton } from "@/components/admin/boards/DeleteButton";
+import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoards } from "@/lib/action/adminBoardManagementApi";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 import { AdminBoardResponse } from "@/lib/definition/adminBoardManagementSchema";
+import { CategorySummary } from "@/lib/definition/adminCategoryManagementSchema";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+function ErrorMessage({ message }: { message: string }) {
+  return (
+    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-6">
+      <h3 className="text-red-800 font-medium">Error</h3>
+      <p className="text-red-700">{message}</p>
+    </div>
+  );
+}
+
 export default async function BoardList() {
-  const categories = await fetchCategories();
-  const boards = await fetchBoards();
+  let categories: CategorySummary[];
+  let boards: AdminBoardResponse[];
+  let errorMessage: string;
+
+  try {
+    categories = await fetchCategories();
+    boards = await fetchBoards();
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === ERROR_MESSAGES.FORBIDDEN) {
+        return <UnauthorizedRedirect />;
+      }
+      errorMessage = error.message;
+    } else {
+      errorMessage = "서버로부터 정보를 받아오는 데 실패하였습니다.";
+    }
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <ErrorMessage message={errorMessage} />
+      </div>
+    );
+  }
 
   const boardMap = boards.reduce((acc, board) => {
     if (!acc[board.categoryId]) {

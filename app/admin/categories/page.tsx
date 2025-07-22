@@ -1,5 +1,7 @@
 import { DeleteButton } from "@/components/admin/categories/DeleteButton";
+import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +12,9 @@ export default async function CategoryList() {
   try {
     categories = await fetchCategories();
   } catch (error) {
+    if (error instanceof Error && error.message == ERROR_MESSAGES.FORBIDDEN) {
+      return <UnauthorizedRedirect />;
+    }
     return (
       <div className="p-6 text-red-600">
         {error instanceof Error

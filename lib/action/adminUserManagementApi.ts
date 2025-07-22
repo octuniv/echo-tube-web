@@ -19,8 +19,9 @@ import {
   AdminUserDetailResponse,
   AdminUserDetailResponseSchema,
 } from "../definition/adminUserManagementSchema";
-import { serverAddress } from "../util";
+import { BASE_API_URL } from "../util";
 import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
+import { authErrorGuard } from "../auth/errors/authErrorGuard";
 
 export async function FetchUserPaginatedList(
   query: PaginationDto
@@ -33,7 +34,7 @@ export async function FetchUserPaginatedList(
     order,
   });
 
-  const reqAddress = `${serverAddress}/admin/users`;
+  const reqAddress = `${BASE_API_URL}/admin/users`;
   const { data, error } = await authenticatedFetch({
     method: "GET",
     headers: {
@@ -43,7 +44,7 @@ export async function FetchUserPaginatedList(
   });
 
   if (error) {
-    await handleAuthRedirects(error);
+    authErrorGuard(error);
     console.error("사용자 목록을 불러오던 중 예기치 못한 오류 발생:", error);
     throw new Error(
       "사용자 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
@@ -96,7 +97,7 @@ export async function FetchUserSearchResults(query: {
   if (searchNickname) params.set("searchNickname", searchNickname);
   if (searchRole) params.set("searchRole", searchRole);
 
-  const reqAddress = `${serverAddress}/admin/users/search`;
+  const reqAddress = `${BASE_API_URL}/admin/users/search`;
   const { data, error } = await authenticatedFetch({
     method: "GET",
     headers: { "Content-Type": "application/json" },
@@ -104,9 +105,11 @@ export async function FetchUserSearchResults(query: {
   });
 
   if (error) {
-    await handleAuthRedirects(error);
-    console.error("Failed to fetch search results:", error);
-    throw new Error("Failed to fetch search results");
+    authErrorGuard(error);
+    console.error("사용자 목록을 불러오던 중 예기치 못한 오류 발생:", error);
+    throw new Error(
+      "사용자 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+    );
   } else {
     const result = AdminUserListPaginatedSchema.safeParse(data);
     if (!result.success) {
@@ -138,7 +141,7 @@ export async function AdminSignUpAction(
 
   const userData = validatedFields.data;
 
-  const reqAddress = `${serverAddress}/admin/users`;
+  const reqAddress = `${BASE_API_URL}/admin/users`;
 
   const { error } = await authenticatedFetch({
     method: "POST",
@@ -203,7 +206,7 @@ export async function AdminUserUpdateAction(
     };
   }
 
-  const reqAddress = `${serverAddress}/admin/users/${userId}`;
+  const reqAddress = `${BASE_API_URL}/admin/users/${userId}`;
 
   const { error } = await authenticatedFetch({
     url: reqAddress,
@@ -248,8 +251,8 @@ export async function AdminUserUpdateAction(
 
 export async function fetchUserDetails(
   id: number
-): Promise<AdminUserDetailResponse> {
-  const reqAddress = `${serverAddress}/admin/users/${id}`;
+): Promise<AdminUserDetailResponse | null> {
+  const reqAddress = `${BASE_API_URL}/admin/users/${id}`;
 
   const { data, error } = await authenticatedFetch({
     method: "GET",
@@ -260,10 +263,10 @@ export async function fetchUserDetails(
   });
 
   if (error) {
-    await handleAuthRedirects(error);
+    authErrorGuard(error);
     switch (error.type) {
       case AuthenticatedFetchErrorType.NotFound:
-        throw new Error("사용자를 찾을 수 없습니다");
+        return null;
       default:
         throw new Error("사용자 정보를 불러오지 못했습니다");
     }
@@ -280,7 +283,7 @@ export async function fetchUserDetails(
 }
 
 export async function deleteUser(userId: number) {
-  const reqAddress = `${serverAddress}/admin/users/${userId}`;
+  const reqAddress = `${BASE_API_URL}/admin/users/${userId}`;
 
   const { error } = await authenticatedFetch({
     method: "DELETE",

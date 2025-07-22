@@ -19,13 +19,14 @@ import {
   AvailableCategoriesResponseSchema,
   AvailableCategoriesResponse,
 } from "../definition/adminCategoryManagementSchema";
-import { serverAddress } from "../util";
+import { BASE_API_URL } from "../util";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
+import { authErrorGuard } from "../auth/errors/authErrorGuard";
 
 export async function fetchCategories(): Promise<CategorySummary[]> {
-  const reqAddress = `${serverAddress}/admin/categories`;
+  const reqAddress = `${BASE_API_URL}/admin/categories`;
   const { data, error } = await authenticatedFetch({
     method: "GET",
     headers: {
@@ -35,7 +36,7 @@ export async function fetchCategories(): Promise<CategorySummary[]> {
   });
 
   if (error) {
-    await handleAuthRedirects(error);
+    authErrorGuard(error);
     console.error("카테고리 목록을 불러오던 중 예기치 못한 오류 발생:", error);
     throw new Error(CATEGORY_ERROR_MESSAGES.FAIL_FETCH_CATEGORY);
   } else {
@@ -48,8 +49,10 @@ export async function fetchCategories(): Promise<CategorySummary[]> {
   }
 }
 
-export async function fetchCategoryById(id: number): Promise<CategoryDetails> {
-  const reqAddress = `${serverAddress}/admin/categories/${id}`;
+export async function fetchCategoryById(
+  id: number
+): Promise<CategoryDetails | null> {
+  const reqAddress = `${BASE_API_URL}/admin/categories/${id}`;
   const { data, error } = await authenticatedFetch({
     method: "GET",
     headers: {
@@ -59,10 +62,10 @@ export async function fetchCategoryById(id: number): Promise<CategoryDetails> {
   });
 
   if (error) {
-    await handleAuthRedirects(error);
+    authErrorGuard(error);
     switch (error.type) {
       case AuthenticatedFetchErrorType.NotFound:
-        throw new Error(ERROR_MESSAGES.NOT_FOUND);
+        return null;
       default:
         throw new Error(CATEGORY_ERROR_MESSAGES.FAIL_FETCH_CATEGORY);
     }
@@ -94,7 +97,7 @@ export async function createCategory(
 
   const categoryData: CategoryFormData = validatedFields.data;
 
-  const reqAddress = `${serverAddress}/admin/categories`;
+  const reqAddress = `${BASE_API_URL}/admin/categories`;
 
   const { error } = await authenticatedFetch({
     method: "POST",
@@ -182,7 +185,7 @@ export async function updateCategory(
 
   const categoryData: CategoryFormData = validatedFields.data;
 
-  const reqAddress = `${serverAddress}/admin/categories/${id}`;
+  const reqAddress = `${BASE_API_URL}/admin/categories/${id}`;
 
   const { error } = await authenticatedFetch({
     url: reqAddress,
@@ -254,7 +257,7 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: number) {
-  const reqAddress = `${serverAddress}/admin/categories/${id}`;
+  const reqAddress = `${BASE_API_URL}/admin/categories/${id}`;
 
   const { error } = await authenticatedFetch({
     url: reqAddress,
@@ -297,7 +300,7 @@ export async function validateSlug(
     params.append("categoryId", categoryId.toString());
   }
 
-  const reqAddress = `${serverAddress}/admin/categories/validate-slug?${params.toString()}`;
+  const reqAddress = `${BASE_API_URL}/admin/categories/validate-slug?${params.toString()}`;
 
   const { error, data } = await authenticatedFetch({
     url: reqAddress,
@@ -345,7 +348,7 @@ export async function validateName(
     params.append("categoryId", categoryId.toString());
   }
 
-  const reqAddress = `${serverAddress}/admin/categories/validate-name?${params.toString()}`;
+  const reqAddress = `${BASE_API_URL}/admin/categories/validate-name?${params.toString()}`;
 
   const { error, data } = await authenticatedFetch({
     url: reqAddress,
@@ -378,7 +381,7 @@ export async function validateName(
 export async function getAvailableCategories(
   boardId?: number
 ): Promise<AvailableCategoriesResponse> {
-  const url = new URL(`${serverAddress}/admin/categories/available`);
+  const url = new URL(`${BASE_API_URL}/admin/categories/available`);
   if (boardId !== undefined) {
     url.searchParams.append("boardId", boardId.toString());
   }
@@ -393,7 +396,7 @@ export async function getAvailableCategories(
   });
 
   if (error) {
-    await handleAuthRedirects(error);
+    authErrorGuard(error);
     console.error("카테고리 목록을 불러오던 중 예기치 못한 오류 발생:", error);
     throw new Error(CATEGORY_ERROR_MESSAGES.FAIL_FETCH_CATEGORY);
   } else {

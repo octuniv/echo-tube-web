@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import {
@@ -11,13 +11,14 @@ import {
   BoardFormSchema,
   BoardFormState,
 } from "../definition/adminBoardManagementSchema";
-import { serverAddress } from "../util";
+import { BASE_API_URL } from "../util";
 import { AuthenticatedFetchErrorType } from "../auth/types";
 import { BOARD_ERROR_MESSAGES } from "../constants/board/errorMessage";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
+import { authErrorGuard } from "../auth/errors/authErrorGuard";
 
-const boardApiHeadAddress = `${serverAddress}/admin/boards`;
+const boardApiHeadAddress = `${BASE_API_URL}/admin/boards`;
 
 export async function fetchBoards(): Promise<AdminBoardResponse[]> {
   const reqAddress = boardApiHeadAddress;
@@ -30,8 +31,7 @@ export async function fetchBoards(): Promise<AdminBoardResponse[]> {
   });
 
   if (error) {
-    await handleAuthRedirects(error);
-
+    authErrorGuard(error);
     console.error("보드 목록을 불러오던 중 예기치 못한 오류 발생:", error);
     throw new Error(BOARD_ERROR_MESSAGES.FAIL_FETCH_BOARD);
   } else {
@@ -44,7 +44,9 @@ export async function fetchBoards(): Promise<AdminBoardResponse[]> {
   }
 }
 
-export async function fetchBoardById(id: number): Promise<AdminBoardResponse> {
+export async function fetchBoardById(
+  id: number
+): Promise<AdminBoardResponse | null> {
   const reqAddress = `${boardApiHeadAddress}/${id}`;
   const { data, error } = await authenticatedFetch({
     method: "GET",
@@ -55,15 +57,12 @@ export async function fetchBoardById(id: number): Promise<AdminBoardResponse> {
   });
 
   if (error) {
-    await handleAuthRedirects(error);
+    authErrorGuard(error);
 
     switch (error.type) {
       case AuthenticatedFetchErrorType.NotFound:
-        notFound();
       case AuthenticatedFetchErrorType.BadRequest:
-        if (error.message === BOARD_ERROR_MESSAGES.INVALID_ID_TYPE) {
-          redirect("/admin/boards");
-        }
+        return null;
       default:
         throw new Error(BOARD_ERROR_MESSAGES.FAIL_FETCH_BOARD);
     }

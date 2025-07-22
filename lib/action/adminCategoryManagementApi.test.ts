@@ -16,7 +16,7 @@ import {
 } from "../definition/adminCategoryManagementSchema";
 import { server } from "../../mocks/server";
 import { http, HttpResponse } from "msw";
-import { serverAddress } from "../util";
+import { BASE_API_URL } from "../util";
 import { clearAuth } from "../authState";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { forbidden, redirect } from "next/navigation";
@@ -83,7 +83,7 @@ describe("Admin Category API Tests", () => {
 
     it("should fetch categories successfully", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories`, () => {
+        http.get(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(mockCategories, { status: 200 });
         })
       );
@@ -94,7 +94,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle unauthorized access", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories`, () => {
+        http.get(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -102,25 +102,22 @@ describe("Admin Category API Tests", () => {
         })
       );
 
-      await expect(fetchCategories()).rejects.toThrow();
-      expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      await expect(fetchCategories()).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
     });
 
     it("should handle permission denied", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories`, () => {
+        http.get(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
-      await expect(fetchCategories()).rejects.toThrow();
-      expect(forbidden).toHaveBeenCalled();
+      await expect(fetchCategories()).rejects.toThrow(ERROR_MESSAGES.FORBIDDEN);
     });
 
     it("should handle validation errors", async () => {
       const invalidData = { invalid: "data" };
       server.use(
-        http.get(`${serverAddress}/admin/categories`, () => {
+        http.get(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(invalidData, { status: 200 });
         })
       );
@@ -161,19 +158,17 @@ describe("Admin Category API Tests", () => {
 
     it("should handle not found error", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/999`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/999`, () => {
           return HttpResponse.json({ message: "Not Found" }, { status: 404 });
         })
       );
 
-      await expect(fetchCategoryById(999)).rejects.toThrow(
-        ERROR_MESSAGES.NOT_FOUND
-      );
+      await expect(fetchCategoryById(999)).resolves.toBeNull();
     });
 
     it("should handle unauthorized access", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -181,20 +176,21 @@ describe("Admin Category API Tests", () => {
         })
       );
 
-      await expect(fetchCategoryById(categoryId)).rejects.toThrow();
-      expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      await expect(fetchCategoryById(categoryId)).rejects.toThrow(
+        ERROR_MESSAGES.FORBIDDEN
+      );
     });
 
     it("should handle permission denied", async () => {
       const categoryId = 1;
       server.use(
-        http.get(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
-      await expect(fetchCategoryById(categoryId)).rejects.toThrow();
-      expect(forbidden).toHaveBeenCalled();
+      await expect(fetchCategoryById(categoryId)).rejects.toThrow(
+        ERROR_MESSAGES.FORBIDDEN
+      );
     });
   });
 
@@ -291,7 +287,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["existing"],
       };
       server.use(
-        http.post(`${serverAddress}/admin/categories`, () => {
+        http.post(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(
             { message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME },
             { status: 409 }
@@ -315,7 +311,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["existing"],
       };
       server.use(
-        http.post(`${serverAddress}/admin/categories`, () => {
+        http.post(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(
             {
               message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
@@ -349,7 +345,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["existing1", "existing2"],
       };
       server.use(
-        http.post(`${serverAddress}/admin/categories`, () => {
+        http.post(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(
             {
               message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
@@ -385,7 +381,7 @@ describe("Admin Category API Tests", () => {
       const mockResponse = { ...categoryData, id: 3, boardIds: [] };
 
       server.use(
-        http.post(`${serverAddress}/admin/categories`, () => {
+        http.post(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(mockResponse, { status: 201 });
         })
       );
@@ -419,7 +415,7 @@ describe("Admin Category API Tests", () => {
       });
 
       server.use(
-        http.post(`${serverAddress}/admin/categories`, () => {
+        http.post(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(
             { message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS },
             { status: 400 }
@@ -442,7 +438,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["new-category"],
       };
       server.use(
-        http.post(`${serverAddress}/admin/categories`, () => {
+        http.post(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -463,7 +459,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["new-category"],
       };
       server.use(
-        http.post(`${serverAddress}/admin/categories`, () => {
+        http.post(`${BASE_API_URL}/admin/categories`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
@@ -534,7 +530,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["new-slug"],
       };
       server.use(
-        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
             { message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME },
             { status: 409 }
@@ -558,7 +554,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["existing1", "existing2"],
       };
       server.use(
-        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
             {
               message: CATEGORY_ERROR_MESSAGES.DUPLICATE_SLUGS(
@@ -594,7 +590,7 @@ describe("Admin Category API Tests", () => {
       };
       const mockResponse = { ...mockCategories[0], ...updateData };
       server.use(
-        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(mockResponse, { status: 200 });
         })
       );
@@ -613,7 +609,7 @@ describe("Admin Category API Tests", () => {
       const nonExistentId = 999;
 
       server.use(
-        http.put(`${serverAddress}/admin/categories/${nonExistentId}`, () => {
+        http.put(`${BASE_API_URL}/admin/categories/${nonExistentId}`, () => {
           return HttpResponse.json(
             { message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND },
             { status: 404 }
@@ -642,7 +638,7 @@ describe("Admin Category API Tests", () => {
       });
 
       server.use(
-        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
             { message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS },
             { status: 400 }
@@ -670,7 +666,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["updated-slug"],
       };
       server.use(
-        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -692,7 +688,7 @@ describe("Admin Category API Tests", () => {
         allowedSlugs: ["updated-slug"],
       };
       server.use(
-        http.put(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.put(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
@@ -709,7 +705,7 @@ describe("Admin Category API Tests", () => {
 
     it("should delete category successfully", async () => {
       server.use(
-        http.delete(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.delete(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json({ message: "삭제 성공" }, { status: 200 });
         })
       );
@@ -720,7 +716,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle unauthorized error", async () => {
       server.use(
-        http.delete(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.delete(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -735,7 +731,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle not found error", async () => {
       server.use(
-        http.delete(`${serverAddress}/admin/categories/999`, () => {
+        http.delete(`${BASE_API_URL}/admin/categories/999`, () => {
           return HttpResponse.json(
             { message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND },
             { status: 404 }
@@ -751,7 +747,7 @@ describe("Admin Category API Tests", () => {
     it("should handle permission denied", async () => {
       const categoryId = 1;
       server.use(
-        http.delete(`${serverAddress}/admin/categories/${categoryId}`, () => {
+        http.delete(`${BASE_API_URL}/admin/categories/${categoryId}`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
@@ -769,7 +765,7 @@ describe("Admin Category API Tests", () => {
 
       server.use(
         http.get(
-          `${serverAddress}/admin/categories/validate-slug`,
+          `${BASE_API_URL}/admin/categories/validate-slug`,
           ({ request }) => {
             const url = new URL(request.url);
             const slugParam = url.searchParams.get("slug");
@@ -792,7 +788,7 @@ describe("Admin Category API Tests", () => {
 
       server.use(
         http.get(
-          `${serverAddress}/admin/categories/validate-slug`,
+          `${BASE_API_URL}/admin/categories/validate-slug`,
           ({ request }) => {
             const url = new URL(request.url);
             const slugParam = url.searchParams.get("slug");
@@ -812,7 +808,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle missing slug parameter", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-slug`, () => {
           return HttpResponse.json({ isUsed: false }, { status: 200 });
         })
       );
@@ -825,7 +821,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle unauthorized access", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-slug`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -840,7 +836,7 @@ describe("Admin Category API Tests", () => {
 
     it("should validate slug format correctly", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-slug`, () => {
           return HttpResponse.json({ isUsed: false }, { status: 200 });
         })
       );
@@ -865,7 +861,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle permission denied", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-slug`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-slug`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
@@ -881,7 +877,7 @@ describe("Admin Category API Tests", () => {
     it("should validate name successfully with categoryId", async () => {
       server.use(
         http.get(
-          `${serverAddress}/admin/categories/validate-name`,
+          `${BASE_API_URL}/admin/categories/validate-name`,
           ({ request }) => {
             const url = new URL(request.url);
             const nameParam = url.searchParams.get("name");
@@ -900,7 +896,7 @@ describe("Admin Category API Tests", () => {
     it("should validate name successfully without categoryId", async () => {
       server.use(
         http.get(
-          `${serverAddress}/admin/categories/validate-name`,
+          `${BASE_API_URL}/admin/categories/validate-name`,
           ({ request }) => {
             const url = new URL(request.url);
             const nameParam = url.searchParams.get("name");
@@ -918,7 +914,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle missing name parameter", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-name`, () => {
           return HttpResponse.json({ isUsed: false }, { status: 200 });
         })
       );
@@ -932,7 +928,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle unauthorized access", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-name`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -947,7 +943,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle server error", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-name`, () => {
           return HttpResponse.json(
             { message: "Internal Server Error" },
             { status: 500 }
@@ -962,7 +958,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle conflicted name", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-name`, () => {
           return HttpResponse.json({ isUsed: true }, { status: 200 });
         })
       );
@@ -973,7 +969,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle invalid name", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-name`, () => {
           return HttpResponse.json({ isUsed: false }, { status: 200 });
         })
       );
@@ -987,7 +983,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle permission denied", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/validate-name`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/validate-name`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
@@ -1009,7 +1005,7 @@ describe("Admin Category API Tests", () => {
 
     it("should handle unauthorized access", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/available`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/available`, () => {
           return HttpResponse.json(
             { message: "Unauthorized" },
             { status: 401 }
@@ -1017,25 +1013,26 @@ describe("Admin Category API Tests", () => {
         })
       );
 
-      await expect(getAvailableCategories()).rejects.toThrow();
-      expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      await expect(getAvailableCategories()).rejects.toThrow(
+        ERROR_MESSAGES.FORBIDDEN
+      );
     });
 
     it("should handle permission denied", async () => {
       server.use(
-        http.get(`${serverAddress}/admin/categories/available`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/available`, () => {
           return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
         })
       );
-      await expect(getAvailableCategories()).rejects.toThrow();
-      expect(forbidden).toHaveBeenCalled();
+      await expect(getAvailableCategories()).rejects.toThrow(
+        ERROR_MESSAGES.FORBIDDEN
+      );
     });
 
     it("should handle validation errors", async () => {
       const invalidData = { invalid: "data" };
       server.use(
-        http.get(`${serverAddress}/admin/categories/available`, () => {
+        http.get(`${BASE_API_URL}/admin/categories/available`, () => {
           return HttpResponse.json(invalidData, { status: 200 });
         })
       );

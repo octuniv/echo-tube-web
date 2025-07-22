@@ -2,7 +2,7 @@
 
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
-import { serverAddress } from "../lib/util";
+import { BASE_API_URL } from "../lib/util";
 import {
   BoardPurpose,
   CategoryWithBoardsResponse,
@@ -103,12 +103,12 @@ export const mockCategoriesWithBoards: CategoryWithBoardsResponse = [
 
 export const server = setupServer(
   // Mock API for user sign-up
-  http.post(`${serverAddress}/users`, () => {
+  http.post(`${BASE_API_URL}/users`, () => {
     return HttpResponse.json({ success: true }, { status: 200 });
   }),
 
   // Mock API for login
-  http.post(`${serverAddress}/auth/login`, () => {
+  http.post(`${BASE_API_URL}/auth/login`, () => {
     return HttpResponse.json(
       {
         access_token: "valid-access-token",
@@ -125,7 +125,7 @@ export const server = setupServer(
   }),
 
   // Mock API for token refresh
-  http.post(`${serverAddress}/auth/refresh`, () => {
+  http.post(`${BASE_API_URL}/auth/refresh`, () => {
     return HttpResponse.json(
       {
         access_token: "new-access-token",
@@ -136,14 +136,14 @@ export const server = setupServer(
   }),
 
   // Mock API for fetch posts with Board Slug
-  http.get(`${serverAddress}/posts/board/:boardId`, ({ params }) => {
+  http.get(`${BASE_API_URL}/posts/board/:boardId`, ({ params }) => {
     const boardId = Number(params.boardId);
     const filteredPosts = mockPosts.filter((post) => post.board.id === boardId);
     return HttpResponse.json(filteredPosts, { status: 200 });
   }),
 
   // Mock API for fetch post
-  http.get(`${serverAddress}/posts/:id`, ({ params }) => {
+  http.get(`${BASE_API_URL}/posts/:id`, ({ params }) => {
     const postId = Number(params.id);
 
     if (postId === 1) {
@@ -156,7 +156,7 @@ export const server = setupServer(
   }),
 
   // Mock API for creating Post
-  http.post(`${serverAddress}/posts`, async ({ request }) => {
+  http.post(`${BASE_API_URL}/posts`, async ({ request }) => {
     let body: unknown; // 1. unknown 타입으로 선언
 
     try {
@@ -199,7 +199,7 @@ export const server = setupServer(
   }),
 
   // Mock API for delete post
-  http.delete(`${serverAddress}/posts/:id`, () => {
+  http.delete(`${BASE_API_URL}/posts/:id`, () => {
     return HttpResponse.json(
       { message: "Post deleted successfully." },
       { status: 200 }
@@ -207,7 +207,7 @@ export const server = setupServer(
   }),
 
   // Mock API for edit post
-  http.patch(`${serverAddress}/posts/:id`, () => {
+  http.patch(`${BASE_API_URL}/posts/:id`, () => {
     return HttpResponse.json(
       { ...mockPosts[0], ...mockEditPostForm },
       { status: 200 }
@@ -215,7 +215,7 @@ export const server = setupServer(
   }),
 
   // Mock API for delete user
-  http.delete(`${serverAddress}/users`, () => {
+  http.delete(`${BASE_API_URL}/users`, () => {
     return HttpResponse.json(
       { message: "Successfully deleted account" },
       { status: 200 }
@@ -223,7 +223,7 @@ export const server = setupServer(
   }),
 
   // Mock API for update nickname
-  http.patch(`${serverAddress}/users/nickname`, () => {
+  http.patch(`${BASE_API_URL}/users/nickname`, () => {
     return HttpResponse.json(
       { message: "Nickname change successful." },
       { status: 200 }
@@ -231,43 +231,43 @@ export const server = setupServer(
   }),
 
   // Mock API for testing authenticatedFetch
-  http.get(`${serverAddress}/test-endpoint`, () => {
+  http.get(`${BASE_API_URL}/test-endpoint`, () => {
     return HttpResponse.json({ data: "success" }, { status: 200 });
   }),
 
   // Mock API for testing checkEmailExists
-  http.post(`${serverAddress}/users/check-email`, () => {
+  http.post(`${BASE_API_URL}/users/check-email`, () => {
     return HttpResponse.json({ exists: true }, { status: 200 });
   }),
 
   // Mock API for testing checkNicknameExists
-  http.post(`${serverAddress}/users/check-nickname`, () => {
+  http.post(`${BASE_API_URL}/users/check-nickname`, () => {
     return HttpResponse.json({ exists: true }, { status: 200 });
   }),
 
   // Mock API for testing passowrd
-  http.patch(`${serverAddress}/users/check-nickname`, () => {
+  http.patch(`${BASE_API_URL}/users/check-nickname`, () => {
     return HttpResponse.json(
       { message: "Passcode change successful." },
       { status: 200 }
     );
   }),
 
-  http.get(`${serverAddress}/boards`, () => {
+  http.get(`${BASE_API_URL}/boards`, () => {
     return HttpResponse.json([{ id: 1, slug: "free", name: "자유 게시판" }], {
       status: 200,
     });
   }),
 
-  http.get(`${serverAddress}/categories/with-boards`, () => {
+  http.get(`${BASE_API_URL}/categories/with-boards`, () => {
     return HttpResponse.json(mockCategoriesWithBoards, { status: 200 });
   }),
 
-  http.get(`${serverAddress}/dashboard/summary`, () => {
+  http.get(`${BASE_API_URL}/dashboard/summary`, () => {
     return HttpResponse.json(mockDashboardSummary, { status: 200 });
   }),
 
-  http.post(`${serverAddress}/auth/logout`, () => {
+  http.post(`${BASE_API_URL}/auth/logout`, () => {
     return HttpResponse.json(
       { message: "Logged out successfully" },
       { status: 200 }
