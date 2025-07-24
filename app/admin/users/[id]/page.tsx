@@ -6,6 +6,7 @@ import DeleteButton from "@/components/admin/users/buttons/DeleteButton";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { notFound } from "next/navigation";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
+import ErrorMessage from "@/components/admin/errorMessage";
 
 export default async function UserDetailPage({
   params,
@@ -15,22 +16,17 @@ export default async function UserDetailPage({
   const id = Number((await params).id);
 
   let userData: AdminUserDetailResponse | null;
+  let message: string = "알 수 없는 오류가 발생했습니다";
   try {
     userData = await fetchUserDetails(id);
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message === "사용자를 찾을 수 없습니다") {
-        return (
-          <div className="p-4 text-red-500">사용자를 찾을 수 없습니다.</div>
-        );
-      } else if (error.message === ERROR_MESSAGES.FORBIDDEN) {
+      if (error.message === ERROR_MESSAGES.FORBIDDEN) {
         return <UnauthorizedRedirect />;
       }
-      return <div className="p-4 text-red-500">{error.message}</div>;
+      message = error.message;
     }
-    return (
-      <div className="p-4 text-red-500">알 수 없는 오류가 발생했습니다</div>
-    );
+    return <ErrorMessage message={message} />;
   }
 
   if (!userData) {

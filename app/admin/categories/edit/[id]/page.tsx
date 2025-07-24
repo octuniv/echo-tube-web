@@ -1,5 +1,5 @@
 import UpdateCategoryPage from "@/components/admin/categories/edit/UpdateCategoryPage";
-import { GoToCategoriesLink } from "@/components/admin/categories/GoToCategoriesLink";
+import ErrorMessage from "@/components/admin/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchCategoryById } from "@/lib/action/adminCategoryManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
@@ -28,13 +28,7 @@ export default async function CategoryUpdate({ params }: PageProps) {
     } else {
       message = "알 수 없는 오류가 발생했습니다.";
     }
-    return (
-      <div className="error-container">
-        <h2>오류 발생</h2>
-        <p>{message}</p>
-        <GoToCategoriesLink />
-      </div>
-    );
+    return <ErrorMessage message={message} />;
   }
 
   if (!category) {

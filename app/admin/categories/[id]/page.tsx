@@ -1,5 +1,5 @@
 import { GoToCategoriesLink } from "@/components/admin/categories/GoToCategoriesLink";
-import { RetryButton } from "@/components/admin/categories/RetryButton";
+import ErrorMessage from "@/components/admin/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchCategoryById } from "@/lib/action/adminCategoryManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
@@ -30,15 +30,6 @@ function LoadingSkeleton() {
       </div>
 
       <div className="h-96 bg-gray-200 rounded"></div>
-    </div>
-  );
-}
-
-function ErrorMessage({ message }: { message: string }) {
-  return (
-    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-6">
-      <h3 className="text-red-800 font-medium">Error</h3>
-      <p className="text-red-700">{message}</p>
     </div>
   );
 }
@@ -139,12 +130,7 @@ export default async function CategoryDetail({ params }: pageProps) {
       message = "Failed to load category details. Please try again later.";
     }
 
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ErrorMessage message={message} />
-        <RetryButton />
-      </div>
-    );
+    return <ErrorMessage message={message} />;
   }
 
   if (!category) {

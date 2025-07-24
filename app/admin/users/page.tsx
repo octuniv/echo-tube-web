@@ -1,3 +1,4 @@
+import ErrorMessage from "@/components/admin/errorMessage";
 import DeleteButton from "@/components/admin/users/buttons/DeleteButton";
 import DetailButton from "@/components/admin/users/buttons/DetailButton";
 import EditButton from "@/components/admin/users/buttons/EditButton";
@@ -42,6 +43,7 @@ export default async function UserList({
   let searchMode = false;
   let currentPage: number;
   let currentLimit: number;
+  let message: string = "알 수 없는 오류가 발생했습니다.";
 
   try {
     if (validatedSearchParams.success) {
@@ -82,11 +84,9 @@ export default async function UserList({
       } else if (error.message === ERROR_MESSAGES.FORBIDDEN) {
         return <UnauthorizedRedirect />;
       }
-      return <div className="text-red-500 p-4">{error.message}</div>;
+      message = error.message;
     }
-    return (
-      <div className="text-red-500 p-4">알 수 없는 오류가 발생했습니다.</div>
-    );
+    return <ErrorMessage message={message} />;
   }
 
   if (!data) {

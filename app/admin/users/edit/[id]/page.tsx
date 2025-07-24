@@ -1,3 +1,4 @@
+import ErrorMessage from "@/components/admin/errorMessage";
 import AdminUserEditPage from "@/components/admin/users/edit/AdminUserEditPage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchUserDetails } from "@/lib/action/adminUserManagementApi";
@@ -15,6 +16,7 @@ export default async function UserDetail({ params }: pageProps) {
   const { id } = await params;
   const userId = Number(id);
   let userData: AdminUserDetailResponse | null;
+  let message: string = "알 수 없는 오류가 발생했습니다";
 
   if (isNaN(userId)) {
     notFound();
@@ -27,12 +29,10 @@ export default async function UserDetail({ params }: pageProps) {
       if (error.message === ERROR_MESSAGES.FORBIDDEN) {
         return <UnauthorizedRedirect />;
       } else {
-        return <div className="p-4 text-red-500">{error.message}</div>;
+        message = error.message;
       }
     }
-    return (
-      <div className="p-4 text-red-500">알 수 없는 오류가 발생했습니다</div>
-    );
+    return <ErrorMessage message={message} />;
   }
 
   if (!userData) {

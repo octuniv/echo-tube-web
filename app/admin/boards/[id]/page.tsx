@@ -1,3 +1,4 @@
+import ErrorMessage from "@/components/admin/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoardById } from "@/lib/action/adminBoardManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
@@ -15,15 +16,6 @@ function formatDateTime(dateString: string): string {
     minute: "2-digit",
     second: "2-digit",
   });
-}
-
-function ErrorMessage({ message }: { message: string }) {
-  return (
-    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-6">
-      <h3 className="text-red-800 font-medium">Error</h3>
-      <p className="text-red-700">{message}</p>
-    </div>
-  );
 }
 
 export default async function BoardDetail({

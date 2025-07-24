@@ -1,4 +1,5 @@
 import { DeleteButton } from "@/components/admin/categories/DeleteButton";
+import ErrorMessage from "@/components/admin/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
@@ -16,11 +17,13 @@ export default async function CategoryList() {
       return <UnauthorizedRedirect />;
     }
     return (
-      <div className="p-6 text-red-600">
-        {error instanceof Error
-          ? error.message
-          : "알 수 없는 오류가 발생했습니다."}
-      </div>
+      <ErrorMessage
+        message={
+          error instanceof Error
+            ? error.message
+            : "알 수 없는 오류가 발생했습니다."
+        }
+      />
     );
   }
 

@@ -1,4 +1,5 @@
 import { DeleteButton } from "@/components/admin/boards/DeleteButton";
+import ErrorMessage from "@/components/admin/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoards } from "@/lib/action/adminBoardManagementApi";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
@@ -8,15 +9,6 @@ import { CategorySummary } from "@/lib/definition/adminCategoryManagementSchema"
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-function ErrorMessage({ message }: { message: string }) {
-  return (
-    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-6">
-      <h3 className="text-red-800 font-medium">Error</h3>
-      <p className="text-red-700">{message}</p>
-    </div>
-  );
-}
 
 export default async function BoardList() {
   let categories: CategorySummary[];
