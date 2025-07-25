@@ -3,7 +3,10 @@ import { useRef, useState } from "react";
 import { UserRole } from "@/lib/definition";
 import { AdminUserCreateState } from "@/lib/definition/adminUserManagementSchema";
 import { LabelInput, ErrorText } from "@/components/common";
-import { checkEmailExists, checkNicknameExists } from "@/lib/actions";
+import {
+  checkEmailExists,
+  checkNicknameExists,
+} from "@/lib/action/userAuthAction";
 import RoleSelect from "../RoleSelect";
 
 type ValidationType = "nickname" | "email";

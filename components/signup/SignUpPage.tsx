@@ -1,7 +1,7 @@
 "use client";
 
 import SignUpForm from "./SignUpForm";
-import { signUpAction } from "@/lib/actions";
+import { signUpAction } from "@/lib/action/userAuthAction";
 import { useActionState } from "react";
 import { UserState as ErrorState } from "@/lib/definition";
 

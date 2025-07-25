@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { FetchPost } from "@/lib/actions";
+import { FetchPost } from "@/lib/action/postActions";
 import AIDigestPostPage from "@/components/Boards/AiDigest/AiDigestPostPage";
 
 interface PostPageProps {

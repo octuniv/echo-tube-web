@@ -21,11 +21,11 @@ import { clearAuth } from "../authState";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { forbidden, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 import {
   availableCategoriesMock,
   mockCategories,
-} from "../../mocks/admin/categoryHandlers";
-import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
+} from "../../mocks/handlers/admin/categoryHandlers";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>

@@ -1,5 +1,6 @@
 import Board from "@/components/Boards/AiDigest/AiDigestBoard"; // 영상 중심 UI 컴포넌트
-import { FetchAllBoards, FetchPostsByBoardId } from "@/lib/actions";
+import { FetchAllBoards } from "@/lib/action/boardBrowseActions";
+import { FetchPostsByBoardId } from "@/lib/action/postActions";
 import { BoardPurpose, VideoCardInfo } from "@/lib/definition";
 import { notFound } from "next/navigation";
 

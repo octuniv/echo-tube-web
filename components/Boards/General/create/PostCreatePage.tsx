@@ -1,6 +1,6 @@
 "use client";
 
-import { CreatePost } from "@/lib/actions";
+import { CreatePost } from "@/lib/action/postActions";
 import { useActionState } from "react";
 import { CreatePostInputState as ErrorState } from "@/lib/definition";
 import PostCreateForm from "../../Shared/PostEditor";

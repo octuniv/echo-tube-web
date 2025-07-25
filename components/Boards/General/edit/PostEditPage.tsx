@@ -1,6 +1,6 @@
 "use client";
 
-import { EditPost } from "@/lib/actions";
+import { EditPost } from "@/lib/action/postActions";
 import { useActionState } from "react";
 import {
   CreatePostInputState as ErrorState,

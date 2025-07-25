@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { hasAdminRole, loginStatus } from "@/lib/authState";
 import AppShell from "@/components/layout/AppShell";
-import { FetchCategoriesWithBoards } from "@/lib/actions";
+import { FetchCategoriesWithBoards } from "@/lib/action/boardBrowseActions";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

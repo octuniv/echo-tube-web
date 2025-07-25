@@ -1,7 +1,7 @@
 "use client";
 
 // components/DeleteButton.tsx
-import { DeletePost } from "@/lib/actions";
+import { DeletePost } from "@/lib/action/postActions";
 import { TrashIcon } from "@heroicons/react/24/solid"; // 휴지통 아이콘 사용
 
 interface DeleteButtonProps {

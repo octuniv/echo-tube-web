@@ -1,9 +1,9 @@
-import { UserRole } from "../../lib/definition";
+import { UserRole } from "../../../lib/definition";
 import {
   AdminUserDetailResponse,
   AdminUserListPaginatedResponse,
-} from "../../lib/definition/adminUserManagementSchema";
-import { BASE_API_URL } from "../../lib/util";
+} from "../../../lib/definition/adminUserManagementSchema";
+import { BASE_API_URL } from "../../../lib/util";
 import { http, HttpResponse } from "msw";
 
 export const mockUserList: AdminUserDetailResponse[] = [

@@ -11,7 +11,6 @@ import {
   AdminUserDetailResponse,
   AdminUserUpdateState,
 } from "../definition/adminUserManagementSchema";
-import { mockUserList } from "../../mocks/admin/userHandlers";
 import { server } from "../../mocks/server";
 import { http, HttpResponse } from "msw";
 import { BASE_API_URL } from "../util";
@@ -20,6 +19,7 @@ import { UserRole } from "../definition";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { forbidden, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { mockUserList } from "../../mocks/handlers/admin/userHandlers";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>

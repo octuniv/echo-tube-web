@@ -1,5 +1,4 @@
 import { http, HttpResponse } from "msw";
-import { mockBoards } from "../../mocks/admin/boardHandlers";
 import { server } from "../../mocks/server";
 import { BoardPurpose, UserRole } from "../definition";
 import { BASE_API_URL } from "../util";
@@ -19,6 +18,7 @@ import {
 } from "../definition/adminBoardManagementSchema";
 import { revalidatePath } from "next/cache";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
+import { mockBoards } from "../../mocks/handlers/admin/boardHandlers";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>

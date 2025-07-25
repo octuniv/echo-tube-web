@@ -1,6 +1,6 @@
 "use client";
 
-import { LoginAction } from "@/lib/actions";
+import { LoginAction } from "@/lib/action/userAuthAction";
 import { useActionState, useEffect, useState } from "react";
 import { LoginInfoState as ErrorState } from "@/lib/definition";
 import LoginForm from "./LoginForm";

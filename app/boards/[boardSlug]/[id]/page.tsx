@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { FetchPost } from "@/lib/actions";
+import { FetchPost } from "@/lib/action/postActions";
 import { userStatus } from "@/lib/authState";
 import { canModifyPost } from "@/lib/util";
 import GeneralPostPage from "@/components/Boards/General/GeneralPostPage";

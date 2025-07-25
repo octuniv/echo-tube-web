@@ -1,5 +1,5 @@
 "use client";
-import { DeleteUser } from "@/lib/actions";
+import { DeleteUser } from "@/lib/action/userProfileActions";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 

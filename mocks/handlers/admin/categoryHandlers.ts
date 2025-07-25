@@ -1,17 +1,16 @@
 // mocks/admin/categoryHandlers.ts
 import { http, HttpResponse } from "msw";
-import { BASE_API_URL } from "../../lib/util";
+import { BASE_API_URL } from "../../../lib/util";
 import {
   BoardSummary,
   CategoryDetails,
   CategorySummary,
   CategoryFormValidationSchema,
   SLUG_REGEX,
-  AvailableCategoryDto,
   AvailableCategoriesResponse,
-} from "../../lib/definition/adminCategoryManagementSchema";
-import { BoardPurpose, UserRole } from "../../lib/definition";
-import { CATEGORY_ERROR_MESSAGES } from "../../lib/constants/category/errorMessage";
+} from "../../../lib/definition/adminCategoryManagementSchema";
+import { BoardPurpose, UserRole } from "../../../lib/definition";
+import { CATEGORY_ERROR_MESSAGES } from "../../../lib/constants/category/errorMessage";
 
 // 테스트용 카테고리 데이터
 export const mockCategories: CategorySummary[] = [

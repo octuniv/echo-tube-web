@@ -1,5 +1,6 @@
 import Board from "@/components/Boards/General/Board";
-import { FetchAllBoards, FetchPostsByBoardId } from "@/lib/actions";
+import { FetchAllBoards } from "@/lib/action/boardBrowseActions";
+import { FetchPostsByBoardId } from "@/lib/action/postActions";
 import { userStatus } from "@/lib/authState";
 import { BoardPurpose, PostResponse, VideoCardInfo } from "@/lib/definition";
 import { canCreatePost } from "@/lib/util";
