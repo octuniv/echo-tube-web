@@ -43,7 +43,8 @@ pnpm install
 `.env` 파일 생성:
 
 ```env
-SERVER_ADDRESS=http://your-api-endpoint.com
+BASE_API_URL=http://your-api-endpoint.com
+NEXT_PUBLIC_SERVER_ADDRESS=http://localhost:3000
 ```
 
 ### 3. 개발 서버 실행

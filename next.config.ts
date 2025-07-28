@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  devIndicators: process.env.PLAYWRIGHT_TEST === "true" ? false : undefined,
+  experimental: {
+    authInterrupts: true,
+  },
 };
 
 export default nextConfig;

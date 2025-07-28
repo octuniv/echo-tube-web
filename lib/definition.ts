@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export type FormState<T> = {
+  errors?: { [K in keyof T]?: string[] };
+  message?: string | null;
+};
+
 export enum UserRole {
   ADMIN = "admin",
   USER = "user",
@@ -8,24 +13,10 @@ export enum UserRole {
 
 export enum BoardPurpose {
   GENERAL = "general",
-  AI_DEGEST = "ai_digest",
+  AI_DIGEST = "ai_digest",
 }
 
-export interface User {
-  name: string;
-  nickname: string;
-  email: string;
-  password: string;
-}
-
-export interface UserState {
-  errors?: {
-    [key in keyof User]?: string[];
-  };
-  message?: string | null;
-}
-
-export const userSchema = z.object({
+export const UserSchema = z.object({
   name: z.string().min(1, { message: "Please enter your valid name." }),
   nickname: z.string().min(1, { message: "Please enter your nickname." }),
   email: z.string().email({ message: "This email is invalid" }),
@@ -33,6 +24,10 @@ export const userSchema = z.object({
     .string()
     .min(6, { message: "Password must be at least 6 characters" }),
 });
+
+export type User = z.infer<typeof UserSchema>;
+
+export type UserState = FormState<User>;
 
 export interface UserAuthInfo {
   name: string;
@@ -46,39 +41,17 @@ export interface LoginResponse {
   refresh_token: string;
   user: UserAuthInfo;
 }
+export const LoginInfoSchema = UserSchema.omit({ name: true, nickname: true });
 
-export type LoginInfo = Omit<User, "name" | "nickname">;
+export type LoginInfo = z.infer<typeof LoginInfoSchema>;
 
-export interface LoginInfoState {
-  errors?: {
-    [key in keyof LoginInfo]?: string[];
-  };
-  message?: string | null;
-}
+export type LoginInfoState = FormState<LoginInfo>;
 
-export const LoginInfoSchema = userSchema.omit({ name: true, nickname: true });
+export const NicknameUpdateSchema = UserSchema.pick({ nickname: true });
 
-export type NicknameUpdateInfo = Pick<User, "nickname">;
+export type NicknameUpdateInfo = z.infer<typeof NicknameUpdateSchema>;
 
-export interface NicknameUpdateState {
-  errors?: {
-    [key in keyof NicknameUpdateInfo]?: string[];
-  };
-  message?: string | null;
-}
-
-export const nicknameUpdateSchema = userSchema.pick({ nickname: true });
-
-export type PasswordUpdateInfo = Pick<User, "password"> & {
-  confirmPassword: string;
-};
-
-export interface PasswordUpdateState {
-  errors?: {
-    [key in keyof PasswordUpdateInfo]?: string[];
-  };
-  message?: string | null;
-}
+export type NicknameUpdateState = FormState<NicknameUpdateInfo>;
 
 export const PasswordUpdateSchema = z
   .object({
@@ -94,14 +67,35 @@ export const PasswordUpdateSchema = z
     path: ["confirmPassword"],
   });
 
-export interface BoardListItemDto {
-  id: number;
-  slug: string;
-  name: string;
-  description?: string | null;
-  requiredRole: UserRole;
-  boardType: BoardPurpose;
-}
+export type PasswordUpdateInfo = z.infer<typeof PasswordUpdateSchema>;
+
+export type PasswordUpdateState = FormState<PasswordUpdateInfo>;
+
+export const CategoryBoardSummarySchema = z.object({
+  id: z.number(),
+  slug: z.string(),
+  name: z.string(),
+});
+
+export type CategoryBoardSummary = z.infer<typeof CategoryBoardSummarySchema>;
+
+export const CategoryBoardGroupSchema = z.object({
+  purpose: z.nativeEnum(BoardPurpose),
+  boards: z.array(CategoryBoardSummarySchema),
+});
+
+export type CategoryBoardGroup = z.infer<typeof CategoryBoardGroupSchema>;
+
+export const CategoryWithBoardsResponseSchema = z.array(
+  z.object({
+    name: z.string(),
+    boardGroups: z.array(CategoryBoardGroupSchema),
+  })
+);
+
+export type CategoryWithBoardsResponse = z.infer<
+  typeof CategoryWithBoardsResponseSchema
+>;
 
 export const BoardListItemDtoSchema = z.object({
   id: z.number(),
@@ -112,24 +106,9 @@ export const BoardListItemDtoSchema = z.object({
   boardType: z.nativeEnum(BoardPurpose),
 });
 
-export interface PostDto {
-  id: number;
-  title: string;
-  content: string;
-  views: number;
-  commentsCount: number;
-  videoUrl?: string | null;
-  nickname: string;
-  createdAt: string;
-  updatedAt: string;
-  board: BoardListItemDto;
-  hotScore: number;
-  channelTitle?: string | null;
-  duration?: string | null;
-  source?: string | null;
-}
+export type BoardListItemDto = z.infer<typeof BoardListItemDtoSchema>;
 
-export const PostDtoSchema = z.object({
+export const PostResponseSchema = z.object({
   id: z.number(),
   title: z.string(),
   content: z.string(),
@@ -146,9 +125,10 @@ export const PostDtoSchema = z.object({
   source: z.string().nullable().optional(),
 });
 
-// export type VideoCardInfo = Omit<PostDto, "content" | "updatedAt">;
+export type PostResponse = z.infer<typeof PostResponseSchema>;
+
 export type VideoCardInfo = Pick<
-  PostDto,
+  PostResponse,
   "id" | "title" | "nickname" | "createdAt" | "videoUrl"
 > & {
   channelTitle?: string | null;
@@ -156,19 +136,15 @@ export type VideoCardInfo = Pick<
   source?: string | null;
 };
 
-export const postSchema = z.object({
+export const CreatePostInputSchema = z.object({
   title: z.string().min(1, { message: "Please enter your title." }),
   content: z.string().min(1, { message: "Please enter your content." }),
   videoUrl: z.string().optional(),
 });
 
-export interface PostState {
-  errors?: {
-    title?: string[];
-    content?: string[];
-  };
-  message?: string | null;
-}
+export type CreatePostInput = z.infer<typeof CreatePostInputSchema>;
+
+export type CreatePostInputState = FormState<CreatePostInput>;
 
 export interface CreatePostRequestBody {
   title: string;
@@ -177,16 +153,25 @@ export interface CreatePostRequestBody {
   boardSlug: string;
 }
 
-export interface DashboardSummaryDto {
-  visitors: number;
-  recentPosts: PostDto[];
-  popularPosts: PostDto[];
-  noticesPosts: PostDto[];
-}
-
 export const DashboardSummaryDtoSchema = z.object({
   visitors: z.number(),
-  recentPosts: z.array(PostDtoSchema),
-  popularPosts: z.array(PostDtoSchema),
-  noticesPosts: z.array(PostDtoSchema),
+  recentPosts: z.array(PostResponseSchema),
+  popularPosts: z.array(PostResponseSchema),
+  noticesPosts: z.array(PostResponseSchema),
 });
+
+export type DashboardSummaryDto = z.infer<typeof DashboardSummaryDtoSchema>;
+
+export const genericPaginatedResponseDtoSchema = <T extends z.ZodTypeAny>(
+  schema: T
+) =>
+  z.object({
+    data: z.array(schema),
+    currentPage: z.number().int().nonnegative(),
+    totalItems: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  });
+
+export type PaginatedResponseDto<T extends z.ZodTypeAny> = z.infer<
+  ReturnType<typeof genericPaginatedResponseDtoSchema<T>>
+>;

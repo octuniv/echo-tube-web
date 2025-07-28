@@ -1,7 +1,7 @@
 "use client";
 
 // components/DeleteButton.tsx
-import { DeletePost } from "@/lib/actions";
+import { DeletePost } from "@/lib/action/postActions";
 import { TrashIcon } from "@heroicons/react/24/solid"; // 휴지통 아이콘 사용
 
 interface DeleteButtonProps {
@@ -17,8 +17,15 @@ export default function DeleteButton({
 }: DeleteButtonProps) {
   // 삭제 핸들러
   const handleDelete = async () => {
+    if (!isEditable) return;
+
     if (confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
-      await DeletePost(postId, boardSlug); // 서버 액션 호출
+      try {
+        await DeletePost(postId, boardSlug);
+      } catch (err) {
+        alert("삭제 중 오류가 발생했습니다. 다시 시도해주세요.");
+        console.error("삭제 실패:", err);
+      }
     }
   };
 

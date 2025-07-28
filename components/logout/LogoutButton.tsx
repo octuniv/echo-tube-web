@@ -1,5 +1,5 @@
 "use client";
-import { LogoutAction } from "@/lib/actions";
+import { LogoutAction } from "@/lib/action/userAuthAction";
 import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/solid";
 
 function LogoutButton() {

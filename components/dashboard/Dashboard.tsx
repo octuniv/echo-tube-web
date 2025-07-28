@@ -3,7 +3,11 @@
 import { useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { DashboardSummaryDto, PostDto, UserAuthInfo } from "@/lib/definition";
+import {
+  DashboardSummaryDto,
+  PostResponse,
+  UserAuthInfo,
+} from "@/lib/definition";
 
 interface DashboardProps {
   user: UserAuthInfo;
@@ -26,7 +30,7 @@ export default function Dashboard({ user, data }: DashboardProps) {
   };
 
   // 게시물 주소
-  const postAddress = (post: PostDto) =>
+  const postAddress = (post: PostResponse) =>
     `/boards/${post.board.slug}/${post.id}`;
 
   return (

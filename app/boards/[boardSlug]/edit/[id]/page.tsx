@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { FetchPost } from "@/lib/actions";
+import { FetchPost } from "@/lib/action/postActions";
 import { userStatus } from "@/lib/authState";
 import PostEditPage from "@/components/Boards/General/edit/PostEditPage";
 import { canModifyPost } from "@/lib/util";

@@ -1,10 +1,13 @@
-import { PostState as ErrorState, PostDto } from "@/lib/definition";
+import {
+  CreatePostInputState as ErrorState,
+  PostResponse,
+} from "@/lib/definition";
 import Link from "next/link";
 
 interface PostEditorProps {
   state: ErrorState;
   formAction: (payload: FormData) => void;
-  post?: PostDto;
+  post?: PostResponse;
   boardSlug: string;
 }
 

@@ -3,7 +3,10 @@
 import { useRef, useState } from "react";
 import { UserState as ErrorState } from "@/lib/definition";
 import { LabelInput, ErrorText } from "../common";
-import { checkEmailExists, checkNicknameExists } from "@/lib/actions";
+import {
+  checkEmailExists,
+  checkNicknameExists,
+} from "@/lib/action/userAuthAction";
 
 type ValidationType = "nickname" | "email";
 

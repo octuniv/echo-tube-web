@@ -1,17 +1,23 @@
-"use client"; // 클라이언트 컴포넌트 선언
+"use client";
 
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { BoardListItemDto } from "@/lib/definition";
+import { CategoryWithBoardsResponse } from "@/lib/definition";
 
 interface AppShellProps {
   isLogined: boolean;
+  isAdmin: boolean;
   children: React.ReactNode;
-  boards: BoardListItemDto[];
+  categoriesWithBoards: CategoryWithBoardsResponse;
 }
 
-const AppShell = ({ isLogined, children, boards }: AppShellProps) => {
+const AppShell = ({
+  isLogined,
+  isAdmin,
+  children,
+  categoriesWithBoards,
+}: AppShellProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -20,7 +26,8 @@ const AppShell = ({ isLogined, children, boards }: AppShellProps) => {
       <Sidebar
         isOpen={isSidebarOpen}
         isLogined={isLogined}
-        boards={boards}
+        isAdmin={isAdmin}
+        categoriesWithBoards={categoriesWithBoards}
         onClose={() => setIsSidebarOpen(false)}
       />
 

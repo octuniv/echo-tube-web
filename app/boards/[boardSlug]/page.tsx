@@ -1,7 +1,8 @@
 import Board from "@/components/Boards/General/Board";
-import { FetchAllBoards, FetchPostsByBoardId } from "@/lib/actions";
+import { FetchAllBoards } from "@/lib/action/boardBrowseActions";
+import { FetchPostsByBoardId } from "@/lib/action/postActions";
 import { userStatus } from "@/lib/authState";
-import { BoardPurpose, PostDto, VideoCardInfo } from "@/lib/definition";
+import { BoardPurpose, PostResponse, VideoCardInfo } from "@/lib/definition";
 import { canCreatePost } from "@/lib/util";
 import { notFound } from "next/navigation";
 
@@ -31,7 +32,7 @@ const Page = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
 
   const posts = await FetchPostsByBoardId(currentBoard.id);
   // page.tsx 내부의 posts 매핑 부분
-  videoData = posts.map((post: PostDto) => ({
+  videoData = posts.map((post: PostResponse) => ({
     id: post.id,
     title: post.title,
     nickname: post.nickname,

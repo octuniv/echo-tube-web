@@ -1,5 +1,5 @@
 import Dashboard from "@/components/dashboard/Dashboard";
-import { FetchDashboardSummary } from "@/lib/actions";
+import { FetchDashboardSummary } from "@/lib/action/dashboardActions";
 import { userStatus } from "@/lib/authState";
 import { isValidUser } from "@/lib/util";
 import { redirect } from "next/navigation";

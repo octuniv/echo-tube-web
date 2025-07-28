@@ -3,27 +3,30 @@
 import Link from "next/link";
 import {
   HomeIcon,
-  DocumentTextIcon,
   CogIcon,
-  DocumentDuplicateIcon,
+  UserGroupIcon,
+  FolderIcon,
+  ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
-import { BoardListItemDto } from "@/lib/definition";
+import { BoardPurpose, CategoryWithBoardsResponse } from "@/lib/definition";
 
 interface SidebarProps {
   isOpen: boolean;
   isLogined: boolean;
-  boards: BoardListItemDto[];
+  isAdmin: boolean;
+  categoriesWithBoards: CategoryWithBoardsResponse;
   onClose: () => void;
 }
 
-const Sidebar = ({ isOpen, isLogined, boards, onClose }: SidebarProps) => {
+const Sidebar = ({
+  isOpen,
+  isLogined,
+  isAdmin,
+  categoriesWithBoards,
+  onClose,
+}: SidebarProps) => {
   const pathname = usePathname();
-
-  const generalBoards = boards.filter((board) => board.boardType === "general");
-  const aiDigestBoards = boards.filter(
-    (board) => board.boardType === "ai_digest"
-  );
 
   return (
     <div
@@ -69,76 +72,106 @@ const Sidebar = ({ isOpen, isLogined, boards, onClose }: SidebarProps) => {
               </Link>
             </>
           )}
+          {isAdmin && (
+            <>
+              <h3 className="px-4 py-2 font-semibold text-sm text-gray-500 uppercase tracking-wider">
+                관리자
+              </h3>
+              <div className="pl-2 space-y-1">
+                <Link
+                  href="/admin/users"
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    pathname === "/admin/users"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-700"
+                  } hover:bg-blue-50`}
+                >
+                  <UserGroupIcon className="w-6 h-6 mr-3" />
+                  사용자 관리
+                </Link>
+
+                <Link
+                  href="/admin/categories"
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    pathname === "/admin/categories"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-700"
+                  } hover:bg-blue-50`}
+                >
+                  <FolderIcon className="w-6 h-6 mr-3" />
+                  카테고리 관리
+                </Link>
+
+                <Link
+                  href="/admin/boards"
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    pathname === "/admin/boards"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-700"
+                  } hover:bg-blue-50`}
+                >
+                  <ClipboardDocumentListIcon className="w-6 h-6 mr-3" />
+                  게시판 관리
+                </Link>
+              </div>
+            </>
+          )}
         </div>
 
-        {generalBoards.length > 0 && (
-          <div className="space-y-2">
+        {categoriesWithBoards.map((category) => (
+          <div key={category.name} className="space-y-2">
             <h3
               className="px-4 py-2 font-semibold text-sm text-gray-500 uppercase tracking-wider"
-              id="general-heading"
+              aria-label={`category-label-${category.name}`}
             >
-              <span className="inline-flex items-center gap-1">
-                <DocumentTextIcon className="w-4 h-4 text-gray-400" />
-                일반 게시판
-              </span>
+              {category.name}
             </h3>
-            {generalBoards.map((board) => {
-              const href = `/boards/${board.slug}`;
-              const isActive = pathname === href;
+            {category.boardGroups
+              .sort((a, b) =>
+                a.purpose === BoardPurpose.GENERAL
+                  ? -1
+                  : b.purpose === BoardPurpose.GENERAL
+                  ? 1
+                  : 0
+              )
+              .map((group) => (
+                <div key={group.purpose} className="pl-2">
+                  {group.boards.map((board) => {
+                    const href =
+                      group.purpose === BoardPurpose.AI_DIGEST
+                        ? `/boards/ai-digest/${board.slug}`
+                        : `/boards/${board.slug}`;
+                    const isActive = pathname === href;
 
-              return (
-                <Link
-                  key={board.id}
-                  href={href}
-                  className={`flex items-center px-4 py-2 rounded-lg ${
-                    isActive ? "bg-blue-100 text-blue-600" : "text-gray-700"
-                  } hover:bg-blue-50`}
-                  aria-label={`일반 게시판 - ${board.name} category`}
-                >
-                  <span className="w-6 h-6 mr-3" aria-hidden="true"></span>
-                  {board.name}
-                </Link>
-              );
-            })}
+                    return (
+                      <Link
+                        key={board.id}
+                        href={href}
+                        className={`flex items-center px-4 py-2 rounded-lg ${
+                          isActive
+                            ? "bg-blue-100 text-blue-600"
+                            : "text-gray-700"
+                        } hover:bg-blue-50`}
+                        aria-label={`board-link-${board.name}-${board.slug}`}
+                      >
+                        <span
+                          className="w-6 h-6 mr-3"
+                          aria-hidden="true"
+                        ></span>
+                        {board.name}
+                        {group.purpose === BoardPurpose.AI_DIGEST &&
+                          isActive && (
+                            <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              AI
+                            </span>
+                          )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
           </div>
-        )}
-
-        {aiDigestBoards.length > 0 && (
-          <div className="space-y-2">
-            <h3
-              className="px-4 py-2 font-semibold text-sm text-gray-500 uppercase tracking-wider"
-              id="ai-digest-heading"
-            >
-              <span className="inline-flex items-center gap-1">
-                <DocumentDuplicateIcon className="w-4 h-4 text-blue-400" />
-                AI 추천 게시판
-              </span>
-            </h3>
-            {aiDigestBoards.map((board) => {
-              const href = `/boards/ai-digest/${board.slug}`;
-              const isActive = pathname === href;
-
-              return (
-                <Link
-                  key={board.id}
-                  href={href}
-                  className={`flex items-center px-4 py-2 rounded-lg ${
-                    isActive ? "bg-blue-100 text-blue-600" : "text-gray-700"
-                  } hover:bg-blue-50`}
-                  aria-label={`AI 큐레이션 게시판 - ${board.name} category`}
-                >
-                  <span className="w-6 h-6 mr-3" aria-hidden="true"></span>
-                  <span>{board.name}</span>
-                  {isActive && (
-                    <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      AI
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        ))}
       </nav>
     </div>
   );

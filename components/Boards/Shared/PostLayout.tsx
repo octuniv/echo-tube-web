@@ -1,4 +1,4 @@
-import { PostDto } from "@/lib/definition";
+import { PostResponse } from "@/lib/definition";
 import DeleteButton from "./DeleteButton";
 import EditButton from "./EditButton";
 
@@ -9,7 +9,7 @@ export default function PostLayout({
   children,
   isEditable = false,
 }: {
-  post: PostDto;
+  post: PostResponse;
   boardSlug: string;
   children: React.ReactNode;
   isEditable?: boolean;

@@ -3,26 +3,28 @@ import { test, expect, chromium, Cookie } from "@playwright/test";
 import { signUpAndLogin } from "./util/auth-utils";
 import { User, UserRole } from "@/lib/definition";
 import {
+  createTestUser,
   expectCookiesToBeDefined,
   expectCookiesToNotExist,
   expectValidUserCookie,
+  uniqueNickname,
 } from "./util/test-utils";
+import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 
 dotenv.config({ path: ".env.e2e.test" });
 
-const settingsTestAccount = {
-  name: "settingsTester",
-  nickname: "settingsTester",
-  email: "settings@test.com",
-  password: "forSettings",
-} satisfies User;
+const settingsTestAccount = createTestUser();
 
-const existingAccount = {
+const existingAccount = createTestUser({
   name: process.env.tester_name as string,
   nickname: process.env.tester_nickname as string,
   email: process.env.tester_email as string,
   password: process.env.tester_password as string,
-} satisfies User;
+});
+
+test.use({
+  storageState: undefined,
+});
 
 test.describe("Settings Test", () => {
   let currentCookies: Cookie[];
@@ -92,13 +94,14 @@ test.describe("Settings Test", () => {
     });
 
     test("should update nickname successfully", async ({ page }) => {
-      await page.fill('input[name="nickname"]', "newnickname");
+      const newNickname = uniqueNickname();
+      await page.fill('input[name="nickname"]', newNickname);
       await page.click('button[type="submit"]');
 
       await page.waitForURL("/dashboard", { timeout: 1000 });
 
       const userData = expectValidUserCookie(await page.context().cookies());
-      expect(userData.nickname).toBe("newnickname");
+      expect(userData.nickname).toBe(newNickname);
       expect(userData.role).toBe(UserRole.USER);
     });
 
@@ -109,7 +112,7 @@ test.describe("Settings Test", () => {
       await page.click('button[type="submit"]');
 
       await expect(page.locator("#nickname-error")).toHaveText(
-        "The nickname is already in use"
+        ERROR_MESSAGES.NICKNAME_EXISTS
       );
 
       await expect(

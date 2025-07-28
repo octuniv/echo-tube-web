@@ -2,16 +2,16 @@ import { test, expect, Cookie, chromium } from "@playwright/test";
 import { signUpAndLogin } from "./util/auth-utils";
 import { User } from "@/lib/definition";
 import {
+  createTestUser,
   expectCookiesToBeDefined,
   expectValidUserCookie,
 } from "./util/test-utils";
 
-const authTestAccount = {
-  name: "authTest",
-  nickname: "authTest",
-  email: "authTest@test.com",
-  password: "authTest",
-} satisfies User;
+const authTestAccount = createTestUser();
+
+test.use({
+  storageState: undefined,
+});
 
 test.describe("Auth Test", () => {
   let currentCookies: Cookie[];
@@ -83,7 +83,7 @@ test.describe("Auth Test", () => {
         if (cookie.name === "access_token") {
           return {
             ...cookie,
-            expires: Date.now() / 1000 + 1, // 만료 기간 변경경
+            expires: Date.now() / 1000 + 1, // 만료 기간 변경
           };
         }
         return cookie;
@@ -206,8 +206,11 @@ test.describe("Auth Test", () => {
       await deleteButton.click();
 
       // 모든 상태 초기화 확인
-      // 로그인 페이지로 변경되었는지 확인
-      await page.waitForURL("/login", { timeout: 10000 });
+      // 로그인 페이지로 변경되었는지 확인, 만료 메세지 확인
+      await page.waitForURL("/login?error=session_expired", { timeout: 10000 });
+      await expect(
+        page.getByText("세션이 만료되었습니다. 다시 로그인해주세요")
+      ).toBeVisible();
 
       // 모든 쿠키 삭제되었는지 확인
       const remainingCookies = await page.context().cookies();
@@ -304,8 +307,11 @@ test.describe("Auth Test", () => {
       await submitButton.click();
 
       // 모든 상태 초기화 확인
-      // 로그인 페이지로 변경되었는지 확인
-      await page.waitForURL("/login", { timeout: 10000 });
+      // 로그인 페이지로 변경되었는지 확인, 만료 메세지 확인
+      await page.waitForURL("/login?error=session_expired", { timeout: 10000 });
+      await expect(
+        page.getByText("세션이 만료되었습니다. 다시 로그인해주세요")
+      ).toBeVisible();
 
       // 모든 쿠키 삭제되었는지 확인
       const remainingCookies = await page.context().cookies();
