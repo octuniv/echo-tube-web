@@ -20,12 +20,13 @@ import { BASE_API_URL } from "../util";
 import { clearAuth } from "../authState";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { forbidden, redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 import {
   availableCategoriesMock,
   mockCategories,
 } from "../../mocks/handlers/admin/categoryHandlers";
+import { CACHE_TAGS } from "../cacheTags";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -60,6 +61,7 @@ jest.mock("next/navigation", () => ({
 
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
 }));
 
 jest.mock("../authState", () => ({
@@ -222,6 +224,8 @@ describe("Admin Category API Tests", () => {
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should return error if both fields are empty", async () => {
@@ -237,6 +241,8 @@ describe("Admin Category API Tests", () => {
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should return error if allowedSlug is empty", async () => {
@@ -251,6 +257,8 @@ describe("Admin Category API Tests", () => {
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should return error if name contains numbers", async () => {
@@ -265,6 +273,8 @@ describe("Admin Category API Tests", () => {
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should return error if name contains special characters", async () => {
@@ -279,6 +289,8 @@ describe("Admin Category API Tests", () => {
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle name conflict error", async () => {
@@ -303,6 +315,8 @@ describe("Admin Category API Tests", () => {
         message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME,
         errors: { name: [CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME] },
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle slug conflict error", async () => {
@@ -337,6 +351,8 @@ describe("Admin Category API Tests", () => {
           ],
         },
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle multiple slug conflict errors", async () => {
@@ -371,6 +387,8 @@ describe("Admin Category API Tests", () => {
           ],
         },
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should successfully create category", async () => {
@@ -391,6 +409,10 @@ describe("Admin Category API Tests", () => {
       ).rejects.toThrow();
       expect(revalidatePath).toHaveBeenCalledWith("/admin/categories");
       expect(redirect).toHaveBeenCalledWith("/admin/categories");
+      expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.ALL_BOARDS);
+      expect(revalidateTag).toHaveBeenCalledWith(
+        CACHE_TAGS.CATEGORIES_WITH_BOARDS
+      );
     });
 
     it("should return error if slug has invalid format", async () => {
@@ -406,6 +428,8 @@ describe("Admin Category API Tests", () => {
         },
         message: "Missing or invalid fields. Failed to create category.",
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle to throw server by conflicted slug ", async () => {
@@ -430,6 +454,8 @@ describe("Admin Category API Tests", () => {
         },
         message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle unauthorized access", async () => {
@@ -451,6 +477,8 @@ describe("Admin Category API Tests", () => {
       ).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle permission denied", async () => {
@@ -468,6 +496,8 @@ describe("Admin Category API Tests", () => {
         createCategory({} as CategoryFormState, formData)
       ).rejects.toThrow();
       expect(forbidden).toHaveBeenCalled();
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
   });
 
@@ -504,6 +534,8 @@ describe("Admin Category API Tests", () => {
         },
         message: "Missing or invalid fields. Failed to update category.",
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should return error if name contains special characters", async () => {
@@ -522,6 +554,8 @@ describe("Admin Category API Tests", () => {
         },
         message: "Missing or invalid fields. Failed to update category.",
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle name conflict error", async () => {
@@ -546,6 +580,8 @@ describe("Admin Category API Tests", () => {
         message: CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME,
         errors: { name: [CATEGORY_ERROR_MESSAGES.DUPLICATE_CATEGORY_NAME] },
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle multiple slug conflict errors", async () => {
@@ -581,6 +617,8 @@ describe("Admin Category API Tests", () => {
           ],
         },
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should successfully update category", async () => {
@@ -603,6 +641,10 @@ describe("Admin Category API Tests", () => {
       ).rejects.toThrow();
       expect(revalidatePath).toHaveBeenCalledWith("/admin/categories");
       expect(redirect).toHaveBeenCalledWith("/admin/categories");
+      expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.ALL_BOARDS);
+      expect(revalidateTag).toHaveBeenCalledWith(
+        CACHE_TAGS.CATEGORIES_WITH_BOARDS
+      );
     });
 
     it("should handle category not found error", async () => {
@@ -629,6 +671,8 @@ describe("Admin Category API Tests", () => {
       expect(result).toEqual({
         message: CATEGORY_ERROR_MESSAGES.CATEGORY_NOT_FOUND,
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle to throw server by conflicted slug ", async () => {
@@ -657,6 +701,8 @@ describe("Admin Category API Tests", () => {
         },
         message: CATEGORY_ERROR_MESSAGES.INVALID_SLUGS,
       });
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle unauthorized access", async () => {
@@ -679,6 +725,8 @@ describe("Admin Category API Tests", () => {
       ).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle permission denied", async () => {
@@ -697,6 +745,8 @@ describe("Admin Category API Tests", () => {
         updateCategory(categoryId, {} as CategoryFormState, formData)
       ).rejects.toThrow();
       expect(forbidden).toHaveBeenCalled();
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
   });
 
@@ -712,6 +762,10 @@ describe("Admin Category API Tests", () => {
 
       await deleteCategory(categoryId);
       expect(revalidatePath).toHaveBeenCalledWith("/admin/categories");
+      expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.ALL_BOARDS);
+      expect(revalidateTag).toHaveBeenCalledWith(
+        CACHE_TAGS.CATEGORIES_WITH_BOARDS
+      );
     });
 
     it("should handle unauthorized error", async () => {
@@ -727,6 +781,8 @@ describe("Admin Category API Tests", () => {
       await expect(deleteCategory(categoryId)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle not found error", async () => {
@@ -742,6 +798,8 @@ describe("Admin Category API Tests", () => {
       await expect(deleteCategory(999)).rejects.toThrow(
         ERROR_MESSAGES.NOT_FOUND
       );
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle permission denied", async () => {
@@ -753,6 +811,8 @@ describe("Admin Category API Tests", () => {
       );
       await expect(deleteCategory(categoryId)).rejects.toThrow();
       expect(forbidden).toHaveBeenCalled();
+      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
   });
 

@@ -8,11 +8,16 @@ import {
   CategoryWithBoardsResponseSchema,
 } from "../definition";
 import { BASE_API_URL } from "../util";
+import { CACHE_TAGS } from "../cacheTags";
 
 export async function FetchAllBoards(): Promise<BoardListItemDto[]> {
   const response = await fetch(`${BASE_API_URL}/boards`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
+    next: {
+      tags: [CACHE_TAGS.ALL_BOARDS],
+    },
+    cache: "force-cache",
   });
 
   if (!response.ok) throw new Error("Failed to fetch boards");
@@ -34,6 +39,9 @@ export async function FetchCategoriesWithBoards(): Promise<CategoryWithBoardsRes
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+      },
+      next: {
+        tags: [CACHE_TAGS.CATEGORIES_WITH_BOARDS],
       },
       cache: "force-cache",
     });

@@ -13,7 +13,7 @@ import {
   CreatePostInputSchema,
 } from "../definition";
 import { BASE_API_URL } from "../util";
-import { CacheTags } from "../cacheTags";
+import { CACHE_TAGS } from "../cacheTags";
 
 export async function FetchPostsByBoardId(
   boardId: number,
@@ -27,7 +27,7 @@ export async function FetchPostsByBoardId(
     },
     next: {
       revalidate: 60,
-      tags: [CacheTags.boardPosts(boardSlug)],
+      tags: [CACHE_TAGS.BOARD_POSTS(boardSlug)],
     },
   });
 
@@ -54,7 +54,7 @@ export async function FetchPost(postId: number): Promise<PostResponse> {
     },
     next: {
       revalidate: 300,
-      tags: [CacheTags.post(postId)],
+      tags: [CACHE_TAGS.POST(postId)],
     },
   });
 
@@ -122,7 +122,7 @@ export async function CreatePost(
         };
     }
   } else {
-    revalidateTag(CacheTags.boardPosts(boardSlug));
+    revalidateTag(CACHE_TAGS.BOARD_POSTS(boardSlug));
     redirect(`/boards/${boardSlug}`);
   }
 }
@@ -152,8 +152,8 @@ export async function DeletePost(postId: number, boardSlug: string) {
         throw new Error("게시물을 삭제할 수 없습니다.");
     }
   } else {
-    revalidateTag(CacheTags.post(postId));
-    revalidateTag(CacheTags.boardPosts(boardSlug));
+    revalidateTag(CACHE_TAGS.POST(postId));
+    revalidateTag(CACHE_TAGS.BOARD_POSTS(boardSlug));
     redirect(`/boards/${boardSlug}`);
   }
 }
@@ -205,8 +205,8 @@ export async function EditPost(
         };
     }
   } else {
-    revalidateTag(CacheTags.post(postId));
-    revalidateTag(CacheTags.boardPosts(boardSlug));
+    revalidateTag(CACHE_TAGS.POST(postId));
+    revalidateTag(CACHE_TAGS.BOARD_POSTS(boardSlug));
     redirect(`/boards/${boardSlug}`);
   }
 }

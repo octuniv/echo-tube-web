@@ -4,11 +4,10 @@ import { DashboardSummaryDto, DashboardSummaryDtoSchema } from "../definition";
 import { BASE_API_URL } from "../util";
 
 export async function FetchDashboardSummary(): Promise<DashboardSummaryDto> {
-  // need to control caching later......
   const response = await fetch(`${BASE_API_URL}/dashboard/summary`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
-    // next: { revalidate: 300 },
+    next: { revalidate: 120 },
   });
 
   if (!response.ok) throw new Error("Failed to fetch DashboardSummary");

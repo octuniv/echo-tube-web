@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import { AuthenticatedFetchErrorType } from "../auth/types";
@@ -24,6 +24,7 @@ import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
 import { authErrorGuard } from "../auth/errors/authErrorGuard";
+import { CACHE_TAGS } from "../cacheTags";
 
 export async function fetchCategories(): Promise<CategorySummary[]> {
   const reqAddress = `${BASE_API_URL}/admin/categories`;
@@ -161,6 +162,8 @@ export async function createCategory(
         };
     }
   } else {
+    revalidateTag(CACHE_TAGS.ALL_BOARDS);
+    revalidateTag(CACHE_TAGS.CATEGORIES_WITH_BOARDS);
     revalidatePath("/admin/categories");
     redirect("/admin/categories");
   }
@@ -251,6 +254,8 @@ export async function updateCategory(
         };
     }
   } else {
+    revalidateTag(CACHE_TAGS.ALL_BOARDS);
+    revalidateTag(CACHE_TAGS.CATEGORIES_WITH_BOARDS);
     revalidatePath("/admin/categories");
     redirect("/admin/categories");
   }
@@ -279,6 +284,8 @@ export async function deleteCategory(id: number) {
         throw new Error("카테고리를 삭제할 수 없습니다.");
     }
   } else {
+    revalidateTag(CACHE_TAGS.ALL_BOARDS);
+    revalidateTag(CACHE_TAGS.CATEGORIES_WITH_BOARDS);
     revalidatePath("/admin/categories");
   }
 }

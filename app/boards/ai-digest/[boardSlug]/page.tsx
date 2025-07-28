@@ -11,8 +11,6 @@ export async function generateStaticParams() {
     .map((board) => ({ boardSlug: board.slug }));
 }
 
-export const revalidate = 3600; // 일반 게시판과 동일한 캐시 정책
-
 const Page = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
   const { boardSlug } = await params;
 

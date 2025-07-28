@@ -19,7 +19,7 @@ import {
   EditPost,
 } from "./postActions";
 import { revalidateTag } from "next/cache";
-import { CacheTags } from "../cacheTags";
+import { CACHE_TAGS } from "../cacheTags";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -252,7 +252,7 @@ describe("postAction", () => {
       expect(capturedBody.boardSlug).toBe(boardSlug);
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
       expect(revalidateTag).toHaveBeenCalledWith(
-        CacheTags.boardPosts(boardSlug)
+        CACHE_TAGS.BOARD_POSTS(boardSlug)
       );
     });
 
@@ -335,9 +335,9 @@ describe("postAction", () => {
 
       await expect(DeletePost(postId, boardSlug)).rejects.toThrow();
 
-      expect(revalidateTag).toHaveBeenCalledWith(CacheTags.post(postId));
+      expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.POST(postId));
       expect(revalidateTag).toHaveBeenCalledWith(
-        CacheTags.boardPosts(boardSlug)
+        CACHE_TAGS.BOARD_POSTS(boardSlug)
       );
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
     });
@@ -434,9 +434,9 @@ describe("postAction", () => {
       await expect(EditPost(1, boardSlug, {}, formData)).rejects.toThrow();
 
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
-      expect(revalidateTag).toHaveBeenCalledWith(CacheTags.post(postId));
+      expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.POST(postId));
       expect(revalidateTag).toHaveBeenCalledWith(
-        CacheTags.boardPosts(boardSlug)
+        CACHE_TAGS.BOARD_POSTS(boardSlug)
       );
     });
 
@@ -484,9 +484,9 @@ describe("postAction", () => {
       });
       expect(capturedBody.videoUrl).toBeUndefined();
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
-      expect(revalidateTag).toHaveBeenCalledWith(CacheTags.post(postId));
+      expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.POST(postId));
       expect(revalidateTag).toHaveBeenCalledWith(
-        CacheTags.boardPosts(boardSlug)
+        CACHE_TAGS.BOARD_POSTS(boardSlug)
       );
     });
 

@@ -13,8 +13,6 @@ export async function generateStaticParams() {
     .map((board) => ({ boardSlug: board.slug }));
 }
 
-export const revalidate = 3600;
-
 const Page = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
   const { boardSlug } = await params;
 

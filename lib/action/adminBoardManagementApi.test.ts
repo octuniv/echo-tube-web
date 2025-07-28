@@ -16,9 +16,10 @@ import {
   BoardFormData,
   BoardFormState,
 } from "../definition/adminBoardManagementSchema";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { mockBoards } from "../../mocks/handlers/admin/boardHandlers";
+import { CACHE_TAGS } from "../cacheTags";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -53,6 +54,7 @@ jest.mock("next/navigation", () => ({
 
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
 }));
 
 jest.mock("../authState", () => ({
@@ -68,6 +70,11 @@ beforeAll(() => {
 
 afterAll(() => {
   consoleErrorSpy.mockRestore();
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  server.resetHandlers();
 });
 
 describe("fetchBoards", () => {
@@ -167,6 +174,8 @@ describe("createBoard", () => {
       },
       message: BOARD_ERROR_MESSAGES.INVALID_FORM_DATA,
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("슬러그가 유효하지 않은 경우 오류를 반환해야 합니다", async () => {
@@ -186,6 +195,8 @@ describe("createBoard", () => {
       },
       message: BOARD_ERROR_MESSAGES.INVALID_FORM_DATA,
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   const validData = {
@@ -215,6 +226,8 @@ describe("createBoard", () => {
       },
       message: BOARD_ERROR_MESSAGES.DUPLICATE_SLUG(duplicatedSlug),
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("카테고리에서 허용하지 않는 슬러그를 입력하면 오류를 반환해야 합니다.", async () => {
@@ -238,6 +251,8 @@ describe("createBoard", () => {
       message:
         BOARD_ERROR_MESSAGES.SLUG_NOT_ALLOWED_IN_CATEGORY(notAllowedSlug),
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("허용 되지 않는 보드 권한을 사용하면 오류를 반환해야 합니다.", async () => {
@@ -259,6 +274,8 @@ describe("createBoard", () => {
       },
       message: BOARD_ERROR_MESSAGES.NOT_ALLOWED_BOARD_TYPE,
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("유효한 데이터 입력시 성공적으로 호출이 이루어진 후 조회 페이지로 리다이렉트 됩니다.", async () => {
@@ -270,6 +287,10 @@ describe("createBoard", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/admin/boards");
     expect(redirect).toHaveBeenCalledWith("/admin/boards");
     expect(mockBoards.length).toBe(mockDataLength + 1);
+    expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.ALL_BOARDS);
+    expect(revalidateTag).toHaveBeenCalledWith(
+      CACHE_TAGS.CATEGORIES_WITH_BOARDS
+    );
   });
 
   it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {
@@ -284,6 +305,8 @@ describe("createBoard", () => {
     ).rejects.toThrow();
     expect(clearAuth).toHaveBeenCalled();
     expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
@@ -297,6 +320,8 @@ describe("createBoard", () => {
       createBoard({} as BoardFormState, boardFormDataMock(validData))
     ).rejects.toThrow();
     expect(forbidden).toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 });
 
@@ -327,6 +352,8 @@ describe("updateBoard", () => {
       },
       message: BOARD_ERROR_MESSAGES.INVALID_FORM_DATA,
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("슬러그가 유효하지 않은 경우 오류를 반환해야 합니다", async () => {
@@ -350,6 +377,8 @@ describe("updateBoard", () => {
       },
       message: BOARD_ERROR_MESSAGES.INVALID_FORM_DATA,
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   const validData = {
@@ -380,6 +409,8 @@ describe("updateBoard", () => {
       },
       message: BOARD_ERROR_MESSAGES.DUPLICATE_SLUG(duplicatedSlug),
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("카테고리에서 허용하지 않는 슬러그를 입력하면 오류를 반환해야 합니다.", async () => {
@@ -404,6 +435,8 @@ describe("updateBoard", () => {
       message:
         BOARD_ERROR_MESSAGES.SLUG_NOT_ALLOWED_IN_CATEGORY(notAllowedSlug),
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("허용 되지 않는 보드 권한을 사용하면 오류를 반환해야 합니다.", async () => {
@@ -426,6 +459,8 @@ describe("updateBoard", () => {
       },
       message: BOARD_ERROR_MESSAGES.NOT_ALLOWED_BOARD_TYPE,
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("존재하지 않는 보드 업데이트 시 not_found 오류를 반환합니다.", async () => {
@@ -438,6 +473,8 @@ describe("updateBoard", () => {
     expect(result).toEqual({
       message: BOARD_ERROR_MESSAGES.NOT_FOUND_BOARD,
     });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("유효한 데이터 입력시 성공적으로 호출이 이루어진 후 조회 페이지로 리다이렉트 됩니다.", async () => {
@@ -449,6 +486,10 @@ describe("updateBoard", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/admin/boards");
     expect(redirect).toHaveBeenCalledWith("/admin/boards");
     expect(mockBoards.length).toBe(mockDataLength);
+    expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.ALL_BOARDS);
+    expect(revalidateTag).toHaveBeenCalledWith(
+      CACHE_TAGS.CATEGORIES_WITH_BOARDS
+    );
   });
 
   it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {
@@ -463,6 +504,8 @@ describe("updateBoard", () => {
     ).rejects.toThrow();
     expect(clearAuth).toHaveBeenCalled();
     expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
@@ -476,6 +519,8 @@ describe("updateBoard", () => {
       updateBoard(boardId, {} as BoardFormState, boardFormDataMock(validData))
     ).rejects.toThrow();
     expect(forbidden).toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 });
 
@@ -484,6 +529,8 @@ describe("deleteBoard", () => {
     await expect(deleteBoard(9999)).rejects.toThrow(
       new Error(BOARD_ERROR_MESSAGES.NOT_FOUND_BOARD)
     );
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("올바른 보드 삭제 후 현 조회 페이지가 갱신됩니다.", async () => {
@@ -491,6 +538,10 @@ describe("deleteBoard", () => {
     await deleteBoard(2);
     expect(mockBoards.length).toBe(mockBoardLength - 1);
     expect(revalidatePath).toHaveBeenCalledWith("/admin/boards");
+    expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.ALL_BOARDS);
+    expect(revalidateTag).toHaveBeenCalledWith(
+      CACHE_TAGS.CATEGORIES_WITH_BOARDS
+    );
   });
 
   it("인증 실패 시 Unauthorized 페이지로 리다이렉트 해야 합니다", async () => {
@@ -503,6 +554,8 @@ describe("deleteBoard", () => {
     await expect(deleteBoard(1)).rejects.toThrow();
     expect(clearAuth).toHaveBeenCalled();
     expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it("권한 부족 시 Forbidden 페이지로 리다이렉트 해야 합니다", async () => {
@@ -514,5 +567,7 @@ describe("deleteBoard", () => {
 
     await expect(deleteBoard(1)).rejects.toThrow();
     expect(forbidden).toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 });

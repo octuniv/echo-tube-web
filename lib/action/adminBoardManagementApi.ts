@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import {
   AdminBoardResponse,
@@ -17,6 +17,7 @@ import { BOARD_ERROR_MESSAGES } from "../constants/board/errorMessage";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
 import { authErrorGuard } from "../auth/errors/authErrorGuard";
+import { CACHE_TAGS } from "../cacheTags";
 
 const boardApiHeadAddress = `${BASE_API_URL}/admin/boards`;
 
@@ -155,6 +156,8 @@ export async function createBoard(
         };
     }
   } else {
+    revalidateTag(CACHE_TAGS.ALL_BOARDS);
+    revalidateTag(CACHE_TAGS.CATEGORIES_WITH_BOARDS);
     revalidatePath("/admin/boards");
     redirect("/admin/boards");
   }
@@ -242,6 +245,8 @@ export async function updateBoard(
         };
     }
   } else {
+    revalidateTag(CACHE_TAGS.ALL_BOARDS);
+    revalidateTag(CACHE_TAGS.CATEGORIES_WITH_BOARDS);
     revalidatePath("/admin/boards");
     redirect("/admin/boards");
   }
@@ -268,6 +273,8 @@ export async function deleteBoard(id: number) {
         throw new Error("보드를 삭제할 수 없습니다.");
     }
   } else {
+    revalidateTag(CACHE_TAGS.ALL_BOARDS);
+    revalidateTag(CACHE_TAGS.CATEGORIES_WITH_BOARDS);
     revalidatePath("/admin/boards");
   }
 }

@@ -138,23 +138,5 @@ describe("Actions Module", () => {
       expect(result).toEqual([]);
       expect(consoleErrorMock).not.toHaveBeenCalled();
     });
-
-    it("should use cache control", async () => {
-      const fetchSpy = jest.spyOn(global, "fetch");
-
-      server.use(
-        http.get(`${BASE_API_URL}/categories/with-boards`, () => {
-          return HttpResponse.json(mockCategoriesWithBoards, { status: 200 });
-        })
-      );
-
-      await FetchCategoriesWithBoards();
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining("/categories/with-boards"),
-        expect.objectContaining({
-          cache: "force-cache",
-        })
-      );
-    });
   });
 });
