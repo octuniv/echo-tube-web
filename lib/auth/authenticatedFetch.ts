@@ -23,6 +23,7 @@ export async function authenticatedFetch<T>(
     const response = await fetch(options.url, {
       ...options,
       headers,
+      cache: "no-store",
     });
 
     if (response.ok) {
@@ -46,6 +47,7 @@ export async function authenticatedFetch<T>(
         const retryResponse = await fetch(options.url, {
           ...options,
           headers,
+          cache: "no-store",
         });
 
         if (retryResponse.ok) {
