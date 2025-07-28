@@ -30,7 +30,7 @@ const Page = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
 
   let videoData: VideoCardInfo[] = [];
 
-  const posts = await FetchPostsByBoardId(currentBoard.id);
+  const posts = await FetchPostsByBoardId(currentBoard.id, currentBoard.slug);
   // page.tsx 내부의 posts 매핑 부분
   videoData = posts.map((post: PostResponse) => ({
     id: post.id,

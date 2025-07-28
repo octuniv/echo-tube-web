@@ -18,7 +18,8 @@ import {
   DeletePost,
   EditPost,
 } from "./postActions";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
+import { CacheTags } from "../cacheTags";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -50,7 +51,7 @@ jest.mock("../authState", () => ({
 }));
 
 jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
 }));
 
 describe("postAction", () => {
@@ -64,46 +65,50 @@ describe("postAction", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    afterEach(() => {
+    afterAll(() => {
       consoleErrorMock.mockClear();
     });
-    it("should fetch posts by boardId successfully", async () => {
+
+    it("should fetch posts by boardId and boardSlug successfully", async () => {
       const boardId = 1;
+      const boardSlug = "free";
       server.use(
         http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json(mockPosts, { status: 200 })
         )
       );
-      const posts = await FetchPostsByBoardId(boardId);
+      const posts = await FetchPostsByBoardId(boardId, boardSlug);
       expect(posts).toEqual(mockPosts);
     });
 
     it("should throw error when response is not ok", async () => {
       const boardId = 999;
+      const boardSlug = "nonexistent";
       server.use(
         http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json({ error: "Not Found" }, { status: 404 })
         )
       );
-      await expect(FetchPostsByBoardId(boardId)).rejects.toThrow(
+      await expect(FetchPostsByBoardId(boardId, boardSlug)).rejects.toThrow(
         "Failed to fetch posts"
       );
     });
 
     it("should handle empty posts array", async () => {
       const boardId = 1;
+      const boardSlug = "empty-board";
       server.use(
         http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json([], { status: 200 })
         )
       );
-
-      const posts = await FetchPostsByBoardId(boardId);
+      const posts = await FetchPostsByBoardId(boardId, boardSlug);
       expect(posts).toEqual([]);
     });
 
     it("should return empty array when response data is invalid", async () => {
       const boardId = 1;
+      const boardSlug = "invalid-data-board";
       const invalidData = [
         {
           id: 1,
@@ -118,7 +123,7 @@ describe("postAction", () => {
           HttpResponse.json(invalidData, { status: 200 })
         )
       );
-      const posts = await FetchPostsByBoardId(boardId);
+      const posts = await FetchPostsByBoardId(boardId, boardSlug);
       expect(posts).toEqual([]); // Zod 검증 실패 시 빈 배열 반환
       expect(console.error).toHaveBeenCalled(); // 에러 로깅 확인
     });
@@ -129,7 +134,7 @@ describe("postAction", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    afterEach(() => {
+    afterAll(() => {
       consoleErrorMock.mockClear();
     });
 
@@ -246,6 +251,9 @@ describe("postAction", () => {
 
       expect(capturedBody.boardSlug).toBe(boardSlug);
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
+      expect(revalidateTag).toHaveBeenCalledWith(
+        CacheTags.boardPosts(boardSlug)
+      );
     });
 
     it("should handle validation errors", async () => {
@@ -259,6 +267,7 @@ describe("postAction", () => {
       expect(result.errors?.title).toBeDefined();
       expect(result.errors?.content).toBeDefined();
       expect(result.message).toBe("Missing Fields. Failed to create posts.");
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle unauthorized access", async () => {
@@ -280,6 +289,7 @@ describe("postAction", () => {
 
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle unexpected errors", async () => {
@@ -300,10 +310,12 @@ describe("postAction", () => {
       const result = await CreatePost(boardSlug, {}, formData);
 
       expect(result.message).toBe("Create post failed.");
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
   });
 
   describe("DeletePost", () => {
+    const postId = 1;
     const boardSlug = "free";
 
     beforeEach(() => {
@@ -311,8 +323,6 @@ describe("postAction", () => {
     });
 
     it("should delete a post successfully and redirect to /boards/boardSlug", async () => {
-      const postId = 1;
-
       // Mock the server response for a successful DELETE request
       server.use(
         http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
@@ -325,14 +335,14 @@ describe("postAction", () => {
 
       await expect(DeletePost(postId, boardSlug)).rejects.toThrow();
 
-      // Verify revalidation and redirection
-      expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardSlug}`);
+      expect(revalidateTag).toHaveBeenCalledWith(CacheTags.post(postId));
+      expect(revalidateTag).toHaveBeenCalledWith(
+        CacheTags.boardPosts(boardSlug)
+      );
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
     });
 
     it("should handle unauthorized access during post deletion", async () => {
-      const postId = 1;
-
       // Mock the server response for a 401 Unauthorized error
       server.use(
         http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
@@ -346,11 +356,10 @@ describe("postAction", () => {
       await expect(DeletePost(postId, boardSlug)).rejects.toThrow();
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle unexpected errors during post deletion", async () => {
-      const postId = 1;
-
       // Mock the server response for a 500 Internal Server Error
       server.use(
         http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
@@ -363,6 +372,7 @@ describe("postAction", () => {
       await expect(DeletePost(postId, boardSlug)).rejects.toThrow(
         "서버 오류가 발생했습니다."
       );
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle invalid post ID gracefully", async () => {
@@ -381,10 +391,12 @@ describe("postAction", () => {
       await expect(DeletePost(postId, boardSlug)).rejects.toThrow(
         "요청한 리소스를 찾을 수 없습니다."
       );
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
   });
 
   describe("EditPost", () => {
+    const postId = 1;
     const boardSlug = "free";
 
     beforeEach(() => {
@@ -398,7 +410,7 @@ describe("postAction", () => {
       formData.append("videoUrl", "https://example.com/new-video");
 
       server.use(
-        http.patch(`${BASE_API_URL}/posts/1`, () => {
+        http.patch(`${BASE_API_URL}/posts/${postId}`, () => {
           return HttpResponse.json(
             {
               ...mockPosts[0],
@@ -422,6 +434,10 @@ describe("postAction", () => {
       await expect(EditPost(1, boardSlug, {}, formData)).rejects.toThrow();
 
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
+      expect(revalidateTag).toHaveBeenCalledWith(CacheTags.post(postId));
+      expect(revalidateTag).toHaveBeenCalledWith(
+        CacheTags.boardPosts(boardSlug)
+      );
     });
 
     it("should be able to omit videoUrl when empty", async () => {
@@ -439,7 +455,7 @@ describe("postAction", () => {
       let capturedBody: CapturedBody = { title: "", content: "" };
 
       server.use(
-        http.patch(`${BASE_API_URL}/posts/1`, async ({ request }) => {
+        http.patch(`${BASE_API_URL}/posts/${postId}`, async ({ request }) => {
           capturedBody = (await request.json()) as CapturedBody;
           return HttpResponse.json(
             {
@@ -468,6 +484,10 @@ describe("postAction", () => {
       });
       expect(capturedBody.videoUrl).toBeUndefined();
       expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
+      expect(revalidateTag).toHaveBeenCalledWith(CacheTags.post(postId));
+      expect(revalidateTag).toHaveBeenCalledWith(
+        CacheTags.boardPosts(boardSlug)
+      );
     });
 
     it("should handle validation errors", async () => {
@@ -480,6 +500,7 @@ describe("postAction", () => {
 
       expect(result.errors?.title).toBeDefined();
       expect(result.message).toBe("Missing Fields. Failed to edit posts.");
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle unauthorized access", async () => {
@@ -501,6 +522,7 @@ describe("postAction", () => {
 
       expect(clearAuth).toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("should handle server error", async () => {
@@ -521,6 +543,7 @@ describe("postAction", () => {
       const result = await EditPost(1, boardSlug, {}, formData);
 
       expect(result.message).toBe("Edit post failed.");
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
   });
 });

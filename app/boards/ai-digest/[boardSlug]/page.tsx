@@ -24,7 +24,7 @@ const Page = async ({ params }: { params: Promise<{ boardSlug: string }> }) => {
 
   if (!currentBoard) notFound();
 
-  const posts = await FetchPostsByBoardId(currentBoard.id);
+  const posts = await FetchPostsByBoardId(currentBoard.id, currentBoard.slug);
   const sortedVideos = posts
     .filter((post) => post.videoUrl) // 영상 URL 필수 검증
     .map(

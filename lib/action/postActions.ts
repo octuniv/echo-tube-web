@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod/v3";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
@@ -13,9 +13,11 @@ import {
   CreatePostInputSchema,
 } from "../definition";
 import { BASE_API_URL } from "../util";
+import { CacheTags } from "../cacheTags";
 
 export async function FetchPostsByBoardId(
-  boardId: number
+  boardId: number,
+  boardSlug: string
 ): Promise<PostResponse[]> {
   const reqAddress = `${BASE_API_URL}/posts/board/${boardId}`;
   const response = await fetch(reqAddress, {
@@ -23,7 +25,10 @@ export async function FetchPostsByBoardId(
     headers: {
       "Content-Type": "application/json",
     },
-    cache: "no-store", // 실시간 데이터를 위해 캐시 비활성화
+    next: {
+      revalidate: 60,
+      tags: [CacheTags.boardPosts(boardSlug)],
+    },
   });
 
   if (!response.ok) throw new Error("Failed to fetch posts");
@@ -40,14 +45,17 @@ export async function FetchPostsByBoardId(
   return result.data;
 }
 
-export async function FetchPost(id: number): Promise<PostResponse> {
-  const reqAddress = BASE_API_URL + `/posts/${id}`;
+export async function FetchPost(postId: number): Promise<PostResponse> {
+  const reqAddress = BASE_API_URL + `/posts/${postId}`;
   const response = await fetch(reqAddress, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
-    cache: "no-store", // 실시간 데이터를 위해 캐시 비활성화
+    next: {
+      revalidate: 300,
+      tags: [CacheTags.post(postId)],
+    },
   });
 
   if (!response.ok) {
@@ -114,12 +122,13 @@ export async function CreatePost(
         };
     }
   } else {
+    revalidateTag(CacheTags.boardPosts(boardSlug));
     redirect(`/boards/${boardSlug}`);
   }
 }
 
-export async function DeletePost(id: number, boardSlug: string) {
-  const reqAddress = new URL(`/posts/${id}`, BASE_API_URL).toString();
+export async function DeletePost(postId: number, boardSlug: string) {
+  const reqAddress = new URL(`/posts/${postId}`, BASE_API_URL).toString();
 
   const { error } = await authenticatedFetch({
     method: "DELETE",
@@ -143,13 +152,14 @@ export async function DeletePost(id: number, boardSlug: string) {
         throw new Error("게시물을 삭제할 수 없습니다.");
     }
   } else {
-    revalidatePath(`/boards/${boardSlug}`);
+    revalidateTag(CacheTags.post(postId));
+    revalidateTag(CacheTags.boardPosts(boardSlug));
     redirect(`/boards/${boardSlug}`);
   }
 }
 
 export async function EditPost(
-  id: number,
+  postId: number,
   boardSlug: string,
   prevState: CreatePostInputState,
   formData: FormData
@@ -173,7 +183,7 @@ export async function EditPost(
     delete params.videoUrl;
   }
 
-  const reqAddress = BASE_API_URL + `/posts/${id}`;
+  const reqAddress = BASE_API_URL + `/posts/${postId}`;
 
   const { error } = await authenticatedFetch({
     method: "PATCH",
@@ -195,6 +205,8 @@ export async function EditPost(
         };
     }
   } else {
+    revalidateTag(CacheTags.post(postId));
+    revalidateTag(CacheTags.boardPosts(boardSlug));
     redirect(`/boards/${boardSlug}`);
   }
 }
