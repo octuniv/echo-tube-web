@@ -1,5 +1,4 @@
 // utils/authenticatedFetch.ts
-import { revalidatePath } from "next/cache";
 import {
   AuthenticatedFetchResult,
   AuthenticatedFetchErrorType,
@@ -27,8 +26,6 @@ export async function authenticatedFetch<T>(
     });
 
     if (response.ok) {
-      if (options.revalidatePath) revalidatePath(options.revalidatePath);
-
       if (response.status === 204) {
         return { data: null, error: null };
       }
@@ -52,7 +49,6 @@ export async function authenticatedFetch<T>(
         });
 
         if (retryResponse.ok) {
-          if (options.revalidatePath) revalidatePath(options.revalidatePath);
           return { data: await retryResponse.json(), error: null };
         }
 

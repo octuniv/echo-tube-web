@@ -7,6 +7,7 @@ import {
   expectCookiesToBeDefined,
   expectCookiesToNotExist,
   expectValidUserCookie,
+  safeLogout,
   uniqueNickname,
 } from "./util/test-utils";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
@@ -27,30 +28,24 @@ test.use({
 });
 
 test.describe("Settings Test", () => {
-  let currentCookies: Cookie[];
-
-  test.beforeAll(async () => {
-    const browser = await chromium.launch();
-    const context = await browser.newContext();
-    const page = await browser.newPage();
-    await page.context().clearCookies();
-    await signUpAndLogin({ account: settingsTestAccount, page, context });
-    currentCookies = await page.context().cookies();
-    await browser.close();
+  test.beforeEach(async ({ page }) => {
+    await safeLogout(page);
   });
 
   test.describe("Settings Page", () => {
-    test.beforeEach(async ({ page }) => {
-      await page.context().clearCookies();
-      await page.context().addCookies(currentCookies);
-      const insertedCookies = await page.context().cookies();
-      expectCookiesToBeDefined(insertedCookies, [
+    test.beforeEach(async ({ page, context }) => {
+      await signUpAndLogin({ account: settingsTestAccount, page, context });
+      const cookies = await context.cookies();
+      expectCookiesToBeDefined(cookies, [
         "access_token",
         "refresh_token",
         "user",
       ]);
+      expectValidUserCookie(cookies);
+    });
 
-      expectValidUserCookie(insertedCookies);
+    test.afterEach(async ({ page }) => {
+      await safeLogout(page);
     });
 
     test("Exist components in settings page", async ({ page }) => {
@@ -72,17 +67,15 @@ test.describe("Settings Test", () => {
   });
 
   test.describe("Updating Nickname", () => {
-    test.beforeEach(async ({ page }) => {
-      await page.context().clearCookies();
-      await page.context().addCookies(currentCookies);
-      const insertedCookies = await page.context().cookies();
-      expectCookiesToBeDefined(insertedCookies, [
+    test.beforeEach(async ({ page, context }) => {
+      await signUpAndLogin({ account: settingsTestAccount, page, context });
+      const cookies = await context.cookies();
+      expectCookiesToBeDefined(cookies, [
         "access_token",
         "refresh_token",
         "user",
       ]);
-
-      expectValidUserCookie(insertedCookies);
+      expectValidUserCookie(cookies);
 
       await page.goto("/settings");
       const updateNicknameLink = page.getByRole("link", {
@@ -91,6 +84,10 @@ test.describe("Settings Test", () => {
       await updateNicknameLink.click();
 
       expect(page).toHaveURL("/settings/nickname");
+    });
+
+    test.afterEach(async ({ page }) => {
+      await safeLogout(page);
     });
 
     test("should update nickname successfully", async ({ page }) => {
@@ -124,17 +121,15 @@ test.describe("Settings Test", () => {
   });
 
   test.describe("Updating Password", () => {
-    test.beforeEach(async ({ page }) => {
-      await page.context().clearCookies();
-      await page.context().addCookies(currentCookies);
-      const insertedCookies = await page.context().cookies();
-      expectCookiesToBeDefined(insertedCookies, [
+    test.beforeEach(async ({ page, context }) => {
+      await signUpAndLogin({ account: settingsTestAccount, page, context });
+      const cookies = await context.cookies();
+      expectCookiesToBeDefined(cookies, [
         "access_token",
         "refresh_token",
         "user",
       ]);
-
-      expectValidUserCookie(insertedCookies);
+      expectValidUserCookie(cookies);
 
       await page.goto("/settings");
       const updatePasswordLink = page.getByRole("link", {
@@ -143,6 +138,10 @@ test.describe("Settings Test", () => {
       await updatePasswordLink.click();
 
       expect(page).toHaveURL("/settings/password");
+    });
+
+    test.afterEach(async ({ page }) => {
+      await safeLogout(page);
     });
 
     test("should reject request to change invalid password", async ({
@@ -184,21 +183,20 @@ test.describe("Settings Test", () => {
       await page.click('button[type="submit"]');
 
       await page.waitForURL("/dashboard", { timeout: 1000 });
+      settingsTestAccount.password = "newpassword";
     });
   });
 
   test.describe("Delete User", () => {
-    test.beforeEach(async ({ page }) => {
-      await page.context().clearCookies();
-      await page.context().addCookies(currentCookies);
-      const insertedCookies = await page.context().cookies();
-      expectCookiesToBeDefined(insertedCookies, [
+    test.beforeEach(async ({ page, context }) => {
+      await signUpAndLogin({ account: settingsTestAccount, page, context });
+      const cookies = await context.cookies();
+      expectCookiesToBeDefined(cookies, [
         "access_token",
         "refresh_token",
         "user",
       ]);
-
-      expectValidUserCookie(insertedCookies);
+      expectValidUserCookie(cookies);
 
       await page.goto("/settings");
     });

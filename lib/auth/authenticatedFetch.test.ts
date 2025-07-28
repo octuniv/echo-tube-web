@@ -3,14 +3,7 @@ import { cookies } from "next/headers";
 import { server } from "../../mocks/server";
 import { http, HttpResponse } from "msw";
 import { AuthenticatedFetchErrorType } from "./types";
-import { revalidatePath } from "next/cache";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
-
-jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
-}));
-
-const revalidatePathMock = revalidatePath as jest.Mock;
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -246,39 +239,6 @@ describe("AuthenticatedFetch", () => {
     expect(response.error?.message).toBe(ERROR_MESSAGES.SERVER_ERROR);
   });
 
-  it("should not revalidate path on failed requests", async () => {
-    setupCookies();
-
-    server.use(
-      http.get(`${mockServerAddress}/test-endpoint`, () =>
-        HttpResponse.json({}, { status: 500 })
-      )
-    );
-
-    await authenticatedFetch({
-      url: `${mockServerAddress}/test-endpoint`,
-      revalidatePath: "/admin/users",
-    });
-
-    expect(revalidatePathMock).not.toHaveBeenCalled();
-  });
-
-  it("should revalidate path on successful requests", async () => {
-    setupCookies();
-    server.use(
-      http.get(`${mockServerAddress}/test-endpoint`, () =>
-        HttpResponse.json({ data: "success" }, { status: 200 })
-      )
-    );
-
-    await authenticatedFetch({
-      url: `${mockServerAddress}/test-endpoint`,
-      revalidatePath: "/admin/users",
-    });
-
-    expect(revalidatePathMock).toHaveBeenCalledWith("/admin/users");
-  });
-
   it("should handle 403 Forbidden error", async () => {
     setupCookies();
     server.use(
@@ -294,19 +254,5 @@ describe("AuthenticatedFetch", () => {
     });
     expect(response.error?.type).toBe(AuthenticatedFetchErrorType.Forbidden);
     expect(response.error?.message).toBe(ERROR_MESSAGES.FORBIDDEN);
-  });
-
-  it("should not revalidate path on Forbidden error", async () => {
-    setupCookies();
-    server.use(
-      http.get(`${mockServerAddress}/test-endpoint`, () =>
-        HttpResponse.json({}, { status: 403 })
-      )
-    );
-    await authenticatedFetch({
-      url: `${mockServerAddress}/test-endpoint`,
-      revalidatePath: "/admin/users",
-    });
-    expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 });

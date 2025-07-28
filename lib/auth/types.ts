@@ -1,6 +1,5 @@
 export type AuthenticatedFetchOptions = RequestInit & {
   url: string;
-  revalidatePath?: string;
 };
 
 export enum AuthenticatedFetchErrorType {
