@@ -1,4 +1,4 @@
-import ErrorMessage from "@/components/admin/errorMessage";
+import ErrorMessage from "@/components/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoardById } from "@/lib/action/adminBoardManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";

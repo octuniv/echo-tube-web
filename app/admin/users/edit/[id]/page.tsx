@@ -1,4 +1,4 @@
-import ErrorMessage from "@/components/admin/errorMessage";
+import ErrorMessage from "@/components/errorMessage";
 import AdminUserEditPage from "@/components/admin/users/edit/AdminUserEditPage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchUserDetails } from "@/lib/action/adminUserManagementApi";

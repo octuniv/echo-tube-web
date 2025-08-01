@@ -4,14 +4,16 @@ import { useRouter } from "next/navigation";
 
 export default function LimitSelector({
   currentLimit,
+  baseUrl,
 }: {
   currentLimit: number;
+  baseUrl: string;
 }) {
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLimit = e.target.value;
-    const url = `/admin/users?page=1&limit=${newLimit}`;
+    const url = `${baseUrl}?page=1&limit=${newLimit}`;
     router.push(url);
   };
 

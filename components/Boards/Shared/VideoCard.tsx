@@ -22,9 +22,7 @@ export default function VideoCard({
     duration,
     source,
   } = video;
-  const pageLink = `/boards/${
-    isAiDigest ? "ai-digest/" : ""
-  }${boardSlug}/${id}`;
+  const pageLink = `/boards/${boardSlug}/${id}`;
 
   return (
     <div className="border p-4 rounded-lg shadow-md hover:bg-gray-50 transition">

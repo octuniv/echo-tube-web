@@ -1,5 +1,5 @@
 import { DeleteButton } from "@/components/admin/categories/DeleteButton";
-import ErrorMessage from "@/components/admin/errorMessage";
+import ErrorMessage from "@/components/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";

@@ -2,7 +2,6 @@
 
 import { revalidateTag } from "next/cache";
 import { notFound, redirect } from "next/navigation";
-import { z } from "zod/v3";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import { AuthenticatedFetchErrorType } from "../auth/types";
 import { clearAuth } from "../authState";
@@ -11,35 +10,55 @@ import {
   PostResponseSchema,
   CreatePostInputState,
   CreatePostInputSchema,
+  PaginatedPostsResponse,
+  PaginatedPostsResponseSchema,
 } from "../definition";
 import { BASE_API_URL } from "../util";
 import { CACHE_TAGS } from "../cacheTags";
+import { PaginationDto } from "../definition";
 
 export async function FetchPostsByBoardId(
   boardId: number,
-  boardSlug: string
-): Promise<PostResponse[]> {
+  boardSlug: string,
+  query: PaginationDto
+): Promise<PaginatedPostsResponse> {
+  const { page = 1, limit = 10, sort = "createdAt", order = "DESC" } = query;
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    sort,
+    order,
+  });
+
   const reqAddress = `${BASE_API_URL}/posts/board/${boardId}`;
-  const response = await fetch(reqAddress, {
+  const response = await fetch(`${reqAddress}?${params.toString()}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
+    cache: "force-cache",
     next: {
       revalidate: 60,
       tags: [CACHE_TAGS.BOARD_POSTS(boardSlug)],
     },
   });
 
-  if (!response.ok) throw new Error("Failed to fetch posts");
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch posts for board ${boardId}: ${response.statusText}`
+    );
+  }
 
   const rawData = await response.json();
 
-  // 배열 전체 검증
-  const result = z.array(PostResponseSchema).safeParse(rawData);
+  const result = PaginatedPostsResponseSchema.safeParse(rawData);
+
   if (!result.success) {
-    console.error("Validation failed:", result.error);
-    return [];
+    console.error(
+      "Validation failed for paginated posts response:",
+      result.error
+    );
+    return { data: [], currentPage: page, totalItems: 0, totalPages: 0 };
   }
 
   return result.data;

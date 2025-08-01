@@ -1,10 +1,11 @@
-import ErrorMessage from "@/components/admin/errorMessage";
+import ErrorMessage from "@/components/errorMessage";
 import DeleteButton from "@/components/admin/users/buttons/DeleteButton";
 import DetailButton from "@/components/admin/users/buttons/DetailButton";
 import EditButton from "@/components/admin/users/buttons/EditButton";
-import LimitSelector from "@/components/admin/users/LimitSelector";
+import LimitSelector from "@/components/Pagination/LimitSelector";
 import SortControls from "@/components/admin/users/SortControls";
 import UserSearchForm from "@/components/admin/users/UserSearchForm";
+import { PaginationControls } from "@/components/Pagination/PaginationControls";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import {
   FetchUserPaginatedList,
@@ -167,42 +168,14 @@ export default async function UserList({
           {data.totalPages}
         </div>
 
-        <LimitSelector currentLimit={currentLimit} />
+        <LimitSelector currentLimit={currentLimit} baseUrl={"/admin/users"} />
       </div>
       <PaginationControls
         currentPage={data.currentPage}
         totalPages={data.totalPages}
         currentLimit={currentLimit}
+        baseUrl={"/admin/users"}
       />
-    </div>
-  );
-}
-
-function PaginationControls({
-  currentPage,
-  totalPages,
-  currentLimit,
-}: {
-  currentPage: number;
-  totalPages: number;
-  currentLimit: number;
-}) {
-  const generateHref = (newPage: number) =>
-    `/admin/users?page=${newPage}&limit=${currentLimit}`;
-
-  return (
-    <div className="flex justify-center mt-4 space-x-2">
-      {Array.from({ length: totalPages }, (_, i) => (
-        <Link
-          key={i + 1}
-          href={generateHref(i + 1)}
-          className={`px-3 py-1 rounded ${
-            currentPage === i + 1 ? "bg-blue-500 text-white" : "bg-gray-200"
-          }`}
-        >
-          {i + 1}
-        </Link>
-      ))}
     </div>
   );
 }

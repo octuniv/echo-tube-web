@@ -9,6 +9,8 @@ import {
   BoardPurpose,
   BoardListItemDto,
   CreatePostRequestBody,
+  PaginatedPostsResponseSchema,
+  PaginationDto,
 } from "../definition";
 import { BASE_API_URL } from "../util";
 import {
@@ -69,63 +71,141 @@ describe("postAction", () => {
       consoleErrorMock.mockClear();
     });
 
-    it("should fetch posts by boardId and boardSlug successfully", async () => {
+    it("should fetch paginated posts by boardId and boardSlug successfully", async () => {
       const boardId = 1;
       const boardSlug = "free";
+
+      const mockPaginatedResponse = {
+        data: mockPosts.filter((p) => p.board.id === boardId), // 해당 보드의 게시글
+        currentPage: 1,
+        totalItems: mockPosts.filter((p) => p.board.id === boardId).length, // 해당 보드 게시글 수
+        totalPages: 1, // 예시: 1페이지
+      };
+
       server.use(
         http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
-          HttpResponse.json(mockPosts, { status: 200 })
+          HttpResponse.json(mockPaginatedResponse, { status: 200 })
         )
       );
-      const posts = await FetchPostsByBoardId(boardId, boardSlug);
-      expect(posts).toEqual(mockPosts);
+
+      const posts = await FetchPostsByBoardId(boardId, boardSlug, {
+        page: 1,
+        limit: 10,
+      });
+
+      // Zod 스키마로 검증
+      const validationResult = PaginatedPostsResponseSchema.safeParse(posts);
+      expect(validationResult.success).toBe(true);
+      if (validationResult.success) {
+        expect(validationResult.data).toEqual(mockPaginatedResponse);
+      }
     });
 
-    it("should throw error when response is not ok", async () => {
+    it("should handle error when response is not ok for paginated posts", async () => {
       const boardId = 999;
       const boardSlug = "nonexistent";
+
       server.use(
         http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json({ error: "Not Found" }, { status: 404 })
         )
       );
-      await expect(FetchPostsByBoardId(boardId, boardSlug)).rejects.toThrow(
-        "Failed to fetch posts"
-      );
+
+      await expect(
+        FetchPostsByBoardId(boardId, boardSlug, { page: 1, limit: 10 })
+      ).rejects.toThrow("Failed to fetch posts");
     });
 
-    it("should handle empty posts array", async () => {
-      const boardId = 1;
+    it("should handle empty paginated posts response (no posts in board)", async () => {
+      const boardId = 2; // 게시글이 없는 보드 ID
       const boardSlug = "empty-board";
+
+      // MSW가 빈 데이터 배열을 반환하도록 설정 (페이지네이션 구조)
+      const emptyPaginatedResponse = {
+        data: [],
+        currentPage: 1,
+        totalItems: 0,
+        totalPages: 0,
+      };
+
       server.use(
         http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
-          HttpResponse.json([], { status: 200 })
+          HttpResponse.json(emptyPaginatedResponse, { status: 200 })
         )
       );
-      const posts = await FetchPostsByBoardId(boardId, boardSlug);
-      expect(posts).toEqual([]);
+
+      const posts = await FetchPostsByBoardId(boardId, boardSlug, {
+        page: 1,
+        limit: 10,
+      });
+
+      // Zod 스키마로 검증 또는 직접 비교
+      const validationResult = PaginatedPostsResponseSchema.safeParse(posts);
+      expect(validationResult.success).toBe(true);
+      if (validationResult.success) {
+        expect(validationResult.data).toEqual(emptyPaginatedResponse);
+      }
     });
 
-    it("should return empty array when response data is invalid", async () => {
+    it("should return empty paginated result when response data is invalid", async () => {
       const boardId = 1;
       const boardSlug = "invalid-data-board";
-      const invalidData = [
-        {
-          id: 1,
-          title: "Invalid Post",
-          content: "Content",
-          // requiredRole이 유효하지 않은 값 (enum에 없는 값)
-          board: { requiredRole: "invalid-role" },
-        },
-      ];
+
+      // 유효하지 않은 데이터 (예: PostResponse 스키마 위반)
+      const invalidData = {
+        // data: [...] // 누락
+        currentPage: "one", // 잘못된 타입
+        totalItems: "zero", // 잘못된 타입
+        totalPages: -1, // 잘못된 값
+      };
+
       server.use(
         http.get(`${BASE_API_URL}/posts/board/${boardId}`, () =>
           HttpResponse.json(invalidData, { status: 200 })
         )
       );
-      const posts = await FetchPostsByBoardId(boardId, boardSlug);
-      expect(posts).toEqual([]); // Zod 검증 실패 시 빈 배열 반환
+
+      const posts = await FetchPostsByBoardId(boardId, boardSlug, {
+        page: 1,
+        limit: 10,
+      });
+
+      expect(posts).toEqual({
+        data: [],
+        currentPage: 1,
+        totalItems: 0,
+        totalPages: 0,
+      });
       expect(console.error).toHaveBeenCalled(); // 에러 로깅 확인
+    });
+
+    it("should pass pagination parameters correctly in the request", async () => {
+      const boardId = 1;
+      const boardSlug = "free";
+      const queryParams: PaginationDto = {
+        page: 2,
+        limit: 5,
+        sort: "createdAt",
+        order: "ASC",
+      };
+
+      const mockPaginatedResponse = {
+        data: [],
+        currentPage: queryParams.page,
+        totalItems: 0,
+        totalPages: 0,
+      };
+
+      server.use(
+        http.get(`${BASE_API_URL}/posts/board/${boardId}`, () => {
+          return HttpResponse.json(mockPaginatedResponse, { status: 200 });
+        })
+      );
+
+      const posts = await FetchPostsByBoardId(boardId, boardSlug, queryParams);
+
+      expect(posts.currentPage).toBe(queryParams.page);
+      expect(posts.totalItems).toBe(0);
     });
   });
 

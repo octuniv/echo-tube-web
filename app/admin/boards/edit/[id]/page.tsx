@@ -1,5 +1,5 @@
 import EditBoardPage from "@/components/admin/boards/edit/EditBoardPage";
-import ErrorMessage from "@/components/admin/errorMessage";
+import ErrorMessage from "@/components/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoardById } from "@/lib/action/adminBoardManagementApi";
 import { getAvailableCategories } from "@/lib/action/adminCategoryManagementApi";

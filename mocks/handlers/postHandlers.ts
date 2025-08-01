@@ -1,4 +1,9 @@
-import { BoardPurpose, PostResponse, UserRole } from "../../lib/definition";
+import {
+  BoardPurpose,
+  PaginatedPostsResponse,
+  PostResponse,
+  UserRole,
+} from "../../lib/definition";
 import { BASE_API_URL } from "../../lib/util";
 import { http, HttpResponse } from "msw";
 
@@ -43,6 +48,23 @@ export const mockPosts: PostResponse[] = [
   },
 ];
 
+const createPaginatedResponse = (
+  posts: PostResponse[],
+  page: number = 1,
+  limit: number = 10
+): PaginatedPostsResponse => {
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const data = posts.slice(startIndex, endIndex);
+
+  return {
+    data,
+    currentPage: page,
+    totalItems: posts.length,
+    totalPages: Math.ceil(posts.length / limit),
+  };
+};
+
 export const mockEditPostForm = {
   title: "Changed",
   content: "Content of Changed",
@@ -51,10 +73,24 @@ export const mockEditPostForm = {
 
 export const postHandlers = [
   // Mock API for fetch posts with Board Slug
-  http.get(`${BASE_API_URL}/posts/board/:boardId`, ({ params }) => {
+  http.get(`${BASE_API_URL}/posts/board/:boardId`, ({ params, request }) => {
     const boardId = Number(params.boardId);
+
+    // 쿼리 파라미터 파싱 (선택적)
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
+    const limit = parseInt(url.searchParams.get("limit") || "10", 10);
+
     const filteredPosts = mockPosts.filter((post) => post.board.id === boardId);
-    return HttpResponse.json(filteredPosts, { status: 200 });
+
+    // 페이지네이션된 응답 생성
+    const paginatedResponse = createPaginatedResponse(
+      filteredPosts,
+      page,
+      limit
+    );
+
+    return HttpResponse.json(paginatedResponse, { status: 200 });
   }),
 
   // Mock API for fetch post

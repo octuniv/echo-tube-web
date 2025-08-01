@@ -6,7 +6,7 @@ import DeleteButton from "@/components/admin/users/buttons/DeleteButton";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { notFound } from "next/navigation";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
-import ErrorMessage from "@/components/admin/errorMessage";
+import ErrorMessage from "@/components/errorMessage";
 
 export default async function UserDetailPage({
   params,
