@@ -47,6 +47,8 @@ export const signUpAndLogin = async ({
   expectValidUserCookie(cookies);
 };
 
+const TEST_VIEWPORT = { width: 1920, height: 1080 };
+
 export const loginAsAdmin = async ({
   page,
   context,
@@ -68,7 +70,7 @@ export const loginAsAdmin = async ({
 export const loginAsAdminIsolated = async (
   browser: Browser
 ): Promise<{ context: BrowserContext; page: Page }> => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ viewport: TEST_VIEWPORT });
 
   await context.clearCookies();
 

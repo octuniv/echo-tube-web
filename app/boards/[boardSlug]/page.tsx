@@ -1,18 +1,17 @@
-import VideoCard from "@/components/Boards/Shared/VideoCard";
+"use server";
+
 import ErrorMessage from "@/components/errorMessage";
 import LimitSelector from "@/components/Pagination/LimitSelector";
 import { PaginationControls } from "@/components/Pagination/PaginationControls";
 import { FetchAllBoards } from "@/lib/action/boardBrowseActions";
 import { FetchPostsByBoardId } from "@/lib/action/postActions";
 import { userStatus } from "@/lib/authState";
-import {
-  PaginatedPostsResponse,
-  PaginationDtoSchema,
-  VideoCardInfo,
-} from "@/lib/definition";
+import { PaginatedPostsResponse, PaginationDtoSchema } from "@/lib/definition";
 import { canCreatePost } from "@/lib/util";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import BoardHeader from "@/components/Boards/Shared/BoardHeader";
+import CreatePostButton from "@/components/Boards/Shared/CreatePostButton";
+import Link from "next/link";
 
 export async function generateStaticParams() {
   const boards = await FetchAllBoards();
@@ -74,17 +73,9 @@ export default async function Page({
     return <ErrorMessage message={"데이터를 불러오는 데 실패하였습니다."} />;
   }
 
-  // VideoCardInfo 배열 생성
-  const videos: VideoCardInfo[] = data.data.map((post) => ({
-    id: post.id,
-    title: post.title,
-    nickname: post.nickname,
-    createdAt: post.createdAt,
-    videoUrl: post.videoUrl,
-    channelTitle: post.channelTitle,
-    duration: post.duration,
-    source: post.source,
-  }));
+  if (data.currentPage > data.totalPages && data.totalPages > 0) {
+    notFound();
+  }
 
   const userStatusInfo = await userStatus();
 
@@ -94,58 +85,104 @@ export default async function Page({
   });
 
   return (
-    <div>
-      <div className="mb-6 border-b pb-4">
-        <h1 className="text-2xl font-bold">{currentBoard.name}</h1>
-        <p className="text-gray-600 mt-1">{currentBoard.description}</p>
-      </div>
-      <div className="space-y-4">
-        {videos.length > 0 ? (
-          videos.map((video) => (
-            <VideoCard key={video.id} boardSlug={boardSlug} video={video} />
-          ))
-        ) : (
-          <p
-            className="text-center text-gray-500"
-            aria-label="No posts available"
-          >
-            게시물이 없습니다.
-          </p>
-        )}
-      </div>
-      <div className="flex justify-between items-center mt-4 mb-2">
-        <div className="text-sm text-gray-600">
-          현재 페이지: <span className="font-medium">{data.currentPage}</span> /{" "}
-          {data.totalPages}
+    <div className="container mx-auto px-4 py-6">
+      <BoardHeader
+        name={currentBoard.name}
+        description={currentBoard.description}
+      />
+
+      <div className="mt-6 bg-white rounded-xl shadow-sm overflow-hidden">
+        {/* 필터 및 정렬 컨트롤 */}
+        <div className="px-6 py-4 border-b bg-gray-50">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <LimitSelector
+                currentLimit={currentLimit}
+                baseUrl={`/boards/${boardSlug}`}
+              />
+              {isEditable && <CreatePostButton boardSlug={boardSlug} />}
+            </div>
+          </div>
         </div>
 
-        <LimitSelector
-          currentLimit={currentLimit}
-          baseUrl={`/boards/${boardSlug}`}
-        />
+        {/* 게시물 목록 */}
+        <div className="divide-y divide-gray-200">
+          {data.data.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">
+                이 보드에 게시물이 없습니다.
+              </p>
+              {isEditable && (
+                <Link
+                  href={`/boards/${boardSlug}/create`}
+                  className="mt-4 inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 font-medium"
+                  aria-label="Create post first"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  첫 번째 게시물 작성하기
+                </Link>
+              )}
+            </div>
+          ) : (
+            data.data.map((post) => (
+              <Link
+                key={post.id}
+                href={`/boards/${boardSlug}/${post.id}`}
+                className="block hover:bg-gray-50 transition-colors p-6"
+                aria-label={`Go to post ${post.title}`}
+              >
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1 hover:text-blue-600 transition-colors">
+                      {post.title}
+                    </h2>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      {post.content}
+                    </p>
+                    <div className="flex flex-wrap items-center text-sm text-gray-500 gap-y-1">
+                      <span className="mr-3">작성자: {post.nickname}</span>
+                      <span className="mr-3">조회 {post.views}</span>
+                      <span className="mr-3">댓글 {post.commentsCount}</span>
+                      {post.channelTitle && (
+                        <span className="mr-3">채널: {post.channelTitle}</span>
+                      )}
+                      <span className="md:ml-auto">
+                        {new Date(post.createdAt).toLocaleDateString("ko-KR", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+
+        {/* 페이지네이션 */}
+        <div className="px-6 py-4 border-t bg-gray-50">
+          <PaginationControls
+            currentPage={data.currentPage}
+            totalPages={data.totalPages}
+            currentLimit={currentLimit}
+            baseUrl={`/boards/${boardSlug}`}
+          />
+        </div>
       </div>
-      <PaginationControls
-        currentPage={data.currentPage}
-        totalPages={data.totalPages}
-        currentLimit={currentLimit}
-        baseUrl={`/boards/${boardSlug}`}
-      />
-      {isEditable ? (
-        <Link href={`/boards/${boardSlug}/create`}>
-          <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
-            게시물 작성
-          </button>
-        </Link>
-      ) : (
-        <button
-          disabled
-          className="px-4 py-2 bg-gray-300 text-white rounded cursor-not-allowed opacity-70"
-          title="게시물 작성 권한이 없습니다"
-          aria-disabled
-        >
-          게시물 작성
-        </button>
-      )}
     </div>
   );
 }

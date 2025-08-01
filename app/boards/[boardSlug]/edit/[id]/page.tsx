@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { FetchPost } from "@/lib/action/postActions";
 import { userStatus } from "@/lib/authState";
-import PostEditPage from "@/components/Boards/General/edit/PostEditPage";
+import PostEditPage from "@/components/Boards/edit/PostEditPage";
 import { canModifyPost } from "@/lib/util";
 
 interface PostPageProps {
@@ -20,6 +20,11 @@ export default async function Page({ params }: PostPageProps) {
   }
 
   const post = await FetchPost(postId);
+
+  if (post.board.slug !== boardSlug) {
+    notFound(); // 알맞지 않는 post와 board 경우 404 처리
+  }
+
   const userStatusInfo = await userStatus();
   const isEditable = canModifyPost({ user: userStatusInfo, post });
 

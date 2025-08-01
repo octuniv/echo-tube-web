@@ -176,15 +176,6 @@ export type PaginatedPostsResponse = z.infer<
   typeof PaginatedPostsResponseSchema
 >;
 
-export type VideoCardInfo = Pick<
-  PostResponse,
-  "id" | "title" | "nickname" | "createdAt" | "videoUrl"
-> & {
-  channelTitle?: string | null;
-  duration?: string | null;
-  source?: string | null;
-};
-
 export const CreatePostInputSchema = z.object({
   title: z.string().min(1, { message: "Please enter your title." }),
   content: z.string().min(1, { message: "Please enter your content." }),

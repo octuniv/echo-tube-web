@@ -30,6 +30,9 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
+
+    /* Default viewport size */
+    viewport: { width: 1920, height: 1080 },
   },
 
   /* Configure projects for major browsers */
@@ -40,6 +43,8 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         storageState: "./tests-e2e/.auth/user.json",
+        /* Default viewport size */
+        viewport: { width: 1920, height: 1080 },
       },
       dependencies: ["setup"],
     },
@@ -49,6 +54,8 @@ export default defineConfig({
       use: {
         ...devices["Desktop Firefox"],
         storageState: "./tests-e2e/.auth/user.json",
+        /* Default viewport size */
+        viewport: { width: 1920, height: 1080 },
       },
       dependencies: ["setup"],
     },
@@ -58,6 +65,8 @@ export default defineConfig({
       use: {
         ...devices["Desktop Safari"],
         storageState: "./tests-e2e/.auth/user.json",
+        /* Default viewport size */
+        viewport: { width: 1920, height: 1080 },
       },
       dependencies: ["setup"],
     },

@@ -136,7 +136,7 @@ test.describe("Auth Test", () => {
         .first();
       await post.click();
 
-      await expect(page).toHaveURL(/\/boards\/free\/\d+/);
+      await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
 
       const cookies = await context.cookies();
       await context.clearCookies();
@@ -237,7 +237,7 @@ test.describe("Auth Test", () => {
         .getByText("Test to confirm that this post cannot be edited")
         .first();
       await post.click();
-      await expect(page).toHaveURL(/\/boards\/free\/\d+/);
+      await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
 
       const cookies = await context.cookies();
       await context.clearCookies();

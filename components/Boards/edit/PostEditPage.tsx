@@ -6,7 +6,7 @@ import {
   CreatePostInputState as ErrorState,
   PostResponse,
 } from "@/lib/definition";
-import PostEditForm from "../../Shared/PostEditor";
+import PostEditForm from "../Shared/PostEditor";
 
 interface PostEditPageProps {
   postId: number;
