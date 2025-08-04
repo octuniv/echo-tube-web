@@ -1,5 +1,5 @@
 import { DeleteButton } from "@/components/admin/boards/DeleteButton";
-import ErrorMessage from "@/components/admin/errorMessage";
+import ErrorMessage from "@/components/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoards } from "@/lib/action/adminBoardManagementApi";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";

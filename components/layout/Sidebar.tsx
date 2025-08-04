@@ -137,10 +137,7 @@ const Sidebar = ({
               .map((group) => (
                 <div key={group.purpose} className="pl-2">
                   {group.boards.map((board) => {
-                    const href =
-                      group.purpose === BoardPurpose.AI_DIGEST
-                        ? `/boards/ai-digest/${board.slug}`
-                        : `/boards/${board.slug}`;
+                    const href = `/boards/${board.slug}`;
                     const isActive = pathname === href;
 
                     return (

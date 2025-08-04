@@ -1,17 +1,17 @@
 import { PostResponse } from "@/lib/definition";
-import PostLayout from "../Shared/PostLayout";
+import PostLayout from "./Shared/PostLayout";
 
-interface AIDigestPostPageProps {
+interface ComponentProps {
   post: PostResponse; // URL에서 전달되는 게시물 ID
   isEditable: boolean;
   boardSlug: string;
 }
 
-export default function AIDigestPostPage({
+export default function PostComponent({
   post,
   isEditable,
   boardSlug,
-}: AIDigestPostPageProps) {
+}: ComponentProps) {
   return (
     <PostLayout post={post} isEditable={isEditable} boardSlug={boardSlug}>
       <div className="mt-6 text-sm text-gray-700 space-y-2">

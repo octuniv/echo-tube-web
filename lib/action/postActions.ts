@@ -2,7 +2,6 @@
 
 import { revalidateTag } from "next/cache";
 import { notFound, redirect } from "next/navigation";
-import { z } from "zod/v3";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import { AuthenticatedFetchErrorType } from "../auth/types";
 import { clearAuth } from "../authState";
@@ -11,35 +10,55 @@ import {
   PostResponseSchema,
   CreatePostInputState,
   CreatePostInputSchema,
+  PaginatedPostsResponse,
+  PaginatedPostsResponseSchema,
 } from "../definition";
 import { BASE_API_URL } from "../util";
 import { CACHE_TAGS } from "../cacheTags";
+import { PaginationDto } from "../definition";
 
 export async function FetchPostsByBoardId(
   boardId: number,
-  boardSlug: string
-): Promise<PostResponse[]> {
+  boardSlug: string,
+  query: PaginationDto
+): Promise<PaginatedPostsResponse> {
+  const { page = 1, limit = 10, sort = "createdAt", order = "DESC" } = query;
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    sort,
+    order,
+  });
+
   const reqAddress = `${BASE_API_URL}/posts/board/${boardId}`;
-  const response = await fetch(reqAddress, {
+  const response = await fetch(`${reqAddress}?${params.toString()}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
+    cache: "force-cache",
     next: {
       revalidate: 60,
       tags: [CACHE_TAGS.BOARD_POSTS(boardSlug)],
     },
   });
 
-  if (!response.ok) throw new Error("Failed to fetch posts");
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch posts for board ${boardId}: ${response.statusText}`
+    );
+  }
 
   const rawData = await response.json();
 
-  // 배열 전체 검증
-  const result = z.array(PostResponseSchema).safeParse(rawData);
+  const result = PaginatedPostsResponseSchema.safeParse(rawData);
+
   if (!result.success) {
-    console.error("Validation failed:", result.error);
-    return [];
+    console.error(
+      "Validation failed for paginated posts response:",
+      result.error
+    );
+    return { data: [], currentPage: page, totalItems: 0, totalPages: 0 };
   }
 
   return result.data;
@@ -127,7 +146,10 @@ export async function CreatePost(
   }
 }
 
-export async function DeletePost(postId: number, boardSlug: string) {
+export async function DeletePost(
+  postId: number,
+  boardSlug: string
+): Promise<{ success: boolean; redirectUrl?: string; error?: string }> {
   const reqAddress = new URL(`/posts/${postId}`, BASE_API_URL).toString();
 
   const { error } = await authenticatedFetch({
@@ -143,18 +165,31 @@ export async function DeletePost(postId: number, boardSlug: string) {
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
-        redirect("/login?error=session_expired");
+        return {
+          success: false,
+          error: "세션이 만료되었습니다. 다시 로그인해주세요.",
+          redirectUrl: "/login?error=session_expired",
+        };
       case AuthenticatedFetchErrorType.ServerError:
-        throw new Error("서버 오류가 발생했습니다.");
+        return { success: false, error: "서버 오류가 발생했습니다." };
       case AuthenticatedFetchErrorType.NotFound:
-        throw new Error("요청한 리소스를 찾을 수 없습니다.");
+        return {
+          success: false,
+          error: "요청한 리소스를 찾을 수 없습니다.",
+        };
       default:
-        throw new Error("게시물을 삭제할 수 없습니다.");
+        return {
+          success: false,
+          error: "게시물을 삭제할 수 없습니다.",
+        };
     }
   } else {
     revalidateTag(CACHE_TAGS.POST(postId));
     revalidateTag(CACHE_TAGS.BOARD_POSTS(boardSlug));
-    redirect(`/boards/${boardSlug}`);
+    return {
+      success: true,
+      redirectUrl: `/boards/${boardSlug}`,
+    };
   }
 }
 

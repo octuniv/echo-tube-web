@@ -14,18 +14,12 @@ test.describe("Verifying permissions on bulletin boards E2E test", () => {
     // 1. ADMIN 권한이 필요한 게시판으로 이동
     await page.goto("/boards/notices");
 
-    // 2. 비활성화된 게시물 작성 버튼 확인
+    // 2. 비활성화된 게시물 작성 버튼 표시 없음 확인
     const createButton = page.getByRole("button", {
       name: "게시물 작성",
-      disabled: true,
     });
 
-    await expect(createButton).toBeVisible();
-    await expect(createButton).toHaveClass(/bg-gray-300/);
-    await expect(createButton).toHaveAttribute(
-      "title",
-      "게시물 작성 권한이 없습니다"
-    );
+    await expect(createButton).not.toBeVisible();
 
     // 3. 첫 번째 게시물로 이동 (실제 게시물 존재를 전제)
     const firstPost = page

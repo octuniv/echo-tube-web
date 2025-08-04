@@ -1,5 +1,5 @@
 import { GoToCategoriesLink } from "@/components/admin/categories/GoToCategoriesLink";
-import ErrorMessage from "@/components/admin/errorMessage";
+import ErrorMessage from "@/components/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchCategoryById } from "@/lib/action/adminCategoryManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";

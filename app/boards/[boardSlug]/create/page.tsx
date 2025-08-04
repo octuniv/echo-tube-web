@@ -1,4 +1,4 @@
-import PostCreatePage from "@/components/Boards/General/create/PostCreatePage";
+import PostCreatePage from "@/components/Boards/create/PostCreatePage";
 import { loginStatus } from "@/lib/authState";
 import { redirect } from "next/navigation";
 

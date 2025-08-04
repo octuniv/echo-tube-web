@@ -50,27 +50,9 @@ test.describe("Page-to-page movement test", () => {
     const boardSlug = "free";
     await clickSideBarBoard(page, categoryName, boardName, boardSlug);
 
-    const postButton = page.getByRole("button", {
-      name: "게시물 작성",
-      disabled: true,
-    });
-
-    // 버튼이 화면에 표시되고 비활성화되었는지 확인
-    await expect(postButton).toBeVisible();
-    await expect(postButton).toBeDisabled();
-
-    // 접근성 속성 검증
-    await expect(postButton).toHaveAttribute(
-      "title",
-      "게시물 작성 권한이 없습니다"
-    );
-    await expect(postButton).toHaveAttribute("aria-disabled", "true");
-
-    // 스타일 검증 (옵션)
-    const buttonClass = await postButton.getAttribute("class");
-    expect(buttonClass).toContain("bg-gray-300");
-    expect(buttonClass).toContain("cursor-not-allowed");
-    expect(buttonClass).toContain("opacity-70");
+    await expect(
+      page.getByRole("link", { name: "게시물 작성" })
+    ).not.toBeVisible();
   });
 
   test("Redirect to login page when ths user is not logged in and access page about creating post", async ({

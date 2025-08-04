@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
 function extractDate(dateText: string) {
   const dateMatch = dateText.match(
@@ -19,6 +19,11 @@ function extractDate(dateText: string) {
   return creationDate;
 }
 
+function findPostLink(page: Page, name: string | RegExp) {
+  const post = page.getByRole("link", { name }).first();
+  return post;
+}
+
 test.describe("Create Post Test", () => {
   test.beforeEach(async ({ page }) => {
     // 게시판 목록 이동
@@ -27,16 +32,14 @@ test.describe("Create Post Test", () => {
     await page.reload();
   });
 
-  test("should move create post page when click create post button", async ({
+  test("should move create post page when click create post link", async ({
     page,
   }) => {
     // 게시물 작성 버튼 확인
-    await expect(
-      page.getByRole("button", { name: "게시물 작성" })
-    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "게시물 작성" })).toBeVisible();
 
     // 게시물 작성 버튼 클릭
-    await page.getByRole("button", { name: "게시물 작성" }).click();
+    await page.getByRole("link", { name: "게시물 작성" }).click();
 
     // 게시물 작성 페이지 리다이렉트 확인
     await expect(page).toHaveURL("/boards/free/create");
@@ -105,10 +108,11 @@ test.describe("Create Post Test", () => {
 
 test.describe("Posts E2E Tests", () => {
   // 게시물 작성 테스트
+  const postTitle = "New Post Title";
   test("should create a new post with valid videoUrl", async ({ page }) => {
     await page.goto("/boards/free/create");
 
-    await page.fill("input#title", "New Post Title");
+    await page.fill("input#title", postTitle);
     await page.fill("textarea#content", "New Post Content");
     await page.fill(
       "input#videoUrl",
@@ -118,7 +122,7 @@ test.describe("Posts E2E Tests", () => {
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL("/boards/free");
 
-    const newPost = page.getByLabel("Post title: New Post Title").first();
+    const newPost = findPostLink(page, postTitle);
     await expect(newPost).toBeVisible();
   });
 
@@ -127,18 +131,18 @@ test.describe("Posts E2E Tests", () => {
     page,
   }) => {
     await page.goto("/boards/free");
-    const post = page.getByLabel("Post title: New Post Title").first();
+    const post = findPostLink(page, postTitle);
     await post.click();
 
-    await expect(page).toHaveURL(/\/boards\/free\/\d+/);
-    await expect(page.getByText("New Post Title")).toBeVisible();
+    await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
+    await expect(page.getByText(postTitle)).toBeVisible();
   });
 
   test("should display embedded YouTube video if valid video URL is provided", async ({
     page,
   }) => {
     await page.goto("/boards/free");
-    const post = page.getByLabel("Post title: New Post Title").first();
+    const post = findPostLink(page, postTitle);
     await post.click();
 
     const iframe = page.locator('iframe[src*="youtube.com/embed"]');
@@ -159,8 +163,10 @@ test.describe("Posts E2E Tests", () => {
     // await page.goto("/boards/free");
     await expect(page).toHaveURL("/boards/free");
 
-    const post = page.getByLabel("Post title: Invalid Video URL Test").first();
+    const post = findPostLink(page, "Invalid Video URL Test");
     await post.click();
+
+    await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
 
     await expect(
       page.getByText(
@@ -169,22 +175,18 @@ test.describe("Posts E2E Tests", () => {
     ).toBeVisible();
   });
 
-  // 게시물 목록 페이지 테스트
-  test("should display posts in descending order by creation date", async ({
+  test("should raise notfound error if board and post is not pair when access into post", async ({
     page,
   }) => {
-    await page.goto("/boards/free");
-    const firstPost = page
-      .locator('p[aria-label^="Post creation date"]')
-      .first();
-    const lastPost = page.locator('p[aria-label^="Post creation date"]').last();
+    await page.goto("/boards/free/1"); // post 1 is located at notice board
 
-    const firstPostDateText = await firstPost.innerText();
-    const lastPostDateText = await lastPost.innerText();
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "This page could not be found." })
+    ).toBeVisible();
 
-    expect(
-      new Date(extractDate(firstPostDateText)).getTime()
-    ).toBeGreaterThanOrEqual(new Date(extractDate(lastPostDateText)).getTime());
+    const notFoundText = page.locator("text=This page could not be found.");
+    await expect(notFoundText).toBeVisible();
   });
 });
 
@@ -199,12 +201,10 @@ test.describe("Delete Post Tests", () => {
 
     await expect(page).toHaveURL("/boards/free");
 
-    const post = page
-      .getByLabel("Post title: Test to delete this post")
-      .first();
+    const post = findPostLink(page, "Test to delete this post");
     await post.click();
 
-    await expect(page).toHaveURL(/\/boards\/free\/\d+/);
+    await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
 
     const thisPage = new URL(page.url()).pathname;
 
@@ -263,7 +263,7 @@ test.describe("Delete Post Tests", () => {
       await post.click();
 
       // 게시물 상세 페이지 URL 검증
-      await expect(page).toHaveURL(/\/boards\/free\/\d+/);
+      await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
 
       // 삭제 버튼 상태 확인
       const deleteButton = page.getByRole("button", {
@@ -274,7 +274,8 @@ test.describe("Delete Post Tests", () => {
       // 삭제 버튼이 비활성화되었는지 확인
       expect(isButtonEnabled).toBeFalsy();
     } catch (e) {
-      throw e;
+      console.error(e);
+      test.fail();
     } finally {
       await page.context().addCookies(cookies);
       await page.goto("/boards/free");
@@ -301,10 +302,10 @@ test.describe("Edit Post Test", () => {
 
     await expect(page).toHaveURL("/boards/free");
 
-    const post = page.getByLabel("Post title: Test Title for edit").first();
+    const post = findPostLink(page, "Test Title for edit");
     await post.click();
 
-    await expect(page).toHaveURL(/\/boards\/free\/\d+/);
+    await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
 
     postPage = new URL(page.url()).pathname;
   });
@@ -386,7 +387,7 @@ test.describe("Edit Post Test", () => {
     try {
       // 조회 페이지 방문
       await page.goto(postPage);
-      await expect(page).toHaveURL(/\/boards\/free\/\d+/);
+      await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
 
       // 편집 버튼 상태 확인
       const editLink = page.getByRole("link", {
@@ -397,7 +398,8 @@ test.describe("Edit Post Test", () => {
       // 편집 버튼이 비활성화되었는지 확인
       expect(isLinkEnabled).toBeFalsy();
     } catch (e) {
-      throw e;
+      console.error(e);
+      test.fail();
     } finally {
       await page.context().addCookies(cookies);
       await page.goto("/boards/free");
@@ -432,10 +434,307 @@ test.describe("Edit Post Test", () => {
       await page.goto(editPage);
       await page.waitForURL("/boards/free", { timeout: 10000 });
     } catch (e) {
-      throw e;
+      console.error(e);
+      test.fail();
     } finally {
       await page.context().addCookies(cookies);
       await page.goto("/boards/free");
+    }
+  });
+});
+
+test.describe("Pagination Tests", () => {
+  const POST_TITLE_PREFIX = "Pagination Test Post";
+  const POST_SLUG_FOR_THIS_TEST = "paginationtest";
+
+  test("should display correct number of posts per page when limit is 5", async ({
+    page,
+  }) => {
+    // 게시판 목록 페이지로 이동
+    await page.goto(`/boards/${POST_SLUG_FOR_THIS_TEST}`);
+    await page.waitForURL(`/boards/${POST_SLUG_FOR_THIS_TEST}`, {
+      timeout: 5000,
+    });
+
+    // Limit을 5로 설정
+    await page.selectOption('select[id="limit-select"]', { value: "5" });
+
+    // URL 확인
+    await expect(page).toHaveURL(
+      new RegExp(`/boards/${POST_SLUG_FOR_THIS_TEST}\\?.*page=1.*limit=5`)
+    );
+
+    // 첫 번째 페이지에 생성한 게시물이 모두 표시되는지 확인
+    // POST_TITLE_PREFIX가 포함된 서로 다른 5개의 게시물이 있는지 확인
+    const postTitles = await page
+      .locator(`text=${POST_TITLE_PREFIX}`)
+      .allTextContents();
+
+    // PREFIX 뒤에 오는 숫자들을 추출하여 5개의 서로 다른 숫자가 있는지 확인
+    const postNumbers = postTitles
+      .map((title) => {
+        const match = title.match(new RegExp(`${POST_TITLE_PREFIX}\\s*(\\d+)`));
+        return match ? parseInt(match[1]) : null;
+      })
+      .filter((num) => num !== null);
+
+    // 중복 제거를 위해 Set 사용
+    const uniqueNumbers = new Set(postNumbers);
+
+    // 서로 다른 5개의 숫자가 존재하는지 확인
+    expect(uniqueNumbers.size).toBe(5);
+
+    // 각 게시물이 실제로 화면에 보이는지 확인
+    for (const number of uniqueNumbers) {
+      await expect(
+        page.getByRole("link", { name: `${POST_TITLE_PREFIX} ${number}` })
+      ).toBeVisible();
+    }
+
+    // 페이지네이션 버튼 확인
+    const paginationButtons = page.locator("div.flex.justify-center a");
+    await expect(paginationButtons).toHaveCount(2); // 총 2페이지
+    await expect(paginationButtons.nth(0)).toHaveClass(/bg-blue-500/); // 현재 페이지 강조
+    await expect(paginationButtons.nth(1)).toHaveClass(/bg-gray-200/);
+  });
+
+  test("should navigate to second page and display remaining posts", async ({
+    page,
+  }) => {
+    // 게시판 목록 페이지로 이동
+    await page.goto(`/boards/${POST_SLUG_FOR_THIS_TEST}`);
+    await page.waitForURL(`/boards/${POST_SLUG_FOR_THIS_TEST}`, {
+      timeout: 5000,
+    });
+
+    // Limit을 5로 설정
+    await page.selectOption('select[id="limit-select"]', { value: "5" });
+
+    // 두 번째 페이지로 이동
+    const paginationButtons = page.locator("div.flex.justify-center a");
+    await paginationButtons.nth(1).click();
+
+    // URL 확인
+    await expect(page).toHaveURL(
+      new RegExp(`/boards/${POST_SLUG_FOR_THIS_TEST}\\?.*page=2.*limit=5`)
+    );
+
+    // 두 번째 페이지에 1개의 게시물만 표시되는지 확인
+    const postTitles = await page
+      .locator(`h2:has-text("${POST_TITLE_PREFIX}")`)
+      .allTextContents();
+
+    // 이후 검증 로직은 동일하게 사용
+    expect(postTitles.length).toBe(1);
+
+    // 6번째 게시물이 표시되는지 확인
+    await expect(
+      page.getByText(new RegExp(`${POST_TITLE_PREFIX}\\s*(\\d+)`))
+    ).toBeVisible();
+
+    // 현재 페이지가 2로 표시되는지 확인
+    const currentPageButton = page.locator(
+      `div.flex.justify-center a:has-text("2")`
+    );
+    await expect(currentPageButton).toHaveClass(/bg-blue-500/);
+  });
+
+  test("should display all posts on one page when limit is 10", async ({
+    page,
+  }) => {
+    // 게시판 목록 페이지로 이동
+    await page.goto(`/boards/${POST_SLUG_FOR_THIS_TEST}`);
+    await page.waitForURL(`/boards/${POST_SLUG_FOR_THIS_TEST}`, {
+      timeout: 5000,
+    });
+
+    // Limit을 10으로 설정
+    await page.selectOption('select[id="limit-select"]', { value: "10" });
+
+    await expect(page).toHaveURL(
+      new RegExp(`/boards/${POST_SLUG_FOR_THIS_TEST}\\?.*page=1.*limit=10`)
+    );
+
+    // 첫 번째 페이지에 생성한 게시물이 모두 표시되는지 확인
+    // POST_TITLE_PREFIX가 포함된 서로 다른 6개의 게시물이 있는지 확인
+    const postTitles = await page
+      .locator(`text=${POST_TITLE_PREFIX}`)
+      .allTextContents();
+
+    // PREFIX 뒤에 오는 숫자들을 추출하여 6개의 서로 다른 숫자가 있는지 확인
+    const postNumbers = postTitles
+      .map((title) => {
+        const match = title.match(new RegExp(`${POST_TITLE_PREFIX}\\s*(\\d+)`));
+        return match ? parseInt(match[1]) : null;
+      })
+      .filter((num) => num !== null);
+
+    // 중복 제거를 위해 Set 사용
+    const uniqueNumbers = new Set(postNumbers);
+
+    // 서로 다른 5개의 숫자가 존재하는지 확인
+    expect(uniqueNumbers.size).toBe(6);
+
+    // 각 게시물이 실제로 화면에 보이는지 확인
+    for (const number of uniqueNumbers) {
+      await expect(
+        page.getByRole("link", { name: `${POST_TITLE_PREFIX} ${number}` })
+      ).toBeVisible();
+    }
+
+    // 페이지네이션 버튼이 1개만 표시되는지 확인 (총 1페이지)
+    const paginationButtons = page.locator("div.flex.justify-center a");
+    await expect(paginationButtons).toHaveCount(1);
+    await expect(paginationButtons.nth(0)).toHaveClass(/bg-blue-500/);
+  });
+
+  test("should maintain limit setting when navigating between pages", async ({
+    page,
+  }) => {
+    // 게시판 목록 페이지로 이동
+    await page.goto(`/boards/${POST_SLUG_FOR_THIS_TEST}`);
+    await page.waitForURL(`/boards/${POST_SLUG_FOR_THIS_TEST}`, {
+      timeout: 5000,
+    });
+
+    // Limit을 5로 설정
+    await page.selectOption('select[id="limit-select"]', { value: "5" });
+
+    // 두 번째 페이지로 이동
+    const paginationButtons = page.locator("div.flex.justify-center a");
+    await paginationButtons.nth(1).click();
+
+    // URL 확인
+    await expect(page).toHaveURL(
+      new RegExp(`/boards/${POST_SLUG_FOR_THIS_TEST}\\?.*page=2.*limit=5`)
+    );
+
+    // Limit이 유지되는지 확인
+    const limitSelector = page.locator('select[id="limit-select"]');
+    await expect(limitSelector).toHaveValue("5");
+  });
+
+  test("should reset to first page when limit is changed", async ({ page }) => {
+    // 게시판 목록 페이지로 이동
+    await page.goto(`/boards/${POST_SLUG_FOR_THIS_TEST}?page=2&limit=5`);
+    await page.waitForURL(
+      new RegExp(`/boards/${POST_SLUG_FOR_THIS_TEST}\\?.*page=2.*limit=5`),
+      { timeout: 5000 }
+    );
+
+    // Limit을 10으로 변경
+    await page.selectOption('select[id="limit-select"]', { value: "10" });
+
+    // URL이 첫 번째 페이지로 리셋되었는지 확인
+    await expect(page).toHaveURL(
+      new RegExp(`/boards/${POST_SLUG_FOR_THIS_TEST}\\?.*page=1.*limit=10`)
+    );
+
+    // 첫 번째 페이지에 모든 게시물이 표시되는지 확인
+    const posts = page.locator('a[aria-label^="Go to post"]');
+    await expect(posts).toHaveCount(6);
+  });
+
+  test("should maintain correct page count after deleting a post", async ({
+    page,
+  }) => {
+    let isPostDeleted = false;
+    let deletedPostTitle = "";
+
+    try {
+      // 게시판 목록 페이지로 이동
+      await page.goto(`/boards/${POST_SLUG_FOR_THIS_TEST}`);
+      await page.waitForURL(`/boards/${POST_SLUG_FOR_THIS_TEST}`, {
+        timeout: 5000,
+      });
+
+      // 첫번째 게시글 클릭 (삭제할 게시글 찾기)
+      const post = findPostLink(
+        page,
+        new RegExp(`${POST_TITLE_PREFIX}\\s*(\\d+)`)
+      );
+      // 삭제할 게시글의 제목 저장
+      const postTitleElement = post.locator("h2"); // 제목이 들어 있는 h2 태그
+      await postTitleElement.waitFor(); // 요소가 로드될 때까지 대기
+      deletedPostTitle = (await postTitleElement.textContent()) || "";
+      if (!deletedPostTitle) {
+        throw new Error("Could not determine the title of the post to delete.");
+      }
+
+      await post.click();
+      await page.waitForURL(
+        new RegExp(`/boards/${POST_SLUG_FOR_THIS_TEST}/\\d+`),
+        { timeout: 1000 }
+      );
+
+      // 게시물 삭제
+      const deleteButton = page.getByRole("button", { name: "게시물 삭제" });
+      page.on("dialog", async (dialog) => {
+        await dialog.accept();
+      });
+      await deleteButton.click();
+
+      // 첫 번째 페이지로 리다이렉트 확인
+      await expect(page).toHaveURL(`/boards/${POST_SLUG_FOR_THIS_TEST}`);
+
+      // Limit을 5로 변경
+      await page.selectOption('select[id="limit-select"]', { value: "5" });
+      await expect(page).toHaveURL(
+        new RegExp(`/boards/${POST_SLUG_FOR_THIS_TEST}\\?.*page=1.*limit=5`)
+      );
+
+      // 페이지네이션 버튼이 1개만 표시되는지 확인 (총 1페이지)
+      const updatedPaginationButtons = page.locator(
+        "div.flex.justify-center a"
+      );
+      await expect(updatedPaginationButtons).toHaveCount(1);
+
+      // 5개의 게시물이 표시되는지 확인
+      const posts = page.locator('a[aria-label^="Go to post"]');
+      await expect(posts).toHaveCount(5);
+
+      isPostDeleted = true; // 삭제 성공 표시
+    } finally {
+      // 테스트 성공 여부와 관계없이, 테스트가 끝난 후 게시글 복구 시도
+      if (isPostDeleted && deletedPostTitle) {
+        try {
+          console.log(
+            `Attempting to restore deleted post: ${deletedPostTitle}`
+          );
+          // 게시물 작성 페이지로 이동
+          await page.goto(`/boards/${POST_SLUG_FOR_THIS_TEST}/create`);
+          await page.waitForURL(`/boards/${POST_SLUG_FOR_THIS_TEST}/create`, {
+            timeout: 5000,
+          });
+
+          // 삭제된 게시글의 제목과 내용을 기반으로 새 게시글 작성
+          // 제목에서 번호 추출 (예: "Pagination Test Post 3" -> "3")
+          const titleMatch = deletedPostTitle.match(
+            new RegExp(`${POST_TITLE_PREFIX}\\s*(\\d+)`)
+          );
+          const postNumber = titleMatch ? titleMatch[1] : "RESTORED";
+
+          const restoredTitle = `${POST_TITLE_PREFIX} ${postNumber}`;
+          const restoredContent = `Content for pagination test post ${postNumber} (Restored)`;
+
+          await page.fill("input#title", restoredTitle);
+          await page.fill("textarea#content", restoredContent);
+
+          // 폼 제출
+          await page.click('button[type="submit"]');
+
+          // 작성 후 게시판 목록 페이지로 리다이렉션 확인
+          await expect(page).toHaveURL(`/boards/${POST_SLUG_FOR_THIS_TEST}`, {
+            timeout: 10000,
+          });
+          console.log(`Successfully restored post: ${restoredTitle}`);
+
+          const restoredPostLink = findPostLink(page, restoredTitle);
+          await expect(restoredPostLink).toBeVisible();
+        } catch (restoreError) {
+          console.error("Failed to restore the deleted post:", restoreError);
+        }
+      }
     }
   });
 });

@@ -7,7 +7,6 @@ import { AuthenticatedFetchErrorType } from "../auth/types";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { UserRole } from "../definition";
 import {
-  PaginationDto,
   AdminUserListPaginatedResponse,
   AdminUserListPaginatedSchema,
   SearchUserDtoSchema,
@@ -19,6 +18,7 @@ import {
   AdminUserDetailResponse,
   AdminUserDetailResponseSchema,
 } from "../definition/adminUserManagementSchema";
+import { PaginationDto } from "../definition";
 import { BASE_API_URL } from "../util";
 import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
 import { authErrorGuard } from "../auth/errors/authErrorGuard";
