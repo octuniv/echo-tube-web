@@ -402,7 +402,7 @@ describe("postAction", () => {
       jest.clearAllMocks();
     });
 
-    it("should delete a post successfully and redirect to /boards/boardSlug", async () => {
+    it("should delete a post successfully and return redirect URL", async () => {
       // Mock the server response for a successful DELETE request
       server.use(
         http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
@@ -413,13 +413,19 @@ describe("postAction", () => {
         })
       );
 
-      await expect(DeletePost(postId, boardSlug)).rejects.toThrow();
+      const result = await DeletePost(postId, boardSlug);
 
+      expect(result).toEqual({
+        success: true,
+        redirectUrl: `/boards/${boardSlug}`,
+      });
+
+      expect(revalidateTag).toHaveBeenCalledTimes(2);
       expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.POST(postId));
       expect(revalidateTag).toHaveBeenCalledWith(
         CACHE_TAGS.BOARD_POSTS(boardSlug)
       );
-      expect(redirect).toHaveBeenCalledWith(`/boards/${boardSlug}`);
+      expect(redirect).not.toHaveBeenCalled();
     });
 
     it("should handle unauthorized access during post deletion", async () => {
@@ -433,13 +439,20 @@ describe("postAction", () => {
         })
       );
 
-      await expect(DeletePost(postId, boardSlug)).rejects.toThrow();
+      const result = await DeletePost(postId, boardSlug);
+
+      expect(result).toEqual({
+        success: false,
+        error: "세션이 만료되었습니다. 다시 로그인해주세요.",
+        redirectUrl: "/login?error=session_expired",
+      });
+
       expect(clearAuth).toHaveBeenCalled();
-      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
       expect(revalidateTag).not.toHaveBeenCalled();
+      expect(redirect).not.toHaveBeenCalled();
     });
 
-    it("should handle unexpected errors during post deletion", async () => {
+    it("should handle server errors during post deletion", async () => {
       // Mock the server response for a 500 Internal Server Error
       server.use(
         http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
@@ -449,10 +462,16 @@ describe("postAction", () => {
           );
         })
       );
-      await expect(DeletePost(postId, boardSlug)).rejects.toThrow(
-        "서버 오류가 발생했습니다."
-      );
+
+      const result = await DeletePost(postId, boardSlug);
+
+      expect(result).toEqual({
+        success: false,
+        error: "서버 오류가 발생했습니다.",
+      });
+
       expect(revalidateTag).not.toHaveBeenCalled();
+      expect(redirect).not.toHaveBeenCalled();
     });
 
     it("should handle invalid post ID gracefully", async () => {
@@ -468,10 +487,34 @@ describe("postAction", () => {
         })
       );
 
-      await expect(DeletePost(postId, boardSlug)).rejects.toThrow(
-        "요청한 리소스를 찾을 수 없습니다."
-      );
+      const result = await DeletePost(postId, boardSlug);
+
+      expect(result).toEqual({
+        success: false,
+        error: "요청한 리소스를 찾을 수 없습니다.",
+      });
+
       expect(revalidateTag).not.toHaveBeenCalled();
+      expect(redirect).not.toHaveBeenCalled();
+    });
+
+    it("should handle unexpected errors during post deletion", async () => {
+      // Mock the server response for a generic error
+      server.use(
+        http.delete(`${BASE_API_URL}/posts/${postId}`, () => {
+          return HttpResponse.json({ error: "Unknown error" }, { status: 400 });
+        })
+      );
+
+      const result = await DeletePost(postId, boardSlug);
+
+      expect(result).toEqual({
+        success: false,
+        error: "게시물을 삭제할 수 없습니다.",
+      });
+
+      expect(revalidateTag).not.toHaveBeenCalled();
+      expect(redirect).not.toHaveBeenCalled();
     });
   });
 

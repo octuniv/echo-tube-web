@@ -146,7 +146,10 @@ export async function CreatePost(
   }
 }
 
-export async function DeletePost(postId: number, boardSlug: string) {
+export async function DeletePost(
+  postId: number,
+  boardSlug: string
+): Promise<{ success: boolean; redirectUrl?: string; error?: string }> {
   const reqAddress = new URL(`/posts/${postId}`, BASE_API_URL).toString();
 
   const { error } = await authenticatedFetch({
@@ -162,18 +165,31 @@ export async function DeletePost(postId: number, boardSlug: string) {
     switch (error.type) {
       case AuthenticatedFetchErrorType.Unauthorized:
         await clearAuth();
-        redirect("/login?error=session_expired");
+        return {
+          success: false,
+          error: "세션이 만료되었습니다. 다시 로그인해주세요.",
+          redirectUrl: "/login?error=session_expired",
+        };
       case AuthenticatedFetchErrorType.ServerError:
-        throw new Error("서버 오류가 발생했습니다.");
+        return { success: false, error: "서버 오류가 발생했습니다." };
       case AuthenticatedFetchErrorType.NotFound:
-        throw new Error("요청한 리소스를 찾을 수 없습니다.");
+        return {
+          success: false,
+          error: "요청한 리소스를 찾을 수 없습니다.",
+        };
       default:
-        throw new Error("게시물을 삭제할 수 없습니다.");
+        return {
+          success: false,
+          error: "게시물을 삭제할 수 없습니다.",
+        };
     }
   } else {
     revalidateTag(CACHE_TAGS.POST(postId));
     revalidateTag(CACHE_TAGS.BOARD_POSTS(boardSlug));
-    redirect(`/boards/${boardSlug}`);
+    return {
+      success: true,
+      redirectUrl: `/boards/${boardSlug}`,
+    };
   }
 }
 
