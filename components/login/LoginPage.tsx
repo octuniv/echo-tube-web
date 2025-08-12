@@ -2,7 +2,7 @@
 
 import { LoginAction } from "@/lib/action/userAuthAction";
 import { useActionState, useEffect, useState } from "react";
-import { LoginInfoState as ErrorState } from "@/lib/definition";
+import { LoginInfoState as ErrorState } from "@/lib/definition/userAuthSchemas";
 import LoginForm from "./LoginForm";
 import { useSearchParams } from "next/navigation";
 

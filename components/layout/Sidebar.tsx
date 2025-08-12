@@ -9,7 +9,8 @@ import {
   ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
-import { BoardPurpose, CategoryWithBoardsResponse } from "@/lib/definition";
+import { BoardPurpose } from "@/lib/definition/enums";
+import { CategoryWithBoardsResponse } from "@/lib/definition/boardBrowseSchemas";
 
 interface SidebarProps {
   isOpen: boolean;

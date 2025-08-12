@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../util/auth-utils";
-import { BoardPurpose, UserRole } from "@/lib/definition";
+import { BoardPurpose, UserRole } from "@/lib/definition/enums";
 import { clickSideBarBoard } from "../util/test-utils";
 import { BOARD_ERROR_MESSAGES } from "@/lib/constants/board/errorMessage";
 

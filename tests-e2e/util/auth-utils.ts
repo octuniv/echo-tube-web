@@ -1,5 +1,5 @@
 import { Page, BrowserContext, expect, Browser } from "@playwright/test";
-import { User } from "@/lib/definition";
+import { User } from "@/lib/definition/userAuthSchemas";
 import { expectCookiesToBeDefined, expectValidUserCookie } from "./test-utils";
 
 interface authenticationProps {

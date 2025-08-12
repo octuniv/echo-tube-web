@@ -3,11 +3,9 @@
 import { useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import {
-  DashboardSummaryDto,
-  PostResponse,
-  UserAuthInfo,
-} from "@/lib/definition";
+import { PostResponse } from "@/lib/definition/postSchema";
+import { DashboardSummaryDto } from "@/lib/definition/dashboardSchemas";
+import { UserAuthInfo } from "@/lib/definition/userAuthSchemas";
 
 interface DashboardProps {
   user: UserAuthInfo;

@@ -2,7 +2,8 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { UserAuthInfo, UserRole } from "./definition";
+import { UserRole } from "./definition/enums";
+import { UserAuthInfo } from "./definition/userAuthSchemas";
 
 const isValidUserRole = (value: string | undefined): value is UserRole => {
   return Object.values(UserRole).includes(value as UserRole);

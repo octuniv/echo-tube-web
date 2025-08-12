@@ -2,12 +2,12 @@
 import {
   BoardFormState,
   BoardFormData,
-} from "@/lib/definition/adminBoardManagementSchema";
+} from "@/lib/definition/admin/adminBoardManagementSchema";
 import {
   AvailableCategoriesResponse,
   AvailableCategorySlug,
-} from "@/lib/definition/adminCategoryManagementSchema";
-import { BoardPurpose, UserRole } from "@/lib/definition";
+} from "@/lib/definition/admin/adminCategoryManagementSchema";
+import { UserRole, BoardPurpose } from "@/lib/definition/enums";
 import { useEffect, useState } from "react";
 
 interface FormProps {

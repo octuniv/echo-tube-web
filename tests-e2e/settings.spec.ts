@@ -1,7 +1,8 @@
 import * as dotenv from "dotenv";
 import { test, expect, chromium, Cookie } from "@playwright/test";
 import { signUpAndLogin } from "./util/auth-utils";
-import { User, UserRole } from "@/lib/definition";
+import { UserRole } from "@/lib/definition/enums";
+import { User } from "@/lib/definition/userAuthSchemas";
 import {
   createTestUser,
   expectCookiesToBeDefined,

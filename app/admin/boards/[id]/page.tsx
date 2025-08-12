@@ -2,7 +2,7 @@ import ErrorMessage from "@/components/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoardById } from "@/lib/action/adminBoardManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
-import { AdminBoardResponse } from "@/lib/definition/adminBoardManagementSchema";
+import { AdminBoardResponse } from "@/lib/definition/admin/adminBoardManagementSchema";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

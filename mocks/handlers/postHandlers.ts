@@ -1,9 +1,8 @@
 import {
-  BoardPurpose,
   PaginatedPostsResponse,
   PostResponse,
-  UserRole,
-} from "../../lib/definition";
+} from "../../lib/definition/postSchema";
+import { BoardPurpose, UserRole } from "../../lib/definition/enums";
 import { BASE_API_URL } from "../../lib/util";
 import { http, HttpResponse } from "msw";
 

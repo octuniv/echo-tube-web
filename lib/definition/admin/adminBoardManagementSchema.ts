@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { BoardPurpose, FormState, UserRole } from "../definition";
-import { BOARD_ERROR_MESSAGES } from "../constants/board/errorMessage";
+import { FormState } from "../commonSchemas";
+import { BoardPurpose, UserRole } from "../enums";
+import { BOARD_ERROR_MESSAGES } from "../../constants/board/errorMessage";
 
 const SLUG_REGEX = /^[a-z0-9-]+$/;
 

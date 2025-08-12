@@ -3,7 +3,7 @@
 import SignUpForm from "./SignUpForm";
 import { signUpAction } from "@/lib/action/userAuthAction";
 import { useActionState } from "react";
-import { UserState as ErrorState } from "@/lib/definition";
+import { UserState as ErrorState } from "@/lib/definition/userAuthSchemas";
 
 const SignUpPage: React.FC = () => {
   const initialState: ErrorState = { message: "", errors: {} };

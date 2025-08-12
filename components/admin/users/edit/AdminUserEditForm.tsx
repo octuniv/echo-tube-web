@@ -2,7 +2,7 @@ import { LabelInput, ErrorText } from "@/components/common";
 import {
   AdminUserDetailResponse,
   AdminUserUpdateState,
-} from "@/lib/definition/adminUserManagementSchema";
+} from "@/lib/definition/admin/adminUserManagementSchema";
 import RoleSelect from "../RoleSelect";
 
 interface PageProps {

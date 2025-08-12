@@ -10,7 +10,7 @@ import {
   UserSchema,
   LoginInfoState,
   LoginInfoSchema,
-} from "../definition";
+} from "../definition/userAuthSchemas";
 import { getTokens } from "../tokenUtils";
 import { BASE_API_URL, baseCookieOptions } from "../util";
 

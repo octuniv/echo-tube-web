@@ -1,5 +1,5 @@
 "use client";
-import { NicknameUpdateState as ErrorState } from "@/lib/definition";
+import { NicknameUpdateState as ErrorState } from "@/lib/definition/userProfileSchemas";
 import { UpdateNicknameAction } from "@/lib/action/userProfileActions";
 import ChangeNicknameForm from "./ChangeNicknameForm";
 import { useActionState } from "react";

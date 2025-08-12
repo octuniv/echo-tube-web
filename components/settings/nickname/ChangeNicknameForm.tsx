@@ -1,6 +1,6 @@
 "use client";
 import { ErrorText } from "@/components/common";
-import { NicknameUpdateState as ErrorState } from "@/lib/definition";
+import { NicknameUpdateState as ErrorState } from "@/lib/definition/userProfileSchemas";
 
 interface ChangeNicknameFormProps {
   state: ErrorState;

@@ -1,4 +1,4 @@
-import { User } from "@/lib/definition";
+import { User } from "@/lib/definition/userAuthSchemas";
 import { expect, Cookie, Page } from "@playwright/test";
 
 export const expectCookiesToBeDefined = (

@@ -1,8 +1,9 @@
-import { UserRole, LoginResponse } from "../../lib/definition";
+import { LoginResponse } from "../../lib/definition/userAuthSchemas";
+import { UserRole } from "../../lib/definition/enums";
 import { BASE_API_URL } from "../../lib/util";
 import { http, HttpResponse } from "msw";
 
-export const authHandlers = [
+export const userAuthHandlers = [
   // Mock API for user sign-up
   http.post(`${BASE_API_URL}/users`, () => {
     return HttpResponse.json({ success: true }, { status: 200 });

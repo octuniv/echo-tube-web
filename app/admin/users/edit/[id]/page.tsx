@@ -3,7 +3,7 @@ import AdminUserEditPage from "@/components/admin/users/edit/AdminUserEditPage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchUserDetails } from "@/lib/action/adminUserManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
-import { AdminUserDetailResponse } from "@/lib/definition/adminUserManagementSchema";
+import { AdminUserDetailResponse } from "@/lib/definition/admin/adminUserManagementSchema";
 import { notFound } from "next/navigation";
 
 interface pageProps {

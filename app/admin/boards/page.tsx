@@ -4,8 +4,8 @@ import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoards } from "@/lib/action/adminBoardManagementApi";
 import { fetchCategories } from "@/lib/action/adminCategoryManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
-import { AdminBoardResponse } from "@/lib/definition/adminBoardManagementSchema";
-import { CategorySummary } from "@/lib/definition/adminCategoryManagementSchema";
+import { AdminBoardResponse } from "@/lib/definition/admin/adminBoardManagementSchema";
+import { CategorySummary } from "@/lib/definition/admin/adminCategoryManagementSchema";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";

@@ -1,4 +1,4 @@
-import { PostResponse } from "@/lib/definition";
+import { PostResponse } from "@/lib/definition/postSchema";
 import PostLayout from "./Shared/PostLayout";
 
 interface ComponentProps {

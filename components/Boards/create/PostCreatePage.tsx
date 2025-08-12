@@ -2,7 +2,7 @@
 
 import { CreatePost } from "@/lib/action/postActions";
 import { useActionState } from "react";
-import { CreatePostInputState as ErrorState } from "@/lib/definition";
+import { CreatePostInputState as ErrorState } from "@/lib/definition/postSchema";
 import PostCreateForm from "../Shared/PostEditor";
 
 const PostCreatePage: React.FC<{ boardSlug: string }> = ({

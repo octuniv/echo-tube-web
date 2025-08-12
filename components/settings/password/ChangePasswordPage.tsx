@@ -1,6 +1,6 @@
 "use client";
 
-import { PasswordUpdateState as ErrorState } from "@/lib/definition";
+import { PasswordUpdateState as ErrorState } from "@/lib/definition/userProfileSchemas";
 import { UpdatePasswordAction } from "@/lib/action/userProfileActions";
 import ChangePasswordForm from "./ChangePasswordForm";
 import { useActionState } from "react";

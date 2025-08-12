@@ -1,7 +1,8 @@
 // lib/authState.test.ts
 import { loginStatus, userStatus } from "./authState";
 import { cookies } from "next/headers";
-import { UserAuthInfo, UserRole } from "./definition";
+import { UserRole } from "./definition/enums";
+import { UserAuthInfo } from "./definition/userAuthSchemas";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>

@@ -1,10 +1,8 @@
 import * as dotenv from "dotenv";
-import {
-  BoardListItemDto,
-  PostResponse,
-  UserAuthInfo,
-  UserRole,
-} from "./definition";
+import { PostResponse } from "./definition/postSchema";
+import { BoardListItemDto } from "./definition/boardBrowseSchemas";
+import { UserRole } from "./definition/enums";
+import { UserAuthInfo } from "./definition/userAuthSchemas";
 
 dotenv.config();
 

@@ -1,6 +1,7 @@
 import { BASE_API_URL } from "../../lib/util";
 import { http, HttpResponse } from "msw";
-import { CategoryWithBoardsResponse, BoardPurpose } from "../../lib/definition";
+import { BoardPurpose } from "../../lib/definition/enums";
+import { CategoryWithBoardsResponse } from "../../lib/definition/boardBrowseSchemas";
 
 export const mockCategoriesWithBoards: CategoryWithBoardsResponse = [
   {

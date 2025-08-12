@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { clearAuth } from "../authState";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
-import { UserRole, UserAuthInfo } from "../definition";
+import { UserRole } from "../definition/enums";
+import { UserAuthInfo } from "../definition/userAuthSchemas";
 import { BASE_API_URL } from "../util";
 import {
   DeleteUser,

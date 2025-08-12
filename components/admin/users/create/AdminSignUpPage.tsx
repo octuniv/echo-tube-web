@@ -1,7 +1,7 @@
 "use client";
 import AdminSignUpForm from "./AdminSignUpForm";
 import { useActionState } from "react";
-import { AdminUserCreateState } from "@/lib/definition/adminUserManagementSchema";
+import { AdminUserCreateState } from "@/lib/definition/admin/adminUserManagementSchema";
 import { AdminSignUpAction } from "@/lib/action/adminUserManagementApi";
 
 const AdminSignUpPage: React.FC = () => {

@@ -1,7 +1,8 @@
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { mockCategoriesWithBoards } from "../../mocks/handlers/boardBrowseHandlers";
-import { BoardListItemDto, UserRole, BoardPurpose } from "../definition";
+import { BoardPurpose, UserRole } from "../definition/enums";
+import { BoardListItemDto } from "../definition/boardBrowseSchemas";
 import { BASE_API_URL } from "../util";
 import {
   FetchAllBoards,

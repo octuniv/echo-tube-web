@@ -1,6 +1,6 @@
 "use client";
 import { ErrorText } from "@/components/common";
-import { PasswordUpdateState as ErrorState } from "@/lib/definition";
+import { PasswordUpdateState as ErrorState } from "@/lib/definition/userProfileSchemas";
 
 interface ChangePasswordFormProps {
   state: ErrorState;

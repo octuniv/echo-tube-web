@@ -15,7 +15,7 @@ import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 import {
   AdminUserListPaginatedResponse,
   SearchUserDtoSchema,
-} from "@/lib/definition/adminUserManagementSchema";
+} from "@/lib/definition/admin/adminUserManagementSchema";
 import Link from "next/link";
 
 export default async function UserList({

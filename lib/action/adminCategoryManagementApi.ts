@@ -18,7 +18,7 @@ import {
   SLUG_REGEX,
   AvailableCategoriesResponseSchema,
   AvailableCategoriesResponse,
-} from "../definition/adminCategoryManagementSchema";
+} from "../definition/admin/adminCategoryManagementSchema";
 import { BASE_API_URL } from "../util";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";

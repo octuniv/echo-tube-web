@@ -10,7 +10,7 @@ import {
   BoardFormData,
   BoardFormSchema,
   BoardFormState,
-} from "../definition/adminBoardManagementSchema";
+} from "../definition/admin/adminBoardManagementSchema";
 import { BASE_API_URL } from "../util";
 import { AuthenticatedFetchErrorType } from "../auth/types";
 import { BOARD_ERROR_MESSAGES } from "../constants/board/errorMessage";

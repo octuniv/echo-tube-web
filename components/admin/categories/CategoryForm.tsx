@@ -1,7 +1,7 @@
 import {
   CategoryFormState,
   ValidateDataType,
-} from "@/lib/definition/adminCategoryManagementSchema";
+} from "@/lib/definition/admin/adminCategoryManagementSchema";
 import {
   validateName,
   validateSlug,

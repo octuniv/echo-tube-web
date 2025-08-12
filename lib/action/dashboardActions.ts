@@ -1,6 +1,9 @@
 "use server";
 
-import { DashboardSummaryDto, DashboardSummaryDtoSchema } from "../definition";
+import {
+  DashboardSummaryDto,
+  DashboardSummaryDtoSchema,
+} from "../definition/dashboardSchemas";
 import { BASE_API_URL } from "../util";
 
 export async function FetchDashboardSummary(): Promise<DashboardSummaryDto> {

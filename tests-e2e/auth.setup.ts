@@ -1,7 +1,6 @@
 import { test as setup } from "@playwright/test";
 import path from "path";
 import * as dotenv from "dotenv";
-import { User } from "@/lib/definition";
 import { signUpAndLogin } from "./util/auth-utils";
 import { createTestUser } from "./util/test-utils";
 

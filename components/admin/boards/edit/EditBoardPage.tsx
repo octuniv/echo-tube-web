@@ -5,8 +5,8 @@ import {
   AdminBoardResponse,
   BoardFormData,
   BoardFormState,
-} from "@/lib/definition/adminBoardManagementSchema";
-import { AvailableCategoriesResponse } from "@/lib/definition/adminCategoryManagementSchema";
+} from "@/lib/definition/admin/adminBoardManagementSchema";
+import { AvailableCategoriesResponse } from "@/lib/definition/admin/adminCategoryManagementSchema";
 import { useActionState } from "react";
 import BoardForm from "../BoardForm";
 

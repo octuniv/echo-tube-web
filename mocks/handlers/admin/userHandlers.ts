@@ -1,8 +1,8 @@
-import { UserRole } from "../../../lib/definition";
+import { UserRole } from "../../../lib/definition/enums";
 import {
   AdminUserDetailResponse,
   AdminUserListPaginatedResponse,
-} from "../../../lib/definition/adminUserManagementSchema";
+} from "../../../lib/definition/admin/adminUserManagementSchema";
 import { BASE_API_URL } from "../../../lib/util";
 import { http, HttpResponse } from "msw";
 

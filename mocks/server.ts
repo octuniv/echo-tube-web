@@ -6,7 +6,7 @@ import { BASE_API_URL } from "../lib/util";
 import { adminBoardHandlers } from "./handlers/admin/boardHandlers";
 import { adminCategoryHandlers } from "./handlers/admin/categoryHandlers";
 import { adminUserHandlers } from "./handlers/admin/userHandlers";
-import { authHandlers } from "./handlers/authHandlers";
+import { userAuthHandlers } from "./handlers/userAuthHandlers";
 import { userProfileHandlers } from "./handlers/userProfileHandlers";
 import { postHandlers } from "./handlers/postHandlers";
 import { boardBrowseHandlers } from "./handlers/boardBrowseHandlers";
@@ -17,7 +17,7 @@ export const server = setupServer(
   http.get(`${BASE_API_URL}/test-endpoint`, () => {
     return HttpResponse.json({ data: "success" }, { status: 200 });
   }),
-  ...authHandlers,
+  ...userAuthHandlers,
   ...userProfileHandlers,
   ...postHandlers,
   ...boardBrowseHandlers,

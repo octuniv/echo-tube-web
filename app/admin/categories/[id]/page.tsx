@@ -3,7 +3,7 @@ import ErrorMessage from "@/components/errorMessage";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchCategoryById } from "@/lib/action/adminCategoryManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
-import { BoardSummary } from "@/lib/definition/adminCategoryManagementSchema";
+import { BoardSummary } from "@/lib/definition/admin/adminCategoryManagementSchema";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 

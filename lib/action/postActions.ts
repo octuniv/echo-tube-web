@@ -12,10 +12,10 @@ import {
   CreatePostInputSchema,
   PaginatedPostsResponse,
   PaginatedPostsResponseSchema,
-} from "../definition";
+} from "../definition/postSchema";
 import { BASE_API_URL } from "../util";
 import { CACHE_TAGS } from "../cacheTags";
-import { PaginationDto } from "../definition";
+import { PaginationDto } from "../definition/commonSchemas";
 
 export async function FetchPostsByBoardId(
   boardId: number,

@@ -1,11 +1,11 @@
-import { z } from "zod";
 import {
-  UserRole,
   genericPaginatedResponseDtoSchema,
-  UserSchema,
-  FormState,
   PaginationDtoSchema,
-} from "../definition";
+  FormState,
+} from "../commonSchemas";
+import { UserRole } from "../enums";
+import { UserSchema } from "../userAuthSchemas";
+import { z } from "zod";
 
 export const AdminUserDetailResponseSchema = z.object({
   id: z.number(),

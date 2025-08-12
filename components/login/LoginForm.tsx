@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ErrorText, LabelInput } from "../common";
-import { LoginInfoState as ErrorState } from "@/lib/definition";
+import { LoginInfoState as ErrorState } from "@/lib/definition/userAuthSchemas";
 
 function LoginForm({
   state,

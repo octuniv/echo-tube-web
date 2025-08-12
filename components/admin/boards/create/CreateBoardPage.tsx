@@ -2,8 +2,8 @@
 
 import { useActionState } from "react";
 import { createBoard } from "@/lib/action/adminBoardManagementApi";
-import { BoardFormState } from "@/lib/definition/adminBoardManagementSchema";
-import { AvailableCategoriesResponse } from "@/lib/definition/adminCategoryManagementSchema";
+import { BoardFormState } from "@/lib/definition/admin/adminBoardManagementSchema";
+import { AvailableCategoriesResponse } from "@/lib/definition/admin/adminCategoryManagementSchema";
 import BoardForm from "../BoardForm";
 
 interface PageProps {

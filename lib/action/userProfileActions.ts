@@ -12,7 +12,7 @@ import {
   NicknameUpdateSchema,
   PasswordUpdateState,
   PasswordUpdateSchema,
-} from "../definition";
+} from "../definition/userProfileSchemas";
 import { BASE_API_URL, baseCookieOptions } from "../util";
 
 export async function DeleteUser(): Promise<void> {

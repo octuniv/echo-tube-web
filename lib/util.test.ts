@@ -1,4 +1,6 @@
-import { PostResponse, UserAuthInfo, UserRole } from "./definition";
+import { PostResponse } from "./definition/postSchema";
+import { UserRole } from "./definition/enums";
+import { UserAuthInfo } from "./definition/userAuthSchemas";
 import { canModifyPost } from "./util";
 
 describe("canModifyPost", () => {

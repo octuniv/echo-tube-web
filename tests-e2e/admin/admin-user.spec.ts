@@ -3,7 +3,7 @@ import { loginAsAdmin } from "../util/auth-utils";
 import { createTestUser, uniqueNickname } from "../util/test-utils";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
 
-import { UserRole } from "@/lib/definition";
+import { UserRole } from "@/lib/definition/enums";
 
 async function selectUserRole(page: Page, role: UserRole) {
   const roleSelector = 'select[name="role"]';

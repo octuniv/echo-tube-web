@@ -1,7 +1,7 @@
 import {
   CreatePostInputState as ErrorState,
   PostResponse,
-} from "@/lib/definition";
+} from "@/lib/definition/postSchema";
 import Link from "next/link";
 
 interface PostEditorProps {

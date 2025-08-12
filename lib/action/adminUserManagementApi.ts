@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import { AuthenticatedFetchErrorType } from "../auth/types";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
-import { UserRole } from "../definition";
+import { UserRole } from "../definition/enums";
 import {
   AdminUserListPaginatedResponse,
   AdminUserListPaginatedSchema,
@@ -17,8 +17,8 @@ import {
   AdminUserUpdateSchema,
   AdminUserDetailResponse,
   AdminUserDetailResponseSchema,
-} from "../definition/adminUserManagementSchema";
-import { PaginationDto } from "../definition";
+} from "../definition/admin/adminUserManagementSchema";
+import { PaginationDto } from "../definition/commonSchemas";
 import { BASE_API_URL } from "../util";
 import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
 import { authErrorGuard } from "../auth/errors/authErrorGuard";

@@ -13,7 +13,7 @@ import {
   CategoryFormData,
   CategoryFormState,
   ValidateDataType,
-} from "../definition/adminCategoryManagementSchema";
+} from "../definition/admin/adminCategoryManagementSchema";
 import { server } from "../../mocks/server";
 import { http, HttpResponse } from "msw";
 import { BASE_API_URL } from "../util";

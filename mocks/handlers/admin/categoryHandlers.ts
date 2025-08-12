@@ -8,8 +8,8 @@ import {
   CategoryFormValidationSchema,
   SLUG_REGEX,
   AvailableCategoriesResponse,
-} from "../../../lib/definition/adminCategoryManagementSchema";
-import { BoardPurpose, UserRole } from "../../../lib/definition";
+} from "../../../lib/definition/admin/adminCategoryManagementSchema";
+import { UserRole, BoardPurpose } from "../../../lib/definition/enums";
 import { CATEGORY_ERROR_MESSAGES } from "../../../lib/constants/category/errorMessage";
 
 // 테스트용 카테고리 데이터

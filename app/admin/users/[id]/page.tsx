@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { fetchUserDetails } from "@/lib/action/adminUserManagementApi";
-import { AdminUserDetailResponse } from "@/lib/definition/adminUserManagementSchema";
+import { AdminUserDetailResponse } from "@/lib/definition/admin/adminUserManagementSchema";
 import EditButton from "@/components/admin/users/buttons/EditButton";
 import DeleteButton from "@/components/admin/users/buttons/DeleteButton";
 import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";

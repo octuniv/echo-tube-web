@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
-import { BoardPurpose, UserRole } from "../definition";
+import { BoardPurpose, UserRole } from "../definition/enums";
 import { BASE_API_URL } from "../util";
 import {
   createBoard,
@@ -15,7 +15,7 @@ import { redirect, forbidden } from "next/navigation";
 import {
   BoardFormData,
   BoardFormState,
-} from "../definition/adminBoardManagementSchema";
+} from "../definition/admin/adminBoardManagementSchema";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
 import { mockBoards } from "../../mocks/handlers/admin/boardHandlers";

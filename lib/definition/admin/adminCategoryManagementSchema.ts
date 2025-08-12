@@ -1,6 +1,7 @@
+import { CATEGORY_ERROR_MESSAGES } from "../../../lib/constants/category/errorMessage";
+import { FormState } from "../commonSchemas";
+import { BoardPurpose, UserRole } from "../enums";
 import { z } from "zod";
-import { BoardPurpose, FormState, UserRole } from "../definition";
-import { CATEGORY_ERROR_MESSAGES } from "../constants/category/errorMessage";
 
 export const CategorySummarySchema = z.object({
   id: z.number(),
@@ -97,8 +98,11 @@ export const AvailableCategoriesResponseSchema = z.array(
 );
 
 // 타입 정의
+
 export type AvailableCategorySlug = z.infer<typeof AvailableCategorySlugSchema>;
+
 export type AvailableCategoryDto = z.infer<typeof AvailableCategoryDtoSchema>;
+
 export type AvailableCategoriesResponse = z.infer<
   typeof AvailableCategoriesResponseSchema
 >;

@@ -1,6 +1,6 @@
 "use client";
 import { createCategory } from "@/lib/action/adminCategoryManagementApi";
-import { CategoryFormState } from "@/lib/definition/adminCategoryManagementSchema";
+import { CategoryFormState } from "@/lib/definition/admin/adminCategoryManagementSchema";
 import { useActionState } from "react";
 import CategoryForm from "../CategoryForm";
 

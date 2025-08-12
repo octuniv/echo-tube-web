@@ -1,7 +1,7 @@
 "use client";
 
 import { ErrorText } from "@/components/common";
-import { UserRole } from "@/lib/definition";
+import { UserRole } from "@/lib/definition/enums";
 
 interface RoleSelectProps {
   value?: string;

@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
-import { UserRole } from "@/lib/definition";
-import { AdminUserCreateState } from "@/lib/definition/adminUserManagementSchema";
+import { UserRole } from "@/lib/definition/enums";
+import { AdminUserCreateState } from "@/lib/definition/admin/adminUserManagementSchema";
 import { LabelInput, ErrorText } from "@/components/common";
 import {
   checkEmailExists,

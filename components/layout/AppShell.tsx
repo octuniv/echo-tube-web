@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { CategoryWithBoardsResponse } from "@/lib/definition";
+import { CategoryWithBoardsResponse } from "@/lib/definition/boardBrowseSchemas";
 
 interface AppShellProps {
   isLogined: boolean;

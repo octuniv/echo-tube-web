@@ -1,7 +1,7 @@
 // SignUpForm.tsx
 "use client";
 import { useRef, useState } from "react";
-import { UserState as ErrorState } from "@/lib/definition";
+import { UserState as ErrorState } from "@/lib/definition/userAuthSchemas";
 import { LabelInput, ErrorText } from "../common";
 import {
   checkEmailExists,

@@ -4,8 +4,8 @@ import UnauthorizedRedirect from "@/components/UnauthorizedRedirect";
 import { fetchBoardById } from "@/lib/action/adminBoardManagementApi";
 import { getAvailableCategories } from "@/lib/action/adminCategoryManagementApi";
 import { ERROR_MESSAGES } from "@/lib/constants/errorMessage";
-import { AdminBoardResponse } from "@/lib/definition/adminBoardManagementSchema";
-import { AvailableCategoriesResponse } from "@/lib/definition/adminCategoryManagementSchema";
+import { AdminBoardResponse } from "@/lib/definition/admin/adminBoardManagementSchema";
+import { AvailableCategoriesResponse } from "@/lib/definition/admin/adminCategoryManagementSchema";
 import { notFound } from "next/navigation";
 
 interface PageProps {

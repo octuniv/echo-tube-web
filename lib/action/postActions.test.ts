@@ -4,14 +4,13 @@ import { http, HttpResponse } from "msw";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { clearAuth } from "../authState";
+import { PaginationDto } from "../definition/commonSchemas";
+import { BoardPurpose, UserRole } from "../definition/enums";
 import {
-  UserRole,
-  BoardPurpose,
-  BoardListItemDto,
   CreatePostRequestBody,
   PaginatedPostsResponseSchema,
-  PaginationDto,
-} from "../definition";
+} from "../definition/postSchema";
+import { BoardListItemDto } from "../definition/boardBrowseSchemas";
 import { BASE_API_URL } from "../util";
 import {
   FetchPostsByBoardId,

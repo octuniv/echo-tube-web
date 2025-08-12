@@ -1,12 +1,12 @@
 // mocks/admin/boardHandlers.ts
-import { BoardPurpose, UserRole } from "../../../lib/definition";
+import { UserRole, BoardPurpose } from "../../../lib/definition/enums";
 import { BOARD_ERROR_MESSAGES } from "../../../lib/constants/board/errorMessage";
 import { http, HttpResponse } from "msw";
 import { BASE_API_URL } from "../../../lib/util";
 import {
   AdminBoardResponse,
   BoardFormSchema,
-} from "../../../lib/definition/adminBoardManagementSchema";
+} from "../../../lib/definition/admin/adminBoardManagementSchema";
 
 export const mockBoards: AdminBoardResponse[] = [
   {

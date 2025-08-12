@@ -1,12 +1,12 @@
 "use server";
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import {
-  BoardListItemDto,
-  BoardListItemDtoSchema,
   CategoryWithBoardsResponse,
   CategoryWithBoardsResponseSchema,
-} from "../definition";
+  BoardListItemDto,
+  BoardListItemDtoSchema,
+} from "../definition/boardBrowseSchemas";
 import { BASE_API_URL } from "../util";
 import { CACHE_TAGS } from "../cacheTags";
 

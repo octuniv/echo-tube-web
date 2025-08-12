@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import {
   CreatePostInputState as ErrorState,
   PostResponse,
-} from "@/lib/definition";
+} from "@/lib/definition/postSchema";
 import PostEditForm from "../Shared/PostEditor";
 
 interface PostEditPageProps {
