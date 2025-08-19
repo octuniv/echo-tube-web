@@ -11,6 +11,7 @@ import { userProfileHandlers } from "./handlers/userProfileHandlers";
 import { postHandlers } from "./handlers/postHandlers";
 import { boardBrowseHandlers } from "./handlers/boardBrowseHandlers";
 import { dashboardHandlers } from "./handlers/dashboardHandlers";
+import { commentHandlers } from "./handlers/commentHandlers";
 
 export const server = setupServer(
   // Mock API for testing authenticatedFetch
@@ -24,5 +25,6 @@ export const server = setupServer(
   ...dashboardHandlers,
   ...adminUserHandlers,
   ...adminCategoryHandlers,
-  ...adminBoardHandlers
+  ...adminBoardHandlers,
+  ...commentHandlers
 );

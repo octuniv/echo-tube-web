@@ -42,7 +42,3 @@ export const genericPaginatedResponseDtoSchema = <T extends z.ZodTypeAny>(
     totalItems: z.number().int().nonnegative(),
     totalPages: z.number().int().nonnegative(),
   });
-
-export type PaginatedResponseDto<T extends z.ZodTypeAny> = z.infer<
-  ReturnType<typeof genericPaginatedResponseDtoSchema<T>>
->;

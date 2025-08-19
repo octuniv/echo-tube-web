@@ -8,4 +8,6 @@ export const CACHE_TAGS = {
   // 일반 사용자 board 조회용
   ALL_BOARDS: "all_boards",
   CATEGORIES_WITH_BOARDS: "categories-with-boards",
+
+  COMMENT: (id: string | number) => `comment-post-${id}`,
 } as const;

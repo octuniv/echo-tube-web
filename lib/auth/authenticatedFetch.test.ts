@@ -205,7 +205,7 @@ describe("AuthenticatedFetch", () => {
     server.use(
       http.get(`${mockServerAddress}/test-endpoint`, () =>
         HttpResponse.json(
-          { message: "요청한 리소스를 찾을 수 없습니다." },
+          { message: ERROR_MESSAGES.NOT_FOUND },
           { status: 404 }
         )
       )
@@ -225,7 +225,7 @@ describe("AuthenticatedFetch", () => {
     server.use(
       http.get(`${mockServerAddress}/test-endpoint`, () =>
         HttpResponse.json(
-          { message: "서버 내부 오류가 발생했습니다." },
+          { message: ERROR_MESSAGES.SERVER_ERROR },
           { status: 500 }
         )
       )
