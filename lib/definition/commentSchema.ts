@@ -20,6 +20,8 @@ export const CommentListItemSchema = z.object({
   hasReplies: z.boolean(),
 });
 
+export type CommentListItemDto = z.infer<typeof CommentListItemSchema>;
+
 export const PaginatedCommentListItemSchema = genericPaginatedResponseDtoSchema(
   CommentListItemSchema
 );
@@ -34,3 +36,10 @@ export const CommentApiResponseSchema = z.object({
 });
 
 export type CommentApiResponseType = z.infer<typeof CommentApiResponseSchema>;
+
+export const LikeCommentResponseSchema = z.object({
+  likes: z.number().nonnegative(),
+  isAdded: z.boolean(),
+});
+
+export type LikeCommnetResponse = z.infer<typeof LikeCommentResponseSchema>;

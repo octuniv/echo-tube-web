@@ -7,7 +7,7 @@ import {
   DeleteComment,
   EditComment,
   FetchComments,
-  ToggleLike,
+  LikeComment,
 } from "./commentActions";
 import { revalidateTag } from "next/cache";
 import {
@@ -528,21 +528,43 @@ describe("Comment API Test", () => {
     });
   });
 
-  describe("ToggleLike", () => {
+  describe("LikeComment", () => {
     it("좋아요 토글에 성공했습니다.", async () => {
       const postId = 1;
       const commentId = 1;
 
       server.use(
         http.post(`${BASE_API_URL}/comments/like/${commentId}`, () => {
-          return HttpResponse.json({ likes: 3 }, { status: 200 });
+          return HttpResponse.json(
+            { likes: 3, isAdded: true },
+            { status: 200 }
+          );
         })
       );
 
-      const result = await ToggleLike(postId, commentId);
+      const result = await LikeComment(postId, commentId);
 
-      expect(result).toEqual({ message: COMMENT_MESSAGES.LIKE_TOGGLED });
+      expect(result).toEqual({ likes: 3, isAdded: true });
       expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.COMMENT(postId));
+    });
+
+    it("이미 좋아요를 눌렀습니다.", async () => {
+      const postId = 1;
+      const commentId = 1;
+
+      server.use(
+        http.post(`${BASE_API_URL}/comments/like/${commentId}`, () => {
+          return HttpResponse.json(
+            { likes: 3, isAdded: false },
+            { status: 200 }
+          );
+        })
+      );
+
+      const result = await LikeComment(postId, commentId);
+
+      expect(result).toEqual({ likes: 3, isAdded: false });
+      expect(revalidateTag).not.toHaveBeenCalled();
     });
 
     it("존재하지 않는 댓글에 좋아요 요청은 할 수 없습니다.", async () => {
@@ -558,7 +580,7 @@ describe("Comment API Test", () => {
         })
       );
 
-      const result = await ToggleLike(postId, invalidCommentId);
+      const result = await LikeComment(postId, invalidCommentId);
 
       expect(result).toEqual({
         message: COMMENT_ERRORS.NOT_FOUND,
@@ -576,7 +598,7 @@ describe("Comment API Test", () => {
       );
 
       // 401 에러 시 리다이렉트가 발생하는지 확인
-      await expect(ToggleLike(postId, commentId)).rejects.toThrow(
+      await expect(LikeComment(postId, commentId)).rejects.toThrow(
         "/login?error=session_expired"
       );
 
@@ -595,7 +617,7 @@ describe("Comment API Test", () => {
       );
 
       // 403 에러 시 forbidden이 호출되는지 확인
-      await expect(ToggleLike(postId, commentId)).rejects.toThrow();
+      await expect(LikeComment(postId, commentId)).rejects.toThrow();
 
       expect(forbidden).toHaveBeenCalled();
     });

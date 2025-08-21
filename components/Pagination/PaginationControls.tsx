@@ -8,12 +8,15 @@ export function PaginationControls({
 }: {
   currentPage: number;
   totalPages: number;
-  currentLimit: number;
+  currentLimit?: number;
   baseUrl: string;
 }) {
-  const generateHref = (newPage: number) =>
-    `${baseUrl}?page=${newPage}&limit=${currentLimit}`;
-
+  const generateHref = (newPage: number) => {
+    if (currentLimit !== undefined && currentLimit !== null) {
+      return `${baseUrl}?page=${newPage}&limit=${currentLimit}`;
+    }
+    return `${baseUrl}?page=${newPage}`;
+  };
   return (
     <div className="flex justify-center mt-4 space-x-2">
       {Array.from({ length: totalPages }, (_, i) => (

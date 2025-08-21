@@ -285,13 +285,12 @@ export const commentHandlers = [
     }
   }),
 
-  // POST /comments/like/:id - 댓글 좋아요 토글
+  // POST /comments/like/:id - 댓글 좋아요
   http.post(
     `${BASE_API_URL}/comments/like/:id`,
     async ({ params, cookies }) => {
       const id = Number(params.id);
 
-      // 1. 댓글 존재 여부 확인
       const comment = mockComments.find((comment) => comment.id === id);
       if (!comment) {
         return HttpResponse.json(
@@ -300,31 +299,30 @@ export const commentHandlers = [
         );
       }
 
-      // 2. 사용자 식별 (쿠키 또는 다른 방법으로 사용자 정보 추출)
+      // 사용자 식별 (쿠키 또는 다른 방법으로 사용자 정보 추출)
       // 실제 애플리케이션에서는 JWT 토큰에서 사용자 ID를 추출하겠지만,
       // 테스트를 위해 간단한 방식으로 구현
       const userId = cookies["auth_token"] ? "test_user_123" : "guest_user";
 
-      // 3. 사용자별 좋아요 상태 초기화
       if (!userCommentLikes.has(userId)) {
         userCommentLikes.set(userId, new Set<number>());
       }
 
       const userLikes = userCommentLikes.get(userId)!;
 
-      // 4. 좋아요 상태 토글 로직
       let newLikes;
       if (userLikes.has(id)) {
-        // 좋아요 취소
-        userLikes.delete(id);
-        newLikes = Math.max(comment.likes - 1, 0);
+        // 좋아요 무시
+        return HttpResponse.json(
+          { likes: comment.likes, isAdded: false },
+          { status: 200 }
+        );
       } else {
         // 좋아요 추가
         userLikes.add(id);
         newLikes = comment.likes + 1;
       }
 
-      // 5. mockComments 업데이트
       const commentIndex = mockComments.findIndex((c) => c.id === id);
       if (commentIndex !== -1) {
         mockComments[commentIndex] = {
@@ -333,8 +331,10 @@ export const commentHandlers = [
         };
       }
 
-      // 6. 최종 좋아요 수 반환
-      return HttpResponse.json({ likes: newLikes }, { status: 200 });
+      return HttpResponse.json(
+        { likes: newLikes, isAdded: true },
+        { status: 200 }
+      );
     }
   ),
 ];

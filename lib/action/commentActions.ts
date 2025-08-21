@@ -1,3 +1,5 @@
+"use server";
+
 import { revalidateTag } from "next/cache";
 import { authenticatedFetch } from "../auth/authenticatedFetch";
 import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
@@ -10,6 +12,7 @@ import {
 import {
   CommentFormState,
   CommentSchema,
+  LikeCommentResponseSchema,
   PaginatedCommentListItemDto,
   PaginatedCommentListItemSchema,
 } from "../definition/commentSchema";
@@ -203,8 +206,8 @@ export async function DeleteComment(postId: number, commentId: number) {
   }
 }
 
-export async function ToggleLike(postId: number, commentId: number) {
-  const { error } = await authenticatedFetch({
+export async function LikeComment(postId: number, commentId: number) {
+  const { data, error } = await authenticatedFetch({
     url: `${BASE_API_URL}/comments/like/${commentId}`,
     method: "POST",
     headers: {
@@ -222,7 +225,7 @@ export async function ToggleLike(postId: number, commentId: number) {
             return { message };
           default:
             console.error("Unexpected error during comment updating:", error);
-            return { message: "Something wrong when toggling like" };
+            return { message: "Something wrong when click like" };
         }
 
       default:
@@ -232,7 +235,15 @@ export async function ToggleLike(postId: number, commentId: number) {
         };
     }
   } else {
-    revalidateTag(CACHE_TAGS.COMMENT(postId));
-    return { message: COMMENT_MESSAGES.LIKE_TOGGLED };
+    const result = LikeCommentResponseSchema.safeParse(data);
+    if (!result.success) {
+      console.error("Validation failed:", result.error);
+      throw new Error("LikeComment action has failed.");
+    }
+    const { isAdded } = result.data;
+    if (isAdded) {
+      revalidateTag(CACHE_TAGS.COMMENT(postId));
+    }
+    return result.data;
   }
 }

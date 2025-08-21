@@ -1,16 +1,23 @@
 import { PostResponse } from "@/lib/definition/postSchema";
 import PostLayout from "./Shared/PostLayout";
+import CommentSection from "../Comment/CommentSection";
+import { PaginatedCommentListItemDto } from "@/lib/definition/commentSchema";
+import { UserAuthInfo } from "@/lib/definition/userAuthSchemas";
 
 interface ComponentProps {
-  post: PostResponse; // URL에서 전달되는 게시물 ID
+  post: PostResponse;
   isEditable: boolean;
   boardSlug: string;
+  comments: PaginatedCommentListItemDto;
+  userStatusInfo: UserAuthInfo;
 }
 
 export default function PostComponent({
   post,
   isEditable,
   boardSlug,
+  comments,
+  userStatusInfo,
 }: ComponentProps) {
   return (
     <PostLayout post={post} isEditable={isEditable} boardSlug={boardSlug}>
@@ -41,6 +48,13 @@ export default function PostComponent({
           </p>
         )}
       </div>
+
+      <CommentSection
+        postId={post.id}
+        boardSlug={boardSlug}
+        comments={comments}
+        userStatusInfo={userStatusInfo}
+      />
     </PostLayout>
   );
 }
