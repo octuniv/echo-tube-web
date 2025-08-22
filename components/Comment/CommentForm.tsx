@@ -35,11 +35,15 @@ export default function CommentForm({
 
   useEffect(() => {
     if (state.message && state.message.includes(COMMENT_MESSAGES.CREATED)) {
+      setContent("");
       startTransition(() => {
         router.refresh();
+        if (onCancel) {
+          onCancel();
+        }
       });
     }
-  }, [state, router]);
+  }, [state, router, onCancel]);
 
   if (!userStatusInfo.nickname) {
     return (
@@ -64,6 +68,7 @@ export default function CommentForm({
             type="button"
             onClick={onCancel}
             className="text-sm text-gray-500 hover:text-gray-700"
+            aria-label="댓글 취소 버튼"
           >
             취소
           </button>
@@ -79,6 +84,7 @@ export default function CommentForm({
             rows={3}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             disabled={isPending || isRefreshing}
+            aria-label="내용 입력 창"
           />
           {state.errors?.content && (
             <p className="mt-1 text-red-500 text-sm">{state.errors.content}</p>
@@ -95,6 +101,7 @@ export default function CommentForm({
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
+            aria-label="댓글 등록 버튼"
           >
             {isPending || isRefreshing ? "등록 중..." : "댓글 등록"}
           </button>

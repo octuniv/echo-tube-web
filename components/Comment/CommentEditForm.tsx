@@ -39,9 +39,10 @@ export default function CommentEditForm({
     if (state.message && state.message.includes(COMMENT_MESSAGES.UPDATED)) {
       startTransition(() => {
         router.refresh();
+        onCancel();
       });
     }
-  }, [state, router]);
+  }, [state, router, onCancel]);
 
   if (!isCurrentUser) {
     return (

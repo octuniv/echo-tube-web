@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { CommentListItemDto } from "@/lib/definition/commentSchema";
 import { UserAuthInfo } from "@/lib/definition/userAuthSchemas";
 import CommentEditForm from "./CommentEditForm";
@@ -46,9 +46,9 @@ export default function CommentItem({
     });
   };
 
-  const handleEditCancel = () => {
+  const handleEditCancel = useCallback(() => {
     setEditingCommentId(null);
-  };
+  }, []);
 
   const isEditingParent = editingCommentId === comment.id;
 
@@ -58,6 +58,10 @@ export default function CommentItem({
   const getEditingReply = () => {
     return replies.find((r) => r.id === editingCommentId);
   };
+
+  const handleReplyCancel = useCallback(() => {
+    setIsReplying(false);
+  }, []);
 
   if (isEditingParent) {
     return (
@@ -136,7 +140,10 @@ export default function CommentItem({
               )}
             </div>
           </div>
-          <p className="mt-2 text-gray-700 whitespace-pre-wrap">
+          <p
+            aria-label="parent-comment"
+            className="mt-2 text-gray-700 whitespace-pre-wrap"
+          >
             {comment.content}
           </p>
 
@@ -219,7 +226,7 @@ export default function CommentItem({
                 postId={postId}
                 userStatusInfo={userStatusInfo}
                 parentId={comment.id}
-                onCancel={() => setIsReplying(false)}
+                onCancel={handleReplyCancel}
               />
             </div>
           )}
@@ -278,7 +285,10 @@ export default function CommentItem({
                       </div>
                     )}
                   </div>
-                  <p className="mt-2 text-gray-700 whitespace-pre-wrap">
+                  <p
+                    aria-label="reply-comment"
+                    className="mt-2 text-gray-700 whitespace-pre-wrap"
+                  >
                     {reply.content}
                   </p>
                 </div>

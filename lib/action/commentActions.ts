@@ -32,6 +32,7 @@ export async function FetchComments(
       headers: { "Content-Type": "application/json" },
       next: {
         tags: [CACHE_TAGS.COMMENT(postId)],
+        revalidate: 600,
       },
       cache: "force-cache",
     }
