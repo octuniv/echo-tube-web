@@ -13,59 +13,59 @@ export async function handleHttpError(
     body = await response.text();
   }
 
+  // 공통 메시지 추출 로직
+  const getErrorMessage = (defaultMessage: string) => {
+    if (typeof body === "string") return body;
+    return body?.message || defaultMessage;
+  };
+
   switch (status) {
     case 400:
       return {
         type: AuthenticatedFetchErrorType.BadRequest,
-        message:
-          typeof body === "string"
-            ? body
-            : body.message || ERROR_MESSAGES.BAD_REQUEST,
+        message: getErrorMessage(ERROR_MESSAGES.BAD_REQUEST),
         status,
       };
 
     case 401:
       return {
         type: AuthenticatedFetchErrorType.Unauthorized,
-        message: ERROR_MESSAGES.UNAUTHORIZED,
+        message: getErrorMessage(ERROR_MESSAGES.UNAUTHORIZED),
         status,
       };
 
     case 403:
       return {
         type: AuthenticatedFetchErrorType.Forbidden,
-        message: ERROR_MESSAGES.FORBIDDEN,
+        message: getErrorMessage(ERROR_MESSAGES.FORBIDDEN),
         status,
       };
 
     case 404:
       return {
         type: AuthenticatedFetchErrorType.NotFound,
-        message: ERROR_MESSAGES.NOT_FOUND,
+        message: getErrorMessage(ERROR_MESSAGES.NOT_FOUND),
         status,
       };
 
     case 409:
       return {
         type: AuthenticatedFetchErrorType.ConflictError,
-        message:
-          typeof body === "string"
-            ? body
-            : body.message || ERROR_MESSAGES.CONFLICT,
+        message: getErrorMessage(ERROR_MESSAGES.CONFLICT),
         status,
       };
 
     case 500:
       return {
         type: AuthenticatedFetchErrorType.ServerError,
-        message: ERROR_MESSAGES.SERVER_ERROR,
+        message: getErrorMessage(ERROR_MESSAGES.SERVER_ERROR),
         status,
       };
 
     default:
       return {
         type: AuthenticatedFetchErrorType.Unknown,
-        message: `알 수 없는 오류 (${status})`,
+        message: getErrorMessage(`알 수 없는 오류 (${status})`),
         status,
       };
   }

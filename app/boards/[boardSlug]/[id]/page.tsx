@@ -3,32 +3,52 @@ import { FetchPost } from "@/lib/action/postActions";
 import { userStatus } from "@/lib/authState";
 import { canModifyPost } from "@/lib/util";
 import PostComponent from "@/components/Boards/PostComponent";
+import { FetchComments } from "@/lib/action/commentActions";
 
 interface PostPageProps {
   params: Promise<{
     boardSlug: string;
-    id: string; // URL에서 전달되는 게시물 ID
+    id: string;
   }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
-export default async function Page({ params }: PostPageProps) {
+export default async function Page({ params, searchParams }: PostPageProps) {
   const { boardSlug, id } = await params;
-  const postId = Number(id); // 문자열 ID를 숫자로 변환
-
+  const postId = Number(id);
   if (isNaN(postId)) {
-    notFound(); // 유효하지 않은 ID인 경우 404 처리
+    notFound();
   }
 
-  const post = await FetchPost(postId);
+  let commentPage = 1;
+  const { page } = await searchParams;
+  if (page) {
+    const pageParam = Array.isArray(page) ? page[0] : page;
+    const pageNum = Number(pageParam);
+    if (!isNaN(pageNum) && pageNum > 0) {
+      commentPage = pageNum;
+    }
+  }
+
+  const [post, comments, userStatusInfo] = await Promise.all([
+    FetchPost(postId),
+    FetchComments(postId, commentPage),
+    userStatus(),
+  ]);
 
   if (post.board.slug !== boardSlug) {
-    notFound(); // 알맞지 않는 post와 board 경우 404 처리
+    notFound();
   }
 
-  const userStatusInfo = await userStatus();
   const isEditable = canModifyPost({ user: userStatusInfo, post });
 
   return (
-    <PostComponent post={post} isEditable={isEditable} boardSlug={boardSlug} />
+    <PostComponent
+      post={post}
+      isEditable={isEditable}
+      boardSlug={boardSlug}
+      comments={comments}
+      userStatusInfo={userStatusInfo}
+    />
   );
 }
