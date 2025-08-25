@@ -89,12 +89,18 @@ export default function CommentItem({
   }
 
   return (
-    <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+    <div
+      aria-label="parent-comment-container"
+      className="bg-white rounded-lg p-4 border border-gray-200 mb-4"
+    >
       <div className="flex items-start space-x-3">
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className="font-medium text-gray-800">
+              <span
+                aria-label="parent-comment-author"
+                className="font-medium text-gray-800"
+              >
                 {comment.nickname}
               </span>
               <span className="text-xs text-gray-500">
@@ -103,6 +109,7 @@ export default function CommentItem({
             </div>
             <div className="flex items-center space-x-3">
               <button
+                aria-label="parent-comment-like-button"
                 onClick={() => onLike(comment.id)}
                 className={`flex items-center space-x-1 ${
                   comment.likes > 0 ? "text-blue-500" : "text-gray-500"
@@ -125,12 +132,14 @@ export default function CommentItem({
               {isCurrentUser && (
                 <div className="flex space-x-2">
                   <button
+                    aria-label="parent-comment-edit-button"
                     onClick={() => setEditingCommentId(comment.id)}
                     className="text-sm text-blue-500 hover:text-blue-700"
                   >
                     수정
                   </button>
                   <button
+                    aria-label="parent-comment-delete-button"
                     onClick={handleDelete}
                     className="text-sm text-red-500 hover:text-red-700"
                   >
@@ -141,7 +150,7 @@ export default function CommentItem({
             </div>
           </div>
           <p
-            aria-label="parent-comment"
+            aria-label="parent-comment-content"
             className="mt-2 text-gray-700 whitespace-pre-wrap"
           >
             {comment.content}
@@ -237,11 +246,15 @@ export default function CommentItem({
               {replies.map((reply) => (
                 <div
                   key={reply.id}
+                  aria-label="reply-comment-container"
                   className="pt-3 pb-4 pl-4 pr-2 mt-3 bg-gray-50 rounded-lg border border-gray-100"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium text-gray-800">
+                      <span
+                        aria-label="reply-comment-author"
+                        className="font-medium text-gray-800"
+                      >
                         {reply.nickname}
                       </span>
                       <span className="text-xs text-gray-500">
@@ -251,6 +264,7 @@ export default function CommentItem({
                     {userStatusInfo.nickname === reply.nickname && (
                       <div className="flex items-center space-x-3">
                         <button
+                          aria-label="reply-comment-like-button"
                           onClick={() => onLike(reply.id)}
                           className={`flex items-center space-x-1 ${
                             reply.likes > 0 ? "text-blue-500" : "text-gray-500"
@@ -271,12 +285,14 @@ export default function CommentItem({
                           <span>{reply.likes}</span>
                         </button>
                         <button
+                          aria-label="reply-comment-edit-button"
                           onClick={() => setEditingCommentId(reply.id)}
                           className="text-sm text-blue-500 hover:text-blue-700"
                         >
                           수정
                         </button>
                         <button
+                          aria-label="reply-comment-delete-button"
                           onClick={() => onDelete(reply.id)}
                           className="text-sm text-red-500 hover:text-red-700"
                         >
@@ -286,7 +302,7 @@ export default function CommentItem({
                     )}
                   </div>
                   <p
-                    aria-label="reply-comment"
+                    aria-label="reply-comment-content"
                     className="mt-2 text-gray-700 whitespace-pre-wrap"
                   >
                     {reply.content}
