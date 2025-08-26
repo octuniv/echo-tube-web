@@ -6,6 +6,7 @@ import CommentEditForm from "./CommentEditForm";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import CommentForm from "./CommentForm";
+import { UserRole } from "@/lib/definition/enums";
 
 interface CommentItemProps {
   comment: CommentListItemDto;
@@ -28,6 +29,7 @@ export default function CommentItem({
   const [showReplies, setShowReplies] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const isCurrentUser = userStatusInfo.nickname === comment.nickname;
+  const isAdmin = userStatusInfo.role === UserRole.ADMIN;
 
   const handleDelete = () => {
     if (window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
@@ -129,15 +131,17 @@ export default function CommentItem({
                 </svg>
                 <span>{comment.likes}</span>
               </button>
-              {isCurrentUser && (
+              {(isCurrentUser || isAdmin) && (
                 <div className="flex space-x-2">
-                  <button
-                    aria-label="parent-comment-edit-button"
-                    onClick={() => setEditingCommentId(comment.id)}
-                    className="text-sm text-blue-500 hover:text-blue-700"
-                  >
-                    수정
-                  </button>
+                  {isCurrentUser && (
+                    <button
+                      aria-label="parent-comment-edit-button"
+                      onClick={() => setEditingCommentId(comment.id)}
+                      className="text-sm text-blue-500 hover:text-blue-700"
+                    >
+                      수정
+                    </button>
+                  )}
                   <button
                     aria-label="parent-comment-delete-button"
                     onClick={handleDelete}
@@ -261,7 +265,8 @@ export default function CommentItem({
                         {formatTime(reply.createdAt)}
                       </span>
                     </div>
-                    {userStatusInfo.nickname === reply.nickname && (
+                    {(userStatusInfo.nickname === reply.nickname ||
+                      userStatusInfo.role === UserRole.ADMIN) && (
                       <div className="flex items-center space-x-3">
                         <button
                           aria-label="reply-comment-like-button"
@@ -284,13 +289,15 @@ export default function CommentItem({
                           </svg>
                           <span>{reply.likes}</span>
                         </button>
-                        <button
-                          aria-label="reply-comment-edit-button"
-                          onClick={() => setEditingCommentId(reply.id)}
-                          className="text-sm text-blue-500 hover:text-blue-700"
-                        >
-                          수정
-                        </button>
+                        {userStatusInfo.nickname === reply.nickname && (
+                          <button
+                            aria-label="reply-comment-edit-button"
+                            onClick={() => setEditingCommentId(reply.id)}
+                            className="text-sm text-blue-500 hover:text-blue-700"
+                          >
+                            수정
+                          </button>
+                        )}
                         <button
                           aria-label="reply-comment-delete-button"
                           onClick={() => onDelete(reply.id)}

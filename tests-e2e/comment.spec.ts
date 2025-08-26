@@ -1,5 +1,6 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, Page, BrowserContext } from "@playwright/test";
 import { withTemporaryLogout } from "./util/helper";
+import { loginAsAdminIsolated } from "./util/auth-utils";
 
 test.describe("댓글 및 대댓글 조회 테스트", () => {
   test.beforeEach(async ({ page }) => {
@@ -904,6 +905,87 @@ test.describe("댓글 기능성 테스트", () => {
         "div.text-center.py-8.text-gray-500"
       );
       await expect(noCommentsMessage).not.toBeVisible();
+    });
+
+    test("admin은 모든 사람의 댓글을 삭제 가능합니다.", async ({ browser }) => {
+      let context: BrowserContext | undefined;
+      let page: Page | undefined;
+
+      try {
+        const result = await loginAsAdminIsolated(browser);
+        context = result.context;
+        page = result.page;
+
+        expect(context).toBeDefined();
+        expect(page).toBeDefined();
+
+        await page.goto("/boards/commenttest");
+        const post = page.getByRole("link", { name: postName }).first();
+        await post.click();
+
+        await page.waitForURL(/\/boards\/commenttest\/\d+/, { timeout: 5000 });
+
+        const replyButton = page
+          .getByRole("button", { name: /답글 (보기|숨기기)/ })
+          .first();
+        const buttonText = await replyButton.textContent();
+
+        if (buttonText && buttonText.includes("답글 보기")) {
+          await replyButton.scrollIntoViewIfNeeded();
+          await replyButton.click();
+          await page.waitForTimeout(500);
+        }
+
+        const replyComment = page
+          .locator('p[aria-label="reply-comment-content"]')
+          .first();
+        await expect(replyComment).toBeVisible({ timeout: 5000 });
+
+        const replyDeleteButton = page
+          .getByRole("button", { name: "reply-comment-delete-button" })
+          .first();
+        await replyDeleteButton.scrollIntoViewIfNeeded();
+
+        await replyDeleteButton.click();
+        await page.waitForTimeout(1000);
+
+        await expect(replyComment).not.toBeVisible({ timeout: 5000 });
+
+        const updatedReplyButton = page
+          .getByRole("button", { name: /답글 (보기|숨기기)/ })
+          .first();
+        await expect(updatedReplyButton).not.toBeVisible();
+
+        const parentDeleteButton = page
+          .getByRole("button", { name: "parent-comment-delete-button" })
+          .first();
+        await parentDeleteButton.scrollIntoViewIfNeeded();
+
+        page.once("dialog", async (dialog) => {
+          await dialog.accept();
+        });
+
+        await parentDeleteButton.click();
+        await page.waitForTimeout(1000);
+
+        const parentComment = page
+          .locator('p[aria-label="parent-comment-content"]')
+          .first();
+        await expect(parentComment).not.toBeVisible({ timeout: 5000 });
+
+        const noCommentsMessage = page.locator(
+          "div.text-center.py-8.text-gray-500"
+        );
+        await expect(noCommentsMessage).toHaveText(
+          "아직 작성된 댓글이 없습니다."
+        );
+      } catch (error) {
+        test.fail();
+      } finally {
+        if (context) {
+          await context.close();
+        }
+      }
     });
   });
 
