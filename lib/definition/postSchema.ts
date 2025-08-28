@@ -8,6 +8,7 @@ export const PostResponseSchema = z.object({
   content: z.string(),
   views: z.number(),
   commentsCount: z.number(),
+  likesCount: z.number(),
   videoUrl: z.string().nullable().optional(),
   nickname: z.string(),
   createdAt: z.string(),
@@ -44,3 +45,11 @@ export interface CreatePostRequestBody {
   videoUrl: string;
   boardSlug: string;
 }
+
+export const LikePostResponseSchema = z.object({
+  postId: z.number().nonnegative(),
+  likesCount: z.number().nonnegative(),
+  isAdded: z.boolean(),
+});
+
+export type LikePostReponse = z.infer<typeof LikePostResponseSchema>;

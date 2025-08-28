@@ -1,10 +1,12 @@
 import {
+  LikePostReponse,
   PaginatedPostsResponse,
   PostResponse,
 } from "../../lib/definition/postSchema";
 import { BoardPurpose, UserRole } from "../../lib/definition/enums";
 import { BASE_API_URL } from "../../lib/util";
 import { http, HttpResponse } from "msw";
+import { POST_ERROR_MESSAGES } from "../../lib/constants/post/errorMessage";
 
 export const mockPosts: PostResponse[] = [
   {
@@ -25,6 +27,7 @@ export const mockPosts: PostResponse[] = [
     hotScore: 150.5,
     views: 1,
     commentsCount: 0,
+    likesCount: 0,
   },
   {
     id: 2,
@@ -44,6 +47,7 @@ export const mockPosts: PostResponse[] = [
     hotScore: 150.5,
     views: 1,
     commentsCount: 0,
+    likesCount: 0,
   },
 ];
 
@@ -102,7 +106,10 @@ export const postHandlers = [
       });
     }
 
-    return HttpResponse.json({ error: "Post not found" }, { status: 404 });
+    return HttpResponse.json(
+      { message: POST_ERROR_MESSAGES.POST_FIND_NOT_FOUND },
+      { status: 404 }
+    );
   }),
 
   // Mock API for creating Post
@@ -113,7 +120,7 @@ export const postHandlers = [
       body = await request.json();
     } catch {
       return HttpResponse.json(
-        { error: "Invalid JSON format" },
+        { message: "Invalid JSON format" },
         { status: 400 }
       );
     }
@@ -121,14 +128,14 @@ export const postHandlers = [
     // 2. null 및 기본 타입 검증
     if (body === null) {
       return HttpResponse.json(
-        { error: "Request body cannot be null" },
+        { message: "Request body cannot be null" },
         { status: 400 }
       );
     }
 
     if (typeof body !== "object") {
       return HttpResponse.json(
-        { error: "Request body must be an object" },
+        { message: "Request body must be an object" },
         { status: 400 }
       );
     }
@@ -139,7 +146,7 @@ export const postHandlers = [
     // 4. 필수 필드 검증
     if (!postData.boardSlug) {
       return HttpResponse.json(
-        { error: "boardSlug is required" },
+        { message: "boardSlug is required" },
         { status: 400 }
       );
     }
@@ -161,6 +168,30 @@ export const postHandlers = [
     return HttpResponse.json(
       { ...mockPosts[0], ...mockEditPostForm },
       { status: 200 }
+    );
+  }),
+
+  http.post(`${BASE_API_URL}/posts/like/:id`, ({ params }) => {
+    const postId = Number(params.id);
+
+    if (!isNaN(postId) && postId < mockPosts.length && postId > 0) {
+      mockPosts[postId].likesCount += 1;
+
+      return HttpResponse.json(
+        {
+          postId,
+          likesCount: mockPosts[postId].likesCount,
+          isAdded: true,
+        } satisfies LikePostReponse,
+        {
+          status: 200,
+        }
+      );
+    }
+
+    return HttpResponse.json(
+      { message: POST_ERROR_MESSAGES.POST_FIND_NOT_FOUND },
+      { status: 404 }
     );
   }),
 ];

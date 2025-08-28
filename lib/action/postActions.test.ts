@@ -5,12 +5,11 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { clearAuth } from "../authState";
 import { PaginationDto } from "../definition/commonSchemas";
-import { BoardPurpose, UserRole } from "../definition/enums";
 import {
   CreatePostRequestBody,
+  LikePostReponse,
   PaginatedPostsResponseSchema,
 } from "../definition/postSchema";
-import { BoardListItemDto } from "../definition/boardBrowseSchemas";
 import { BASE_API_URL } from "../util";
 import {
   FetchPostsByBoardId,
@@ -18,9 +17,11 @@ import {
   CreatePost,
   DeletePost,
   EditPost,
+  LikePost,
 } from "./postActions";
 import { revalidateTag } from "next/cache";
 import { CACHE_TAGS } from "../cacheTags";
+import { POST_ERROR_MESSAGES } from "../constants/post/errorMessage";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -219,35 +220,16 @@ describe("postAction", () => {
 
     it("should fetch a post successfully", async () => {
       const postId = 1;
-      const mockPost = {
-        id: postId,
-        title: "Post 1",
-        content: "Content of Post 1",
-        videoUrl: "https://example.com/video1",
-        views: 1,
-        commentsCount: 0,
-        nickname: "UserA",
-        createdAt: "2023-10-01T12:00:00Z",
-        updatedAt: "2023-10-01T12:00:00Z",
-        board: {
-          id: 1,
-          slug: "free",
-          name: "General",
-          requiredRole: UserRole.USER,
-          boardType: BoardPurpose.GENERAL,
-        } satisfies BoardListItemDto,
-        hotScore: 100,
-      };
 
       server.use(
         http.get(`${BASE_API_URL}/posts/${postId}`, () => {
-          return HttpResponse.json(mockPost, { status: 200 });
+          return HttpResponse.json(mockPosts[0], { status: 200 });
         })
       );
 
       const result = await FetchPost(postId);
 
-      expect(result).toEqual(mockPost);
+      expect(result).toEqual(mockPosts[0]);
     });
 
     it("should handle not found error when the post does not exist", async () => {
@@ -665,6 +647,76 @@ describe("postAction", () => {
       const result = await EditPost(1, boardSlug, {}, formData);
 
       expect(result.message).toBe("Edit post failed.");
+      expect(revalidateTag).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("LikePost", () => {
+    const postId = 1;
+    const boardSlug = "free";
+
+    it("좋아요 버튼을 누르는 데 성공합니다.", async () => {
+      const result = await LikePost(postId, boardSlug);
+
+      expect(result).toEqual({
+        postId,
+        likesCount: mockPosts[postId].likesCount,
+        isAdded: true,
+      } satisfies LikePostReponse);
+      expect(revalidateTag).toHaveBeenCalledWith(CACHE_TAGS.POST(postId));
+      expect(revalidateTag).toHaveBeenCalledWith(
+        CACHE_TAGS.BOARD_POSTS(boardSlug)
+      );
+    });
+
+    it("없는 게시물에는 좋아요 버튼을 누를 수 없습니다.", async () => {
+      const result = await LikePost(99999, boardSlug);
+
+      expect(result).toEqual({
+        message: POST_ERROR_MESSAGES.POST_FIND_NOT_FOUND,
+      });
+      expect(revalidateTag).not.toHaveBeenCalled();
+    });
+
+    it("권한이 없는 사용자(비로그인)는 좋아요를 누를 수 없습니다.", async () => {
+      server.use(
+        http.post(`${BASE_API_URL}/posts/like/${postId}`, () => {
+          return HttpResponse.json(
+            { statusCode: 401, message: "Unauthorized" },
+            { status: 401 }
+          );
+        })
+      );
+
+      await expect(LikePost(postId, boardSlug)).rejects.toThrow();
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
+      expect(revalidateTag).not.toHaveBeenCalled();
+    });
+
+    it("좋아요를 이미 누른 사람에게는 다시 눌리지 않습니다.", async () => {
+      server.use(
+        http.post(`${BASE_API_URL}/posts/like/${postId}`, () => {
+          return HttpResponse.json(
+            {
+              postId,
+              likesCount: mockPosts[postId].likesCount,
+              isAdded: false,
+            } satisfies LikePostReponse,
+            {
+              status: 200,
+            }
+          );
+        })
+      );
+
+      const result = await LikePost(postId, boardSlug);
+
+      expect(result).toEqual({
+        postId,
+        likesCount: mockPosts[postId].likesCount,
+        isAdded: false,
+      } satisfies LikePostReponse);
       expect(revalidateTag).not.toHaveBeenCalled();
     });
   });

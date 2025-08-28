@@ -12,10 +12,13 @@ import {
   CreatePostInputSchema,
   PaginatedPostsResponse,
   PaginatedPostsResponseSchema,
+  LikePostResponseSchema,
 } from "../definition/postSchema";
 import { BASE_API_URL } from "../util";
 import { CACHE_TAGS } from "../cacheTags";
 import { PaginationDto } from "../definition/commonSchemas";
+import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
+import { POST_ERROR_MESSAGES } from "../constants/post/errorMessage";
 
 export async function FetchPostsByBoardId(
   boardId: number,
@@ -243,5 +246,48 @@ export async function EditPost(
     revalidateTag(CACHE_TAGS.POST(postId));
     revalidateTag(CACHE_TAGS.BOARD_POSTS(boardSlug));
     redirect(`/boards/${boardSlug}`);
+  }
+}
+
+export async function LikePost(postId: number, boardSlug: string) {
+  const { data, error } = await authenticatedFetch({
+    url: `${BASE_API_URL}/posts/like/${postId}`,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (error) {
+    await handleAuthRedirects(error);
+    const message = error.message;
+    switch (error.type) {
+      case AuthenticatedFetchErrorType.NotFound:
+        switch (message) {
+          case POST_ERROR_MESSAGES.POST_FIND_NOT_FOUND:
+            return { message };
+          default:
+            console.error("Unexpected error during comment updating:", error);
+            return { message: "Something wrong when click like" };
+        }
+
+      default:
+        console.error("Unexpected error during comment updating:", error);
+        return {
+          message: "An unexpected error occurred. Please try again.",
+        };
+    }
+  } else {
+    const result = LikePostResponseSchema.safeParse(data);
+    if (!result.success) {
+      console.error("Validation failed:", result.error);
+      throw new Error("LikePost action has failed.");
+    }
+    const { isAdded } = result.data;
+    if (isAdded) {
+      revalidateTag(CACHE_TAGS.POST(postId));
+      revalidateTag(CACHE_TAGS.BOARD_POSTS(boardSlug));
+    }
+    return result.data;
   }
 }
