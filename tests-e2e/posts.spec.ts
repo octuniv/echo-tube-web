@@ -1,4 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
+import { withTemporaryLogout } from "./util/helper";
 
 function extractDate(dateText: string) {
   const dateMatch = dateText.match(
@@ -736,5 +737,145 @@ test.describe("Pagination Tests", () => {
         }
       }
     }
+  });
+});
+
+test.describe("게시물 좋아요 테스트", () => {
+  const postTitle = "Like Post Test";
+  test.beforeEach("좋아요 버튼 테스트를 위한 게시물 작성", async ({ page }) => {
+    await page.goto("/boards/free/create");
+
+    await page.fill("input#title", postTitle);
+    await page.fill("textarea#content", postTitle);
+
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL("/boards/free");
+
+    const newPost = findPostLink(page, postTitle);
+    await expect(newPost).toBeVisible();
+
+    const likeSpan = newPost.locator("span", { hasText: "좋아요" });
+    await expect(likeSpan).toBeVisible();
+
+    const likeText = await likeSpan.innerText();
+    const likeCount = parseInt(likeText.replace(/[^0-9]/g, ""), 10);
+
+    expect(likeCount).toBe(0);
+
+    await newPost.click();
+
+    await page.waitForURL(/\/boards\/free\/(\d+)/, { timeout: 1000 });
+    await expect(
+      page.getByRole("heading", { name: postTitle, level: 1 })
+    ).toBeVisible();
+  });
+
+  test.afterEach("테스트를 위해 만들었던 게시물 삭제", async ({ page }) => {
+    await page.goto("/boards/free");
+
+    const deletedPost = findPostLink(page, postTitle);
+    await expect(deletedPost).toBeVisible();
+
+    await deletedPost.click();
+
+    await page.waitForURL(/\/boards\/free\/(\d+)/, { timeout: 1000 });
+    await expect(
+      page.getByRole("heading", { name: postTitle, level: 1 })
+    ).toBeVisible();
+
+    const deleteButton = page.getByRole("button", { name: "게시물 삭제" });
+    const isButtonEnabled = await deleteButton.isEnabled();
+
+    expect(isButtonEnabled).toBeTruthy();
+
+    // confirm 대화상자 처리 준비
+    page.on("dialog", async (dialog) => {
+      await dialog.accept(); // "확인" 버튼 클릭
+    });
+
+    await deleteButton.click();
+
+    await expect(page).toHaveURL("/boards/free");
+  });
+
+  test("로그인 된 유저에 대한 좋아요 시나리오 테스트", async ({ page }) => {
+    let likeButton = page.getByRole("button", { name: "이 게시물을 좋아요" });
+    let enableButton = await likeButton.isEnabled();
+
+    expect(enableButton).toBeTruthy();
+
+    await expect(likeButton.locator("span")).toHaveText("0");
+
+    await likeButton.click();
+
+    expect(likeButton).not.toBeVisible();
+
+    likeButton = page.getByRole("button", {
+      name: "이미 좋아요를 누르셨습니다",
+    });
+    expect(likeButton).toBeVisible();
+    enableButton = await likeButton.isEnabled();
+    expect(enableButton).toBeFalsy();
+
+    await expect(likeButton.locator("span")).toHaveText("1");
+
+    await page.goto("/boards/free");
+
+    const likedPost = findPostLink(page, postTitle);
+    await expect(likedPost).toBeVisible();
+
+    const likeSpan = likedPost.locator("span", { hasText: "좋아요" });
+    await expect(likeSpan).toBeVisible();
+
+    const likeText = await likeSpan.innerText();
+    const likeCount = parseInt(likeText.replace(/[^0-9]/g, ""), 10);
+
+    expect(likeCount).toBe(1);
+
+    await likedPost.click();
+
+    await page.waitForURL(/\/boards\/free\/\d+/, { timeout: 1000 });
+    await expect(
+      page.getByRole("heading", { name: postTitle, level: 1 })
+    ).toBeVisible();
+
+    likeButton = page.getByRole("button", { name: "이 게시물을 좋아요" });
+    enableButton = await likeButton.isEnabled();
+
+    expect(enableButton).toBeTruthy();
+
+    await expect(likeButton.locator("span")).toHaveText("1");
+
+    await likeButton.click();
+
+    expect(likeButton).not.toBeVisible();
+
+    likeButton = page.getByRole("button", {
+      name: "이미 좋아요를 누르셨습니다",
+    });
+    expect(likeButton).toBeVisible();
+    enableButton = await likeButton.isEnabled();
+    expect(enableButton).toBeFalsy();
+
+    await expect(likeButton.locator("span")).toHaveText("1");
+  });
+
+  test("비로그인 사용자는 좋아요 버튼을 누를 수 없습니다.", async ({
+    page,
+  }) => {
+    const detailPageUrl = page.url();
+    const pathOnly = new URL(detailPageUrl).pathname;
+
+    await withTemporaryLogout(page, async (page) => {
+      await page.goto(pathOnly);
+      const likeButton = page.getByRole("button", {
+        name: "로그인 후 좋아요를 누를 수 있습니다",
+      });
+      expect(likeButton).toBeVisible();
+
+      const enableButton = await likeButton.isEnabled();
+
+      expect(enableButton).toBeFalsy();
+    });
   });
 });

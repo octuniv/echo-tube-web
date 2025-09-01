@@ -155,6 +155,7 @@ export default async function Page({
                     <div className="flex flex-wrap items-center text-sm text-gray-500 gap-y-1">
                       <span className="mr-3">작성자: {post.nickname}</span>
                       <span className="mr-3">조회 {post.views}</span>
+                      <span className="mr-3">좋아요 {post.likesCount}</span>
                       <span className="mr-3">댓글 {post.commentsCount}</span>
                       {post.channelTitle && (
                         <span className="mr-3">채널: {post.channelTitle}</span>

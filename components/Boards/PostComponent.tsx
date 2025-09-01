@@ -20,7 +20,12 @@ export default function PostComponent({
   userStatusInfo,
 }: ComponentProps) {
   return (
-    <PostLayout post={post} isEditable={isEditable} boardSlug={boardSlug}>
+    <PostLayout
+      post={post}
+      isEditable={isEditable}
+      boardSlug={boardSlug}
+      isLoggedIn={!!userStatusInfo.role}
+    >
       <div className="mt-6 text-sm text-gray-700 space-y-2">
         {post.channelTitle && (
           <p className="flex items-center gap-2">

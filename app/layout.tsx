@@ -4,6 +4,7 @@ import "./globals.css";
 import { hasAdminRole, loginStatus } from "@/lib/authState";
 import AppShell from "@/components/layout/AppShell";
 import { FetchCategoriesWithBoards } from "@/lib/action/boardBrowseActions";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default async function RootLayout({
           isAdmin={isAdmin}
           categoriesWithBoards={categoriesWithBoards}
         >
+          <Toaster position="bottom-center" />
           {children}
         </AppShell>
       </body>

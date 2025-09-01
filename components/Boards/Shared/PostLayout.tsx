@@ -1,6 +1,7 @@
 import { PostResponse } from "@/lib/definition/postSchema";
 import DeleteButton from "./DeleteButton";
 import EditButton from "./EditButton";
+import LikeButton from "./LikeButton";
 
 // components/Boards/Shared/PostLayout.tsx
 export default function PostLayout({
@@ -8,11 +9,13 @@ export default function PostLayout({
   boardSlug,
   children,
   isEditable = false,
+  isLoggedIn = false,
 }: {
   post: PostResponse;
   boardSlug: string;
   children: React.ReactNode;
   isEditable?: boolean;
+  isLoggedIn?: boolean;
 }) {
   return (
     <div className="container mx-auto p-6">
@@ -70,6 +73,12 @@ export default function PostLayout({
 
       {/* 버튼 컨테이너 */}
       <div className="mt-6 flex justify-end gap-4">
+        <LikeButton
+          postId={post.id}
+          boardSlug={boardSlug}
+          initialLikesCount={post.likesCount}
+          isLoggedIn={isLoggedIn}
+        />
         <EditButton
           postId={post.id}
           isEditable={isEditable}
