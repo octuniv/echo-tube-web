@@ -11,10 +11,21 @@
 ### **커뮤니티 시스템**
 
 - 자유 게시판 (CRUD 기능)
+- **댓글 및 대댓글 기능** (신규 추가)
+  - 페이징 조회: 대용량 댓글 처리를 위한 효율적인 페이지네이션 구현
+  - 댓글/대댓글 생성: 사용자 친화적인 폼 인터페이스 제공
+  - 댓글/대댓글 편집: 실시간 수정 기능 및 취소 옵션 지원
+  - 댓글/대댓글 삭제: 소프트 삭제 방식으로 댓글 기록 관리
+  - 댓글/대댓글 좋아요: 중복 방지 및 실시간 카운트 업데이트
+  - 관리자 권한 확장: 관리자는 모든 사용자의 댓글/대댓글 삭제 가능
 - 봇 추천 게시판
 - 공지 게시판
 - 대시보드 (사용자 활동 통계)
 - 설정 창
+- **게시물 좋아요 기능** (신규 추가)
+  - 낙관적 업데이트(Optimistic Update) 지원
+  - 로그인 상태별 UI 처리
+  - 에러 핸들링 및 사용자 피드백(토스트 알림)
 
 ### **관리자 전용 기능**
 
@@ -54,6 +65,71 @@
 | **Utilities**   | date-fns (날짜 처리), React Hook Form (폼 관리) |
 | **Environment** | TypeScript, ESLint, Turbopack                   |
 
+## 🛠️ 기술적 특징
+
+## **1. Next.js 15 + App Router**
+
+- **서버 액션(Server Actions)**:
+  - `commentActions.ts`, `postActions.ts`에서 CRUD 및 좋아요 기능 구현
+  - `useActionState`훅으로 상태 관리 (예: `CreateComment`, `EditComment`)
+  - JWT 토큰 기반 인증 (`authenticatedFetch`, `handleAuthRedirects`)
+- **동적 라우팅**:
+  - 게시판 슬러그(`[boardSlug]`)와 게시물 ID(`[id]`) 기반의 유연한 URL 구조
+  - 페이징 처리(`?page=1`, `?limit=10`) 통합
+
+## **2. 타입 안전한 검증 시스템**
+
+- **Zod 스키마**:
+  - 댓글 데이터(`CommentSchema`), API 응답(`PaginatedCommentListItemSchema`) 정의
+  - 폼 입력 검증(`CommentForm`, `CommentEditForm`) 및 API 응답 검증
+- **타입 추론**:
+  - `z.infer<typeof Schema>`로 강력한 타입검증
+
+## **3. 사용자 경험(UX) 최적화**
+
+- **낙관적 업데이트(Optimistic Update)**:
+  - 좋아요 버튼(`LikeButton`) 클릭 시 즉시 UI 반영 후 API 응답 대기
+- **실시간 캐시 재검증**:
+  - `revalidateTag(CACHE_TAGS.COMMENT(postId))`로 관련 콘텐츠 강제 갱신
+- **에러 핸들링**:
+  - `toast.error`를 활용한 피드백, 비인증 접근 시 `/login` 리다이렉션
+
+## **4. 컴포넌트 아키텍처**
+
+- **복잡한 UI 분리**:
+  - `CommentSection`: 댓글 폼 + 목록 통합
+  - `CommentItem`: 부모/대댓글 구조 관리 + 편집/삭제 모달
+  - `PaginationControls`: 게시물/댓글 공용 페이징 UI
+- **리액트 훅 활용**:
+  - `useState`로 로딩 상태 및 편집 모드 관리 (`CommentForm`, `CommentEditForm`)
+
+## **5. 테스트 전략**
+
+- **MSW(Mock Service Worker)**:
+  - API 모킹(`commentHandlers.ts`)으로 일관된 테스트 환경 구축
+  - Zod 스키마 기반 응답 검증
+- **Playwright E2E 테스트**:
+  - `src/tests-e2e/comments`에서 댓글 CRUD 및 좋아요 시나리오 커버
+  - ARIA 라벨(`aria-label="parent-comment-like-button"`) 기반 선택자 사용
+- **유닛 테스트**:
+  - `jest`로 서버 액션(`commentActions.test.ts`) 및 유틸리티 함수 검증
+
+## **6. 보안 및 인증**
+
+- **JWT 기반 인증**:
+  - `authState.ts`에서 쿠키 기반 사용자 정보 관리
+- **접근 제어**:
+  - `forbidden.tsx` 페이지로 무단 접근 차단
+  - `handleAuthRedirects`로 비인증 시 로그인 페이지 이동
+
+## **7. 환경 및 배포**
+
+- **환경 변수 관리**:
+  - `.env` 파일로 API 엔드포인트 및 테스트 계정 정보 저장
+- **빌드 최적화**:
+  - `turbo` 기반 빌드 속도 개선
+  - `next/cache`를 활용한 캐싱 태그(`CACHE_TAGS`) 관리
+
 ## 👨‍💻 관리자 기능 개발 가이드
 
 ### 📂 프로젝트 구조
@@ -74,6 +150,7 @@ src/
 │ ├── board/
 │ ├── category/
 │ └── user/
+└── tests-e2e/ # e2e test
 ```
 
 ### 🧩 핵심 아키텍처 패턴
@@ -141,6 +218,19 @@ export default function CreateNewFeaturePage() {
   - 사용자 관리 및 권한 테스트
   - 비관리자 접근 차단 테스트
   - 토큰 만료 시 리다이렉션 테스트
+
+- **댓글 관련 테스트**
+  - 댓글/대댓글 페이징 조회 및 렌더링 테스트
+  - 댓글 생성, 수정, 삭제, 좋아요에 대한 E2E 테스트
+  - 대댓글 생성 및 계층 구조 유지 테스트
+  - 부모 댓글 삭제 시 대댓글 처리 테스트
+  - 관리자 권한으로 타인 댓글 삭제 테스트
+- **좋아요 기능 테스트**
+  - 게시물 좋아요/좋아요 취소 E2E 테스트
+  - 댓글/대댓글 좋아요 E2E 테스트
+  - 동시 요청 처리 및 중복 방지 테스트
+  - 인증되지 않은 사용자 접근 제어 테스트
+  - 캐시 재검증(Revalidation) 테스트
 
 ## 📦 시작 가이드
 
