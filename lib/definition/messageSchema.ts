@@ -6,7 +6,7 @@ import { FormState, genericPaginatedResponseDtoSchema } from "./commonSchemas";
  * 메시지 생성 요청 스키마
  */
 export const CreateMessageSchema = z.object({
-  receiverId: z.number().optional(), // 공지일 경우 생략 가능
+  receiverNickname: z.string().optional(), // 공지일 경우 생략 가능
   content: z.string().min(1, { message: "메시지 내용은 필수입니다." }),
   isNotice: z.coerce.boolean().optional().default(false),
 });

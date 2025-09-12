@@ -101,12 +101,17 @@ export async function FetchMessage(
 
 export async function SendMessage(
   prevState: CreateMessageFormState,
-  formData: FormData,
-  receiverId?: number
+  formData: FormData
 ): Promise<CreateMessageFormState> {
+  const getFormValue = (key: string) => {
+    const value = formData.get(key);
+    return value === null || value === "" ? undefined : value;
+  };
+
   const validatedFields = CreateMessageSchema.safeParse({
     content: formData.get("content"),
-    isNotice: formData.get("isNotice") || false,
+    isNotice: getFormValue("isNotice") || false,
+    receiverNickname: getFormValue("receiverNickname"),
   });
 
   if (!validatedFields.success) {
@@ -116,12 +121,7 @@ export async function SendMessage(
     };
   }
 
-  const isNotice = validatedFields.data.isNotice;
-
-  const body = {
-    ...validatedFields.data,
-    ...(!isNotice && { receiverId }),
-  };
+  const body = validatedFields.data;
 
   const { error } = await authenticatedFetch({
     url: `${BASE_API_URL}/messages`,

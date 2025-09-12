@@ -103,12 +103,12 @@ export const messageHandlers = [
         );
       }
 
-      const { receiverId, content, isNotice = false } = parsedBody.data;
+      const { receiverNickname, content, isNotice = false } = parsedBody.data;
 
       // 공지 메시지인 경우 receiverId 체크 생략
-      if (!isNotice && !receiverId) {
+      if (!isNotice && !receiverNickname) {
         return HttpResponse.json(
-          { error: "개인 메시지 전송 시 receiverId는 필수입니다." },
+          { error: "개인 메시지 전송 시 수신자 닉네임은 필수입니다." },
           { status: 400 }
         );
       }
@@ -130,7 +130,7 @@ export const messageHandlers = [
         id: messageIdCounter++,
         senderId: 1, // 현재 로그인한 사용자 (임의로 1로 설정)
         senderNickname: "CurrentUser",
-        receiverId: receiverId!,
+        receiverId: 2,
         content,
         isRead: false,
         createdAt: new Date().toISOString(),

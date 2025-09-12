@@ -4,7 +4,6 @@ import {
   CreateMessageFormState,
   MessageDetailDto,
   PaginatedMessageListDto,
-  PaginatedMessageListSchema,
 } from "../definition/messageSchema";
 import { BASE_API_URL } from "../util";
 import {
@@ -241,9 +240,9 @@ describe("Message API Test", () => {
       const prevState: CreateMessageFormState = {};
       const formData = new FormData();
       formData.append("content", "안녕하세요. 개인 메시지입니다.");
-      const receiverId = 2;
+      formData.append("receiverNickname", "receiver");
 
-      const result = await SendMessage(prevState, formData, receiverId);
+      const result = await SendMessage(prevState, formData);
       expect(result).toEqual({ message: MessageResponses.SENT });
     });
 
@@ -253,7 +252,7 @@ describe("Message API Test", () => {
       formData.append("content", "[공지] 점검 안내입니다.");
       formData.append("isNotice", "true");
 
-      const result = await SendMessage(prevState, formData, undefined);
+      const result = await SendMessage(prevState, formData);
       expect(result).toEqual({ message: MessageResponses.SENT });
     });
 
@@ -262,7 +261,7 @@ describe("Message API Test", () => {
       const formData = new FormData();
       formData.append("content", "");
 
-      const result = await SendMessage(prevState, formData, 2);
+      const result = await SendMessage(prevState, formData);
       expect(result.errors).toBeDefined();
       expect(result.errors?.content).toContain("메시지 내용은 필수입니다.");
     });
@@ -271,7 +270,7 @@ describe("Message API Test", () => {
       const prevState: CreateMessageFormState = {};
       const formData = new FormData();
       formData.append("content", "테스트 메시지");
-      const nonExistentReceiverId = 9999;
+      formData.append("receiverNickname", "nonexist");
 
       server.use(
         http.post(`${BASE_API_URL}/messages`, () =>
@@ -282,11 +281,7 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await SendMessage(
-        prevState,
-        formData,
-        nonExistentReceiverId
-      );
+      const result = await SendMessage(prevState, formData);
       expect(result).toEqual({ message: MessageErrors.RECEIVER_NOT_FOUND });
     });
 
@@ -305,7 +300,7 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await SendMessage(prevState, formData, undefined);
+      const result = await SendMessage(prevState, formData);
       expect(result).toEqual({ message: MessageErrors.FORBIDDEN_NOTICE });
     });
 
@@ -313,6 +308,7 @@ describe("Message API Test", () => {
       const prevState: CreateMessageFormState = {};
       const formData = new FormData();
       formData.append("content", "테스트 메시지");
+      formData.append("receiverNickname", "receiver");
 
       server.use(
         http.post(`${BASE_API_URL}/messages`, () =>
@@ -323,7 +319,7 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await SendMessage(prevState, formData, 2);
+      const result = await SendMessage(prevState, formData);
       expect(result).toEqual({ message: MessageErrors.UNAUTHORIZED_ACCESS });
     });
 
@@ -331,6 +327,7 @@ describe("Message API Test", () => {
       const prevState: CreateMessageFormState = {};
       const formData = new FormData();
       formData.append("content", "테스트 메시지");
+      formData.append("receiverNickname", "receiver");
 
       server.use(
         http.post(`${BASE_API_URL}/messages`, () =>
@@ -341,7 +338,7 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await SendMessage(prevState, formData, 2);
+      const result = await SendMessage(prevState, formData);
       expect(consoleErrorMock).toHaveBeenCalledWith(
         "Unexpected error during message sending:",
         expect.any(Object)
