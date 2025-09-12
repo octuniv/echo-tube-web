@@ -17,6 +17,8 @@ import {
   MessageResponses,
 } from "../constants/message/constants";
 import { ERROR_MESSAGES } from "../constants/errorMessage";
+import { clearAuth } from "../authState";
+import { forbidden, redirect } from "next/navigation";
 
 jest.mock("next/headers", () => ({
   cookies: jest.fn(() =>
@@ -26,6 +28,31 @@ jest.mock("next/headers", () => ({
       delete: jest.fn(),
     })
   ),
+}));
+
+jest.mock("next/navigation", () => ({
+  redirect: jest.fn().mockImplementation((url) => {
+    const error = new Error(`Redirect to ${url}`);
+    Object.defineProperty(error, "digest", {
+      value: `NEXT_REDIRECT: ${url}`,
+      configurable: false,
+      writable: false,
+    });
+    throw error;
+  }),
+  forbidden: jest.fn().mockImplementation(() => {
+    const error = new Error("Forbidden access");
+    Object.defineProperty(error, "digest", {
+      value: "NEXT_FORBIDDEN",
+      configurable: false,
+      writable: false,
+    });
+    throw error;
+  }),
+}));
+
+jest.mock("../authState", () => ({
+  clearAuth: jest.fn(),
 }));
 
 describe("Message API Test", () => {
@@ -123,8 +150,12 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await FetchMessages(page);
-      expect(result).toEqual({ message: MessageErrors.UNAUTHORIZED_ACCESS });
+      await expect(FetchMessages(page)).rejects.toThrow(
+        "Redirect to /login?error=session_expired"
+      );
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("서버 내부 오류 시 기본값을 반환합니다.", async () => {
@@ -187,8 +218,12 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await FetchMessage(messageId);
-      expect(result).toEqual({ message: MessageErrors.UNAUTHORIZED_ACCESS });
+      await expect(FetchMessage(messageId)).rejects.toThrow(
+        "Redirect to /login?error=session_expired"
+      );
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("예상치 못한 에러 발생 시 일반적인 에러 메시지를 반환합니다.", async () => {
@@ -300,8 +335,9 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await SendMessage(prevState, formData);
-      expect(result).toEqual({ message: MessageErrors.FORBIDDEN_NOTICE });
+      await expect(SendMessage(prevState, formData)).rejects.toThrow();
+
+      expect(forbidden).toHaveBeenCalled();
     });
 
     it("인증되지 않은 사용자는 메시지를 보낼 수 없습니다. (401)", async () => {
@@ -319,8 +355,12 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await SendMessage(prevState, formData);
-      expect(result).toEqual({ message: MessageErrors.UNAUTHORIZED_ACCESS });
+      await expect(SendMessage(prevState, formData)).rejects.toThrow(
+        "Redirect to /login?error=session_expired"
+      );
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("예상치 못한 서버 에러 발생 시 일반적인 에러 메시지를 반환합니다.", async () => {
@@ -385,8 +425,12 @@ describe("Message API Test", () => {
         )
       );
 
-      const result = await DeleteMessage(messageId);
-      expect(result).toEqual({ message: MessageErrors.UNAUTHORIZED_ACCESS });
+      await expect(DeleteMessage(messageId)).rejects.toThrow(
+        "Redirect to /login?error=session_expired"
+      );
+
+      expect(clearAuth).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?error=session_expired");
     });
 
     it("예상치 못한 서버 에러 발생 시 일반적인 에러 메시지를 반환합니다.", async () => {

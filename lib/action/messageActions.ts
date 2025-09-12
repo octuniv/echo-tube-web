@@ -16,10 +16,11 @@ import {
   PaginatedMessageListDto,
   PaginatedMessageListSchema,
 } from "../definition/messageSchema";
+import { handleAuthRedirects } from "../auth/errors/authRedirectHandler";
 
 export async function FetchMessages(
   page: number
-): Promise<PaginatedMessageListDto | { message: string }> {
+): Promise<PaginatedMessageListDto> {
   const queryParams = new URLSearchParams({
     page: page.toString(),
   });
@@ -33,18 +34,14 @@ export async function FetchMessages(
   });
 
   if (error) {
-    switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        return { message: MessageErrors.UNAUTHORIZED_ACCESS };
-      default:
-        console.error("Unexpected error during message loading:", error);
-        return {
-          data: [],
-          currentPage: 1,
-          totalItems: 0,
-          totalPages: 0,
-        };
-    }
+    await handleAuthRedirects(error);
+    console.error("Unexpected error during message loading:", error);
+    return {
+      data: [],
+      currentPage: 1,
+      totalItems: 0,
+      totalPages: 0,
+    };
   }
 
   const result = PaginatedMessageListSchema.safeParse(data);
@@ -74,10 +71,9 @@ export async function FetchMessage(
   });
 
   if (error) {
+    await handleAuthRedirects(error);
     const message = error.message;
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        return { message: MessageErrors.UNAUTHORIZED_ACCESS };
       case AuthenticatedFetchErrorType.NotFound:
         if (message === MessageErrors.MESSAGE_NOT_FOUND) {
           return { message };
@@ -133,19 +129,10 @@ export async function SendMessage(
   });
 
   if (error) {
+    await handleAuthRedirects(error);
     const message = error.message;
 
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        return { message: MessageErrors.UNAUTHORIZED_ACCESS };
-      case AuthenticatedFetchErrorType.Forbidden:
-        switch (message) {
-          case MessageErrors.FORBIDDEN_NOTICE:
-            return { message };
-          default:
-            console.error("Unexpected error during message sending:", error);
-            return { message: "Something wrong when sending message" };
-        }
       case AuthenticatedFetchErrorType.NotFound:
         switch (message) {
           case MessageErrors.RECEIVER_NOT_FOUND:
@@ -175,11 +162,10 @@ export async function DeleteMessage(messageId: number) {
   });
 
   if (error) {
+    await handleAuthRedirects(error);
     const message = error.message;
 
     switch (error.type) {
-      case AuthenticatedFetchErrorType.Unauthorized:
-        return { message: MessageErrors.UNAUTHORIZED_ACCESS };
       case AuthenticatedFetchErrorType.NotFound:
         switch (message) {
           case MessageErrors.MESSAGE_NOT_FOUND:
