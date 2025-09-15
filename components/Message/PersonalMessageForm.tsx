@@ -8,12 +8,10 @@ import { MessageResponses } from "@/lib/constants/message/constants";
 
 export default function PersonalMessageForm() {
   const router = useRouter();
-
   const initialState: CreateMessageFormState = {
     errors: {},
     message: "",
   };
-
   const [state, formAction, isPending] = useActionState(
     SendMessage,
     initialState
@@ -39,6 +37,8 @@ export default function PersonalMessageForm() {
               ? "bg-green-50 text-green-800 border border-green-200"
               : "bg-red-50 text-red-800 border border-red-200"
           }`}
+          aria-live="polite"
+          data-testid="form-global-message"
         >
           {state.message}
         </div>
@@ -60,13 +60,15 @@ export default function PersonalMessageForm() {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           placeholder="메시지 내용을 입력하세요..."
           disabled={isPending}
+          aria-label="보낼 메시지 내용을 입력하세요"
+          data-testid="message-content-input"
         />
         {state.errors?.content && (
           <p className="mt-1 text-sm text-red-600">{state.errors.content[0]}</p>
         )}
       </div>
 
-      {/* 수신자 닉네임 필드 (필수) */}
+      {/* 수신자 닉네임 필드 */}
       <div>
         <label
           htmlFor="receiverNickname"
@@ -82,6 +84,8 @@ export default function PersonalMessageForm() {
           placeholder="닉네임을 입력하세요"
           required
           disabled={isPending}
+          aria-label="수신자의 닉네임을 입력하세요"
+          data-testid="receiver-nickname-input"
         />
         {state.errors?.receiverNickname && (
           <p className="mt-1 text-sm text-red-600">
@@ -90,7 +94,7 @@ export default function PersonalMessageForm() {
         )}
       </div>
 
-      {/* 숨김 필드: 공지 여부 false (강제) */}
+      {/* 숨김 필드 */}
       <input type="hidden" name="isNotice" value="false" />
 
       {/* 제출 버튼 */}
@@ -98,6 +102,8 @@ export default function PersonalMessageForm() {
         type="submit"
         disabled={isPending}
         className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="메시지 전송하기"
+        data-testid="send-message-button"
       >
         {isPending ? "전송 중..." : "전송하기"}
       </button>

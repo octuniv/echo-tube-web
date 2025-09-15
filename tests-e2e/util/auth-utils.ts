@@ -91,3 +91,38 @@ export const loginAsAdminIsolated = async (
 
   return { context, page };
 };
+
+export const loginAsAnother = async ({
+  account,
+  page,
+  context,
+}: {
+  account: User;
+  page: Page;
+  context: BrowserContext;
+}) => {
+  // 기존 세션 클리어 (필요 시)
+  await context.clearCookies();
+
+  // 로그인 페이지로 이동
+  await page.goto("/login");
+  await page.waitForSelector('input[name="email"]');
+
+  // 정보 입력 및 로그인
+  await page.fill('input[name="email"]', account.email);
+  await page.fill('input[name="password"]', account.password);
+  await page.click('button[type="submit"]');
+
+  // 대시보드로 리디렉션 확인
+  await page.waitForURL("/dashboard", { timeout: 5000 });
+  expect(await page.url()).toBe("http://localhost:3000/dashboard");
+
+  // 쿠키 검증 (선택 사항)
+  const cookies = await context.cookies();
+  expectCookiesToBeDefined(cookies, ["access_token", "refresh_token", "user"]);
+  expectValidUserCookie(cookies);
+
+  // ✅ tester2 전용 저장소에 세션 저장
+  const authFile = "./tests-e2e/.auth/user-tester2.json";
+  await context.storageState({ path: authFile });
+};

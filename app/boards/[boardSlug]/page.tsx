@@ -182,6 +182,7 @@ export default async function Page({
             totalPages={data.totalPages}
             currentLimit={currentLimit}
             baseUrl={`/boards/${boardSlug}`}
+            ariaLabel="게시글 목록"
           />
         </div>
       </div>

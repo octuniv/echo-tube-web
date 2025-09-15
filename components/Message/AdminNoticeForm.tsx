@@ -8,12 +8,10 @@ import { MessageResponses } from "@/lib/constants/message/constants";
 
 export default function AdminNoticeForm() {
   const router = useRouter();
-
   const initialState: CreateMessageFormState = {
     errors: {},
     message: "",
   };
-
   const [state, formAction, isPending] = useActionState(
     SendMessage,
     initialState
@@ -39,6 +37,8 @@ export default function AdminNoticeForm() {
               ? "bg-green-50 text-green-800 border border-green-200"
               : "bg-red-50 text-red-800 border border-red-200"
           }`}
+          aria-live="polite"
+          data-testid="notice-form-global-message"
         >
           {state.message}
         </div>
@@ -60,19 +60,22 @@ export default function AdminNoticeForm() {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           placeholder="모든 사용자에게 전달될 공지 내용을 입력하세요..."
           disabled={isPending}
+          aria-label="모든 사용자에게 전달할 공지 내용을 입력하세요"
+          data-testid="notice-content-input"
         />
         {state.errors?.content && (
           <p className="mt-1 text-sm text-red-600">{state.errors.content[0]}</p>
         )}
       </div>
 
-      {/* 수신자 필드: 숨김 + 강제 비활성화 */}
+      {/* 숨김 필드 */}
       <input type="hidden" name="receiverNickname" value="" />
       <input type="hidden" name="isNotice" value="true" />
 
-      {/* 공지 전송 안내 메시지 */}
+      {/* 안내 메시지 */}
       <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">
-        <p className="text-sm text-yellow-800">
+        <p className="text-sm text-yellow-800" aria-live="polite">
+          {" "}
           ⚠️ 이 메시지는 <strong>모든 사용자에게 공지</strong>로 전송됩니다.
         </p>
       </div>
@@ -82,6 +85,8 @@ export default function AdminNoticeForm() {
         type="submit"
         disabled={isPending}
         className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="공지 메시지 전송하기"
+        data-testid="notice-submit-button"
       >
         {isPending ? "전송 중..." : "공지 전송하기"}
       </button>

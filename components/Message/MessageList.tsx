@@ -1,5 +1,4 @@
 // components/message/MessageList.tsx
-"use client";
 import MessageItem from "./MessageItem";
 import { PaginatedMessageListDto } from "@/lib/definition/messageSchema";
 import Link from "next/link";
@@ -19,7 +18,12 @@ export default function MessageList({ messages }: MessageListProps) {
       {data.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           메시지가 없습니다.{" "}
-          <Link href="/messages/new" className="text-blue-600 hover:underline">
+          <Link
+            href="/messages/new"
+            className="text-blue-600 hover:underline"
+            data-testid="create-message-link"
+            aria-label="새 메시지를 작성하기 위해 새 메시지 보내기 페이지로 이동"
+          >
             새 메시지 보내기
           </Link>
         </div>
@@ -36,6 +40,7 @@ export default function MessageList({ messages }: MessageListProps) {
           currentPage={currentPage}
           totalPages={totalPages}
           baseUrl="/messages"
+          ariaLabel="메시지 목록"
         />
       )}
     </div>

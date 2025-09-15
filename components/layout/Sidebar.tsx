@@ -81,6 +81,8 @@ const Sidebar = ({
                     ? "bg-blue-100 text-blue-600"
                     : "text-gray-700"
                 } hover:bg-blue-50`}
+                aria-label="messages"
+                data-testid="message-list-page-link"
               >
                 <EnvelopeIcon className="w-6 h-6 mr-3" />
                 Messages
@@ -92,6 +94,8 @@ const Sidebar = ({
                     ? "bg-blue-100 text-blue-600"
                     : "text-gray-700"
                 } hover:bg-blue-50`}
+                aria-label="Sending message"
+                data-testid="new-message-page-link"
               >
                 <PaperClipIcon className="w-6 h-6 mr-3" />
                 Send Message
@@ -113,6 +117,7 @@ const Sidebar = ({
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-700"
                   } hover:bg-blue-50`}
+                  aria-label="admin-users"
                 >
                   <UserGroupIcon className="w-6 h-6 mr-3" />
                   사용자 관리
@@ -124,6 +129,7 @@ const Sidebar = ({
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-700"
                   } hover:bg-blue-50`}
+                  aria-label="admin-categories"
                 >
                   <FolderIcon className="w-6 h-6 mr-3" />
                   카테고리 관리
@@ -135,6 +141,7 @@ const Sidebar = ({
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-700"
                   } hover:bg-blue-50`}
+                  aria-label="admin-boards"
                 >
                   <ClipboardDocumentListIcon className="w-6 h-6 mr-3" />
                   게시판 관리
@@ -147,6 +154,7 @@ const Sidebar = ({
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-700"
                   } hover:bg-blue-50`}
+                  aria-label="admin-notices"
                 >
                   <EnvelopeIcon className="w-6 h-6 mr-3" />
                   Send Notice

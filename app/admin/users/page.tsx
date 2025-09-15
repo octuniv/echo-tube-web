@@ -175,6 +175,7 @@ export default async function UserList({
         totalPages={data.totalPages}
         currentLimit={currentLimit}
         baseUrl={"/admin/users"}
+        ariaLabel="사용자 목록"
       />
     </div>
   );
