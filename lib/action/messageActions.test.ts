@@ -286,6 +286,7 @@ describe("Message API Test", () => {
       const formData = new FormData();
       formData.append("content", "[공지] 점검 안내입니다.");
       formData.append("isNotice", "true");
+      formData.append("receiverNickname", "");
 
       const result = await SendMessage(prevState, formData);
       expect(result).toEqual({ message: MessageResponses.SENT });
@@ -325,6 +326,7 @@ describe("Message API Test", () => {
       const formData = new FormData();
       formData.append("content", "[공지] 점검 안내입니다.");
       formData.append("isNotice", "true");
+      formData.append("receiverNickname", "");
 
       server.use(
         http.post(`${BASE_API_URL}/messages`, () =>
