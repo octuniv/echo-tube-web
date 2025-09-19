@@ -6,13 +6,9 @@ import { useRouter } from "next/navigation";
 
 interface MessageDetailProps {
   message: MessageDetailDto;
-  currentUserNickname?: string;
 }
 
-export default function MessageDetail({
-  message,
-  currentUserNickname,
-}: MessageDetailProps) {
+export default function MessageDetail({ message }: MessageDetailProps) {
   const router = useRouter();
 
   const formattedDate = new Intl.DateTimeFormat("ko-KR", {
@@ -89,13 +85,7 @@ export default function MessageDetail({
         </button>
       </div>
 
-      {currentUserNickname && (
-        <DeleteButton
-          messageId={message.id}
-          senderNickname={message.senderNickname}
-          currentUserNickname={currentUserNickname}
-        />
-      )}
+      <DeleteButton messageId={message.id} />
     </div>
   );
 }

@@ -7,25 +7,15 @@ import { useRouter } from "next/navigation";
 
 interface DeleteButtonProps {
   messageId: number;
-  senderNickname: string;
-  currentUserNickname: string;
 }
 
-export default function DeleteButton({
-  messageId,
-  senderNickname,
-  currentUserNickname,
-}: DeleteButtonProps) {
+export default function DeleteButton({ messageId }: DeleteButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
 
   const handleDelete = async () => {
-    if (senderNickname !== currentUserNickname) {
-      setMessage("삭제 권한이 없습니다.");
-      return;
-    }
     setIsDeleting(true);
     setMessage(null);
     const result = await DeleteMessage(messageId);
@@ -38,10 +28,6 @@ export default function DeleteButton({
     setIsDeleting(false);
     setShowConfirm(false);
   };
-
-  if (senderNickname !== currentUserNickname) {
-    return null;
-  }
 
   return (
     <>

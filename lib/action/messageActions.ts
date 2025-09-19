@@ -99,15 +99,10 @@ export async function SendMessage(
   prevState: CreateMessageFormState,
   formData: FormData
 ): Promise<CreateMessageFormState> {
-  const getFormValue = (key: string) => {
-    const value = formData.get(key);
-    return value === null || value === "" ? undefined : value;
-  };
-
   const validatedFields = CreateMessageSchema.safeParse({
     content: formData.get("content"),
-    isNotice: getFormValue("isNotice") || false,
-    receiverNickname: getFormValue("receiverNickname"),
+    isNotice: formData.get("isNotice") === "true",
+    receiverNickname: formData.get("receiverNickname"),
   });
 
   if (!validatedFields.success) {

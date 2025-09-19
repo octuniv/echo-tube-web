@@ -1,6 +1,10 @@
 import { Page, BrowserContext, expect, Browser } from "@playwright/test";
 import { User } from "@/lib/definition/userAuthSchemas";
-import { expectCookiesToBeDefined, expectValidUserCookie } from "./test-utils";
+import {
+  expectCookiesToBeDefined,
+  expectValidUserCookie,
+  safeLogout,
+} from "./test-utils";
 
 interface authenticationProps {
   account: User;
@@ -18,7 +22,10 @@ export const signUpAndLogin = async ({
   page,
   context,
 }: authenticationProps) => {
+  await context.clearCookies();
+
   await page.goto("/signup");
+  await page.waitForURL("/signup");
 
   await page.fill('input[name="name"]', account.name);
   await page.fill('input[name="nickname"]', account.nickname);
