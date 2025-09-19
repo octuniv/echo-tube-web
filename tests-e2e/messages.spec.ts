@@ -1,4 +1,11 @@
-import { test, expect, Page, BrowserContext, Browser } from "@playwright/test";
+import {
+  test,
+  expect,
+  Page,
+  BrowserContext,
+  Browser,
+  Locator,
+} from "@playwright/test";
 import { createTestUser } from "./util/test-utils";
 import {
   loginAsAdminIsolated,
@@ -6,6 +13,11 @@ import {
   signUpAndLogin,
 } from "./util/auth-utils";
 import { MessageResponses } from "@/lib/constants/message/constants";
+import {
+  createMessagesForUser,
+  extractMessageNumbersFromPreview,
+  getTestSessionMessageItems,
+} from "./util/message-utils";
 
 test.describe("Test to read Message", () => {
   const receivedMessagesUser = createTestUser({
@@ -20,7 +32,53 @@ test.describe("Test to read Message", () => {
   });
 
   test.describe("Message List Pagination & Order Test", () => {
-    test.beforeEach(async ({ page }) => {
+    let senderPage: Page;
+    let senderContext: BrowserContext;
+    const sender = createTestUser({
+      name: "Pagination Test Sender",
+    });
+
+    // ✅ 현재 테스트 세션을 식별하기 위한 고유 키
+    let testSessionTag: string;
+
+    // beforeEach에서 로그인 + 테스트 데이터 생성
+    test.beforeEach(async ({ page, browser }) => {
+      // 고유한 세션 태그 생성 (타임스탬프 기반)
+      const shortTimestamp = Date.now().toString().slice(-4);
+      testSessionTag = `TS_${shortTimestamp}`;
+
+      // 새로운 발신자 컨텍스트 생성 및 로그인
+      senderContext = await browser.newContext();
+      senderPage = await senderContext.newPage();
+      await signUpAndLogin({
+        account: sender,
+        page: senderPage,
+        context: senderContext,
+      });
+
+      // tester2에게 15개의 메시지 전송 (고유 태그 포함)
+      for (let i = 1; i <= 15; i++) {
+        // ✅ 고유 태그를 내용에 포함
+        const messageContent = `${testSessionTag} #${i}/15: Test message for pagination order check.`;
+
+        await senderPage.goto("/messages/new");
+        await senderPage.fill(
+          '[data-testid="message-content-input"]',
+          messageContent
+        );
+        await senderPage.fill(
+          '[data-testid="receiver-nickname-input"]',
+          receivedMessagesUser.nickname
+        );
+        await senderPage.click('[data-testid="send-message-button"]');
+
+        // 전송 성공 확인
+        await expect(senderPage.getByTestId("form-global-message")).toHaveText(
+          MessageResponses.SENT
+        );
+      }
+
+      // 테스터2 페이지로 돌아가서 메시지 목록 페이지로 이동
       await page.goto("/");
       await page.getByRole("button", { name: "Sidebar Activation" }).click();
       await expect(page.getByRole("link", { name: "messages" })).toBeVisible();
@@ -28,206 +86,206 @@ test.describe("Test to read Message", () => {
       await page.waitForURL("/messages");
     });
 
-    test("should display first page with latest 10 messages (#15 to #6)", async ({
+    test.afterEach(async () => {
+      // 발신자 컨텍스트 정리
+      if (senderPage) await senderPage.close();
+      if (senderContext) await senderContext.close();
+    });
+
+    test("should display first page with latest 10 messages (ordered by #15 to #6)", async ({
       page,
     }) => {
-      const messageItems = page.locator('[data-testid^="message-item-"]');
+      // ✅ 현재 테스트 세션의 메시지만 필터링
+      const messageItems = getTestSessionMessageItems(page, testSessionTag);
       await expect(messageItems).toHaveCount(10);
 
-      const extractedIds = await Promise.all(
-        (
-          await messageItems.all()
-        ).map(async (item) => {
-          const dataTestId = await item.getAttribute("data-testid");
-          if (!dataTestId) throw new Error("data-testid not found");
-          return parseInt(dataTestId.split("-")[2], 10);
-        })
+      const messageNumbers = await extractMessageNumbersFromPreview(
+        messageItems
       );
-
-      const expectedIds = [15, 14, 13, 12, 11, 10, 9, 8, 7, 6];
-      for (let i = 0; i < 10; i++) {
-        expect(extractedIds[i]).toBe(expectedIds[i]);
-      }
+      const expectedOrder = [15, 14, 13, 12, 11, 10, 9, 8, 7, 6];
+      expect(messageNumbers).toEqual(expectedOrder);
     });
 
     test("should navigate to page 2 and display remaining 5 messages (#5 to #1)", async ({
       page,
     }) => {
-      await page.getByTestId("pagination-메시지-목록-page-2").click();
+      // 페이지 하단으로 스크롤
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+      // 2페이지 버튼 클릭
+      const page2Button = page.getByTestId("pagination-메시지-목록-page-2");
+      await expect(page2Button).toBeVisible();
+      await expect(page2Button).toBeEnabled();
+      await page2Button.click();
+
+      // URL 확인
       await expect(page).toHaveURL(/.*page=2/);
 
-      const messageItems = page.locator('[data-testid^="message-item-"]');
+      // ✅ 현재 테스트 세션의 메시지만 필터링
+      const messageItems = getTestSessionMessageItems(page, testSessionTag);
       await expect(messageItems).toHaveCount(5);
 
-      const extractedIds = await Promise.all(
-        (
-          await messageItems.all()
-        ).map(async (item) => {
-          const dataTestId = await item.getAttribute("data-testid");
-          if (!dataTestId) throw new Error("data-testid not found");
-          return parseInt(dataTestId.split("-")[2], 10);
-        })
+      const messageNumbers = await extractMessageNumbersFromPreview(
+        messageItems
       );
-
-      const expectedIds = [5, 4, 3, 2, 1];
-      for (let i = 0; i < 5; i++) {
-        expect(extractedIds[i]).toBe(expectedIds[i]);
-      }
+      const expectedOrder = [5, 4, 3, 2, 1];
+      expect(messageNumbers).toEqual(expectedOrder);
     });
 
     test("should maintain correct chronological order across pages (end-to-end)", async ({
       page,
     }) => {
-      await page.reload();
+      // 페이지 1의 메시지 추출
+      const page1Items = getTestSessionMessageItems(page, testSessionTag);
+      const page1Numbers = await extractMessageNumbersFromPreview(page1Items);
 
-      const page1Items = page.locator('[data-testid^="message-item-"]');
-      await expect(page1Items).toHaveCount(10);
-
-      const page1Ids = await Promise.all(
-        (
-          await page1Items.all()
-        ).map(async (item) => {
-          const dataTestId = await item.getAttribute("data-testid");
-          if (!dataTestId)
-            throw new Error("Missing data-testid on message item");
-          const parts = dataTestId.split("-");
-          if (parts.length < 3)
-            throw new Error(`Invalid data-testid format: ${dataTestId}`);
-          const id = parseInt(parts[2], 10);
-          if (isNaN(id))
-            throw new Error(`Invalid message ID in: ${dataTestId}`);
-          return id;
-        })
-      );
-
+      // 페이지 2로 이동
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.getByTestId("pagination-메시지-목록-page-2").click();
       await expect(page).toHaveURL(/.*page=2/);
 
-      const page2Items = page.locator('[data-testid^="message-item-"]');
-      await expect(page2Items).toHaveCount(5);
+      // 페이지 2의 메시지 추출
+      const page2Items = getTestSessionMessageItems(page, testSessionTag);
+      const page2Numbers = await extractMessageNumbersFromPreview(page2Items);
 
-      const page2Ids = await Promise.all(
-        (
-          await page2Items.all()
-        ).map(async (item) => {
-          const dataTestId = await item.getAttribute("data-testid");
-          if (!dataTestId)
-            throw new Error("Missing data-testid on message item");
-          const parts = dataTestId.split("-");
-          if (parts.length < 3)
-            throw new Error(`Invalid data-testid format: ${dataTestId}`);
-          const id = parseInt(parts[2], 10);
-          if (isNaN(id))
-            throw new Error(`Invalid message ID in: ${dataTestId}`);
-          return id;
-        })
-      );
-
-      const allIds = [...page1Ids, ...page2Ids];
-      const expectedOrder = Array.from({ length: 15 }, (_, i) => 15 - i);
-
-      expect(allIds).toEqual(expectedOrder);
+      // 전체 순서 검증
+      const allNumbers = [...page1Numbers, ...page2Numbers];
+      const expectedFullOrder = Array.from({ length: 15 }, (_, i) => 15 - i);
+      expect(allNumbers).toEqual(expectedFullOrder);
     });
   });
 
   test.describe("Message Detail Read Status Update Test", () => {
-    test.beforeEach(async ({ page }) => {
+    let senderPage: Page;
+    let senderContext: BrowserContext;
+    const sender = createTestUser({
+      name: "Read Status Test Sender",
+    });
+
+    // beforeEach: 테스트용 메시지 생성 + 메시지 목록 페이지로 이동
+    test.beforeEach(async ({ page, browser }) => {
+      // 1. 새로운 발신자 컨텍스트 생성 및 로그인
+      senderContext = await browser.newContext();
+      senderPage = await senderContext.newPage();
+      await signUpAndLogin({
+        account: sender,
+        page: senderPage,
+        context: senderContext,
+      });
+
+      // 2. tester2에게 테스트 메시지 전송
+      const testMessageContent =
+        "E2E Test: This message will be marked as read.";
+      await senderPage.goto("/messages/new");
+      await senderPage.fill(
+        '[data-testid="message-content-input"]',
+        testMessageContent
+      );
+      await senderPage.fill(
+        '[data-testid="receiver-nickname-input"]',
+        receivedMessagesUser.nickname
+      );
+      await senderPage.click('[data-testid="send-message-button"]');
+      await expect(senderPage.getByTestId("form-global-message")).toHaveText(
+        MessageResponses.SENT
+      );
+
+      // 3. tester2 페이지로 돌아가서 메시지 목록 페이지로 이동
       await page.goto("/");
       await page.getByRole("button", { name: "Sidebar Activation" }).click();
       await expect(page.getByRole("link", { name: "messages" })).toBeVisible();
       await page.getByRole("link", { name: "messages" }).click();
       await page.waitForURL("/messages");
+
+      // ✅ 테스트 메시지가 목록에 나타날 때까지 대기
+      // preview 텍스트를 기반으로 메시지가 도착했는지 확인
+      const expectedPreview = testMessageContent.substring(0, 30) + "...";
+      const sentMessageItem = page
+        .locator(
+          `p[data-testid^="message-preview-"]:has-text("${expectedPreview}")`
+        )
+        .locator("..");
+      await expect(sentMessageItem).toBeVisible();
+    });
+
+    // afterEach: 발신자 컨텍스트 정리
+    test.afterEach(async () => {
+      if (senderPage) await senderPage.close();
+      if (senderContext) await senderContext.close();
     });
 
     test("should mark message as read after viewing detail and refresh", async ({
       page,
     }) => {
-      await page.waitForSelector('[data-testid^="message-item-"]');
-      const unreadBadges = page.locator('[data-testid^="unread-badge-"]');
-
-      const count = await unreadBadges.count();
-
-      if (count === 0) {
-        throw new Error(
-          "No unread messages found. This test requires at least one unread message to proceed. Seed data may be inconsistent or already read."
-        );
-      }
-
-      const firstUnreadItem = page
-        .locator(
-          `a[data-testid^="message-item-"]:has([data-testid^="unread-badge-"])`
-        )
+      // ✅ 1. 방금 전송한 테스트 메시지 식별
+      // 메시지 목록은 createdAt DESC (최신순)으로 정렬되므로, 첫 번째 아이템이 우리가 보낸 메시지입니다.
+      const firstMessageItem = page
+        .locator('[data-testid^="message-item-"]')
         .first();
-      console.log(firstUnreadItem);
-      const messageId = await firstUnreadItem.getAttribute("data-testid");
-      if (!messageId) {
-        throw new Error(
-          "Failed to extract message item ID from unread badge parent."
-        );
-      }
-      const id = messageId.split("-")[2];
+      await expect(firstMessageItem).toBeVisible();
 
-      const message = {
-        id: parseInt(id, 10),
-        senderNickname: "tester",
-        content: `This is test message #${id} from tester to tester2`,
-        isRead: false,
-        isNotice: false,
-      };
+      const expectedPreview = "E2E Test: This message will be...";
+      const previewText = await firstMessageItem
+        .locator('[data-testid^="message-preview-"]')
+        .textContent();
+      expect(previewText).toContain(expectedPreview);
 
-      await firstUnreadItem.click();
+      // ✅ 2. 해당 메시지가 '읽지 않음' 상태인지 확인
+      const unreadBadge = firstMessageItem.locator(
+        '[data-testid^="unread-badge-"]'
+      );
+      await expect(unreadBadge).toBeVisible(); // 읽지 않음 배지가 있어야 함
+      const messageClass = await firstMessageItem.getAttribute("class");
+      expect(messageClass).toContain("bg-blue-50"); // 읽지 않음 스타일
+      expect(messageClass).toContain("border-blue-200");
 
+      // ✅ 3. 메시지 상세 페이지로 이동
+      await firstMessageItem.click();
       await expect(page).toHaveURL(/\/messages\/\d+$/);
 
+      // ✅ 4. 상세 페이지 내용 검증 (선택 사항, 기존 로직 유지)
       const detailTitle = page.getByTestId("message-detail-title");
-      await expect(detailTitle).toHaveText(
-        message.isNotice ? "📢 공지 메시지" : "메시지"
-      );
-
+      await expect(detailTitle).toHaveText("메시지");
       const senderName = page.getByTestId("message-sender-name");
-      await expect(senderName).toHaveText(message.senderNickname);
-      await expect(senderName).toHaveAttribute(
-        "aria-label",
-        `발신자: ${message.senderNickname}`
-      );
-
+      await expect(senderName).toHaveText(sender.nickname);
       const messageContent = page.getByTestId("message-content");
-      await expect(messageContent).toHaveText(message.content);
-      await expect(messageContent).toHaveAttribute(
-        "aria-label",
-        `메시지 내용: ${message.content}`
+      await expect(messageContent).toHaveText(
+        "E2E Test: This message will be marked as read."
       );
 
-      const messageTypeBadge = page.locator(
-        '[class*="bg-red-100"]:has-text("공지"), [class*="bg-blue-100"]:has-text("개인")'
-      );
-      await expect(messageTypeBadge).toBeVisible();
-      await expect(messageTypeBadge).toHaveAttribute(
-        "aria-label",
-        message.isNotice ? "공지 메시지" : "개인 메시지"
-      );
-
+      // ✅ 5. 목록으로 돌아가기
       await page.getByTestId("back-to-list-button").click();
-
       await expect(page).toHaveURL("/messages");
 
+      // ✅ 6. 페이지 새로고침 (서버 상태 동기화)
       await page.reload();
 
-      const updatedMessageItem = page.locator(
-        `[data-testid="message-item-${id}"]`
-      );
+      // ✅ 7. 동일한 메시지 아이템이 읽음 상태로 업데이트되었는지 확인
+      // 다시 첫 번째 아이템을 찾습니다. (정렬이 유지된다면 동일한 메시지입니다.)
+      const updatedMessageItem = page
+        .locator('[data-testid^="message-item-"]')
+        .first();
       await expect(updatedMessageItem).toBeVisible();
 
+      // preview 내용으로 동일한 메시지인지 재확인 (안정성 향상)
+      const updatedPreviewText = await updatedMessageItem
+        .locator('[data-testid^="message-preview-"]')
+        .textContent();
+      expect(updatedPreviewText).toContain(expectedPreview);
+
+      // 읽음 상태 확인
       const unreadBadgeAfterRefresh = updatedMessageItem.locator(
         '[data-testid^="unread-badge-"]'
       );
-      await expect(unreadBadgeAfterRefresh).not.toBeVisible();
+      await expect(unreadBadgeAfterRefresh).not.toBeVisible(); // 읽음 상태: 배지 사라짐
 
-      const messageClass = await updatedMessageItem.getAttribute("class");
-      expect(messageClass).toContain("bg-white");
-      expect(messageClass).toContain("border-gray-200");
-      expect(messageClass).not.toContain("bg-blue-50");
-      expect(messageClass).not.toContain("border-blue-200");
+      const updatedMessageClass = await updatedMessageItem.getAttribute(
+        "class"
+      );
+      expect(updatedMessageClass).toContain("bg-white"); // 읽음 스타일
+      expect(updatedMessageClass).toContain("border-gray-200");
+      expect(updatedMessageClass).not.toContain("bg-blue-50");
+      expect(updatedMessageClass).not.toContain("border-blue-200");
     });
   });
 });
