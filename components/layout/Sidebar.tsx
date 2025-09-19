@@ -7,6 +7,8 @@ import {
   UserGroupIcon,
   FolderIcon,
   ClipboardDocumentListIcon,
+  EnvelopeIcon,
+  PaperClipIcon,
 } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
 import { BoardPurpose } from "@/lib/definition/enums";
@@ -41,8 +43,8 @@ const Sidebar = ({
           ×
         </button>
       </div>
-
       <nav className="flex-1 px-2 py-4 space-y-4">
+        {/* 일반 사용자 메뉴 */}
         <div className="space-y-2">
           {isLogined && (
             <>
@@ -58,7 +60,6 @@ const Sidebar = ({
                 <HomeIcon className="w-6 h-6 mr-3" />
                 Dashboard
               </Link>
-
               <Link
                 href="/settings"
                 className={`flex items-center px-4 py-2 rounded-lg mt-2 ${
@@ -71,8 +72,38 @@ const Sidebar = ({
                 <CogIcon className="w-6 h-6 mr-3" />
                 Settings
               </Link>
+
+              {/* 메시지 메뉴 - 로그인한 사용자 모두 가능 */}
+              <Link
+                href="/messages"
+                className={`flex items-center px-4 py-2 rounded-lg ${
+                  pathname === "/messages"
+                    ? "bg-blue-100 text-blue-600"
+                    : "text-gray-700"
+                } hover:bg-blue-50`}
+                aria-label="messages"
+                data-testid="message-list-page-link"
+              >
+                <EnvelopeIcon className="w-6 h-6 mr-3" />
+                Messages
+              </Link>
+              <Link
+                href="/messages/new"
+                className={`flex items-center px-4 py-2 rounded-lg ${
+                  pathname === "/messages/new"
+                    ? "bg-blue-100 text-blue-600"
+                    : "text-gray-700"
+                } hover:bg-blue-50`}
+                aria-label="Sending message"
+                data-testid="new-message-page-link"
+              >
+                <PaperClipIcon className="w-6 h-6 mr-3" />
+                Send Message
+              </Link>
             </>
           )}
+
+          {/* 관리자 전용 메뉴 */}
           {isAdmin && (
             <>
               <h3 className="px-4 py-2 font-semibold text-sm text-gray-500 uppercase tracking-wider">
@@ -86,11 +117,11 @@ const Sidebar = ({
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-700"
                   } hover:bg-blue-50`}
+                  aria-label="admin-users"
                 >
                   <UserGroupIcon className="w-6 h-6 mr-3" />
                   사용자 관리
                 </Link>
-
                 <Link
                   href="/admin/categories"
                   className={`flex items-center px-4 py-2 rounded-lg ${
@@ -98,11 +129,11 @@ const Sidebar = ({
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-700"
                   } hover:bg-blue-50`}
+                  aria-label="admin-categories"
                 >
                   <FolderIcon className="w-6 h-6 mr-3" />
                   카테고리 관리
                 </Link>
-
                 <Link
                   href="/admin/boards"
                   className={`flex items-center px-4 py-2 rounded-lg ${
@@ -110,15 +141,30 @@ const Sidebar = ({
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-700"
                   } hover:bg-blue-50`}
+                  aria-label="admin-boards"
                 >
                   <ClipboardDocumentListIcon className="w-6 h-6 mr-3" />
                   게시판 관리
+                </Link>
+
+                <Link
+                  href="/admin/notices"
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    pathname === "/admin/notices"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-700"
+                  } hover:bg-blue-50`}
+                  aria-label="admin-notices"
+                >
+                  <EnvelopeIcon className="w-6 h-6 mr-3" />
+                  Send Notice
                 </Link>
               </div>
             </>
           )}
         </div>
 
+        {/* 카테고리 기반 게시판 목록 */}
         {categoriesWithBoards.map((category) => (
           <div key={category.name} className="space-y-2">
             <h3
@@ -140,7 +186,6 @@ const Sidebar = ({
                   {group.boards.map((board) => {
                     const href = `/boards/${board.slug}`;
                     const isActive = pathname === href;
-
                     return (
                       <Link
                         key={board.id}

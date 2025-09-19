@@ -741,8 +741,10 @@ test.describe("Pagination Tests", () => {
 });
 
 test.describe("게시물 좋아요 테스트", () => {
-  const postTitle = "Like Post Test";
+  let postTitle: string;
+
   test.beforeEach("좋아요 버튼 테스트를 위한 게시물 작성", async ({ page }) => {
+    postTitle = `Like Post Test ${Date.now()}`;
     await page.goto("/boards/free/create");
 
     await page.fill("input#title", postTitle);

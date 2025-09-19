@@ -88,6 +88,7 @@ export default function CommentList({
               currentPage={comments.currentPage}
               totalPages={comments.totalPages}
               baseUrl={`/boards/${boardSlug}/${postId}`}
+              ariaLabel="댓글 목록"
             />
           )}
         </>

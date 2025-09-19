@@ -4,9 +4,10 @@ import { clickSideBarBoard } from "./util/test-utils";
 import { loginAsAdminIsolated } from "./util/auth-utils";
 
 const adminLinks = {
-  "사용자 관리": "/admin/users",
-  "카테고리 관리": "/admin/categories",
-  "게시판 관리": "/admin/boards",
+  "admin-users": "/admin/users",
+  "admin-categories": "/admin/categories",
+  "admin-boards": "/admin/boards",
+  "admin-notices": "/admin/notices",
 };
 
 test.describe("Sidebar test", () => {
@@ -26,6 +27,16 @@ test.describe("Sidebar test", () => {
     await expect(page.getByRole("link", { name: "settings" })).toBeVisible();
     await page.getByRole("link", { name: "settings" }).click();
     await expect(page).toHaveURL(`/settings`);
+
+    await expect(page.getByRole("link", { name: "messages" })).toBeVisible();
+    await page.getByRole("link", { name: "messages" }).click();
+    await page.waitForURL("/messages");
+
+    await expect(
+      page.getByRole("link", { name: "Sending message" })
+    ).toBeVisible();
+    await page.getByRole("link", { name: "Sending message" }).click();
+    await page.waitForURL("/messages/new");
 
     let categoryName = "커뮤니티";
     let boardName = "자유 게시판";
@@ -51,8 +62,17 @@ test.describe("Sidebar test", () => {
       await expect(
         page.getByRole("link", { name: "dashboard" })
       ).not.toBeVisible();
+
       await expect(
         page.getByRole("link", { name: "settings" })
+      ).not.toBeVisible();
+
+      await expect(
+        page.getByRole("link", { name: "messages" })
+      ).not.toBeVisible();
+
+      await expect(
+        page.getByRole("link", { name: "Sending message" })
       ).not.toBeVisible();
 
       let categoryName = "커뮤니티";
@@ -86,6 +106,16 @@ test.describe("Sidebar test", () => {
       await expect(page.getByRole("link", { name: "settings" })).toBeVisible();
       await page.getByRole("link", { name: "settings" }).click();
       await expect(page).toHaveURL(`/settings`);
+
+      await expect(page.getByRole("link", { name: "messages" })).toBeVisible();
+      await page.getByRole("link", { name: "messages" }).click();
+      await page.waitForURL("/messages");
+
+      await expect(
+        page.getByRole("link", { name: "Sending message" })
+      ).toBeVisible();
+      await page.getByRole("link", { name: "Sending message" }).click();
+      await page.waitForURL("/messages/new");
 
       let categoryName = "커뮤니티";
       let boardName = "자유 게시판";
